@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksnippets=self.webpackChunksnippets||[]).push([["214"],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Greetings!","permalink":"/snippets/blog/2026/06/14/first-blog-post","unlisted":false,"date":"2026-06-14T00:00:00.000Z"}]}')}}]);
