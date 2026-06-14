@@ -1,7 +1,67 @@
+---
+description: Basics of TCP/IP in C++
+---
+
 # TCP/IP
+
+<u>TCP (**T**ransmission **C**ontrol **P**rotocol)</u>:
+- Connection-based protocol. Connection is established and the two parties have a conversation until the connection is terminated by one of the parties or by a network error.
+- Promises to deliver packets in order
+- Sender can tell if packet is lost
+- Can send much larger packets
+- More robust but slower
+- Suitable for cases where data loss is unacceptable e.g. banking, payments, emails (SMTP), file transfers (FTP), web browsing (HTTP/S)
+
+<u>UDP (**U**ser **D**atagram **P**rotocol)</u>:
+- Datagram-based, connectionless protocol. Send one datagram and get one reply and then the connection terminates.
+- Packets not guaranteed to be sent in order
+- Can't tell if packet is lost
+- Datagrams are limited in size to 512 bytes
+- Faster, less overhead
+- Suitable for video streaming and gaming
+
+### Key Headers
+Header: `#include <sys/socket.h>` (POSIX Header)
+
+### Key Functions
+`int socket(int domain, int type, int protocol)`
+- Returns the **file descriptor** for the new socket or -1 on error, and `errno` is set to indicate the error 
+- `domain` values (not exhaustive)
+    - `AF_UNIX`: local communication
+    - `AF_LOCAL`: synonym for `AF_UNIX`
+    - `AF_INET`: IPv4 Internet protocol
+    - `AF_INET6`: IPv6
+    - This specifies a **communication domain**, selecting the protocol family to use
+- `type` value (not exhaustive):
+    - `SOCK_STREAM`: Sequenced, reliable, two-way, connection-based byte stream. Use for websockets
+    - `SOCK_DGRAM`: Supports datagrams (UDP) - connectionless, unreliable messages of a fixed maximum length
+    - `SOCK_SEQPACKET`: Provides a sequenced, reliable, two-way connection-based data transmission path for datagrams of **fixed maximum length**. A **consumer** is required to read an entire packet with each input system call.
+    - Value can be OR-ed with `SOCK_NONBLOCK` or `SOCK_CLOEXEC` to modify the behaviour of the socket
+- `protocol` value
+    - Specifies the protocol to use with the socket
+    - Most of the time, only a single protocol exists to support a particular socket type within a given protocol family, in which case `protocol` can be `0`.
+    - It is possible that multiple protocols exist, in which a protocol number must be specified
+    - The protocol number to use can be found with `protocols()` and `getprotoent()`
+- Notes
+    - A socket stream must be in **connected** state before any data is sent or read
+    - A connection is created with `connect()`.
+    - Once connected, data may be transferred with `send()` and `recv()`
+    - When a session is complete, `close()` may be performed
+    - Protocols implementing `SOCK_STREAM` ensure that data is not lost or duplicated
+    - If a piece of data for which the peer protocol has buffer space cannot be successfully transmitted within a reasonable length of time, then the connection is considered to be dead.
+    - When `SO_KEEPALIVE` is enabled on the socket the protocol checks in a protocol-specific manner if the other end is still alive
+    - A `SIGPIPE` signal is raised if a process sends or receives on a broken stream. This causes naive processes, which do not handle the signal, to exit.
+    - `SOCK_SEQPACKET` sockets employ the same system calls as `SOCK_STREAM` sockets.  The only difference is that `read()` calls will return only the amount of data requested, and any data remaining in the arriving packet will be discarded.
+    - `SOCK_DGRAM` and `SOCK_RAW` sockets allow sending of datagrams to correspondents named in `sendto()` calls.  Datagrams are generally received with `recvfrom()`, which returns the next datagram along with the address of its sender.
+    - `SOCK_PACKET` is an obsolete socket type to receive raw packets directly from the device driver.  Use `packet()` instead.
+    - The operation of sockets is controlled by socket level options. These options are defined in `<sys/socket.h>`.  The functions `setsockopt()` and `getsockopt()` are used to set and get options.
 
 ## Basic Server
 
 ```cpp
-int main() {}
+int main() {
+
+}
 ```
+
+## Handle connections with worker threads

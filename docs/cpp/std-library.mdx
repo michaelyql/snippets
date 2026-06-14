@@ -1,0 +1,22 @@
+---
+description: Explanation of standard library headers and functions
+---
+
+# Standard Library
+
+## `cstdlib`
+### `void exit(int)`
+- Terminates program **immediately** without cleaning up **local stack** objects
+- Destroys 
+    - all objects with **static storage duration** (global variables)
+    - objects with **thread-local storage duration** 
+- Also flushes and closes all open **C input/output streams**
+- `0` or `EXIT_SUCCESS` indicates program completed successfully
+- Any non-zero value or `EXIT_FAILURE` indicates abnormal termination
+:::warning
+It does **not** call destructors for automatic local stack variables. Because it skips stack unwinding, it can leak resources managed by local RAII objects (like `std::unique_ptr` or `std::ofstream`)
+:::
+:::tip 
+`return 0` from `main` is the standard clean way to exit which performs stack unwinding and calls local destructors
+:::
+
