@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksnippets=self.webpackChunksnippets||[]).push([["8148"],{9150(e){e.exports=JSON.parse('{"tags":[{"label":"c++","permalink":"/snippets/blog/tags/cpp","description":"Anything related to C++. Language features, library usage etc.","count":1}]}')}}]);
