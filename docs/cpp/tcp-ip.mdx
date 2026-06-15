@@ -4,6 +4,15 @@ description: Basics of TCP/IP in C++
 
 # TCP/IP
 
+## Introduction
+
+TCP/IP is a conceptual framework used to describe how data is transmitted across a network. 
+
+It has **5** layers: Application (HTTP/S, SMTP, FTP), Transport (TCP/UDP), Network (IP), Data Link (Wifi/Ethernet/Infiniband), Physical (Fiber optic cables, bits)
+
+On the other hand, the OSI model has 7 layers: Application, Presentation (data representation & encryption - JSON, XML, TLS, SSL), Session (sockets), Transport (TCP/UDP), Network (IP), Data Link, Physical.
+
+
 <u>TCP (**T**ransmission **C**ontrol **P**rotocol)</u>:
 - Connection-based protocol. Connection is established and the two parties have a conversation until the connection is terminated by one of the parties or by a network error.
 - Promises to deliver packets in order
@@ -20,11 +29,17 @@ description: Basics of TCP/IP in C++
 - Faster, less overhead
 - Suitable for video streaming and gaming
 
-### Key Headers
-Header: `#include <sys/socket.h>` (POSIX Header)
+## Key Headers
+- `#include <sys/socket.h>` (POSIX Header) 
+- `#include <arpa/inet.h>`  
+    - Network to host/host to network byte order conversion: `htons`, `htonl`, `ntohs`, `ntohl`
+    - Typically host uses little-endian, TCP/IP uses big-endian
+    - Convert port number to network byte order
+    - Also defines `in_port_t` and `in_addr_t` types used by `<netinet/in.h>`
+- `#include <netinet/in.h>` 
 
-### Key Functions
-`int socket(int domain, int type, int protocol)`
+## Key Functions
+ `int socket(int domain, int type, int protocol)`
 - Returns the **file descriptor** for the new socket or -1 on error, and `errno` is set to indicate the error 
 - `domain` values (not exhaustive)
     - `AF_UNIX`: local communication
@@ -56,12 +71,168 @@ Header: `#include <sys/socket.h>` (POSIX Header)
     - `SOCK_PACKET` is an obsolete socket type to receive raw packets directly from the device driver.  Use `packet()` instead.
     - The operation of sockets is controlled by socket level options. These options are defined in `<sys/socket.h>`.  The functions `setsockopt()` and `getsockopt()` are used to set and get options.
 
+<br/>
+
+`int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);`
+- Binds a socket to a **name** (an IP address + port)
+- Returns -1 on error
+- `struct sockaddr` (from `<sys/socket.h>`) is the **generic socket address type** used by the socket API, while `struct sockaddr_in` (from `<netinet/in.h>`) is the **IPv4-specific version**.
+- The socket functions (`bind`, `connect`, `accept`, etc.) all take a `sockaddr*` so they can work with different address families (IPv4, IPv6, Unix sockets, etc.).
+- `socklen_t` is typedef for `unsigned int`, so `sizeof(addr)` works (returns `unsigned long`)
+
+<br/>
+
+`int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);`
+- Returns a non-negative integer on success representing the file descriptor for the socket, and -1 on error
+- Accepts an incoming connection from a client, and returns a new file descriptor representing the connected socket. The original `sockfd` is unaffected. The newly created socket is **not** in listening state.
+- Blocks until a connection is present
+- If the socket is marked non-blocking and no pending connections are present, `accept()` fails with the error `EAGAIN` or `EWOULDBLOCK`
+- Can use `select()`, `poll()` or `epoll()` to be notified of incoming connections, then `accept()`
+
+<br/>
+
+`int listen(int sockfd, int backlog)`
+- Listen on the socket for incoming connections, with up to `backlog` number of pending connections
+- If a connection arrives when the queue is full, the client may receive `ECONNREFUSED`, or if the underlying protocol supports retransmission, the request may be ignored so that a later reattempt at connection succeeds.
+- Returns 0 on success, -1 on error
+
+<br/>
+
+`int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);`
+- Returns 0 on success, -1 on error
+- Connect the socket described by `sockfd` to the address specified by `addr`
+- Some protocol sockets (e.g., UNIX domain stream sockets) may successfully `connect()` only once.
+- Some protocol sockets (e.g., datagram sockets in the UNIX and Internet domains) may use `connect()` multiple times to change their association.
+
+<br/>
+
+`int inet_pton(int af, const char *restrict src, void *restrict dst);`
+- From `<arpa/inet.h>`
+- Converts the character string `src` into a **network address structure** in the `af` address family, then copies the network address structure to `dst`
+- The `af` argument must be either `AF_INET` or `AF_INET6`
+- `dst` is written in **network byte order**
+- Returns **1 on success**, 0 if `src` is not a valid network address of the specified address family, -1 if `af` does not contain a valid address family 
+
+
+## Key Types
+
+```cpp title="sys/socket.h"
+struct sockaddr {
+    __uint8_t       sa_len;         /* Total length */
+    sa_family_t     sa_family;      /* Address family */
+    char            sa_data[14];    /* Socket address */
+};
+
+struct in_addr {
+    in_addr_t s_addr;
+};
+
+typedef /* ... */ socklen_t;        /* unsigned int on macOS */
+typedef /* ... */ sa_family_t;      /* unsigned char on macOS */
+typedef /* ... */ in_addr_t;        /* unsigned int on macOS */
+```
+
+```cpp title="netinet/in.h"
+struct sockaddr_in {
+    _uint8_t         sin_len;
+    sa_family_t      sin_family;   // e.g., AF_INET (Address Family for IPv4)
+    in_port_t        sin_port;     // Port number (in network byte order), unsigned short on macOS
+    struct in_addr   sin_addr;     // IPv4 address (in network byte order)
+    char             sin_zero[8];  // Padding to make it the same size as struct sockaddr
+};
+```
+
+
 ## Basic Server
 
-```cpp
-int main() {
+```cpp title="server.cpp" showLineNumbers
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
+#include <iostream>
+#include <cstdlib>
+#include <thread>
+
+constexpr int LISTEN_BACKLOG = 50;
+constexpr int PORT = 8080;
+
+void worker(int clientfd) {
+    // do work
+    std::cout << "Thread " << std::this_thread::get_id() << " working on "
+        << clientfd << std::endl;
+    close(clientfd);
+}
+
+int main() {
+    // Create socket and get file descriptor representing the socket
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0); 
+    if (server_fd == -1) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialize sockaddr_in struct
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(PORT);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY); // 0.0.0.0
+    // inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+    // INADDR_ANY is usually 0, so addr.sin_addr.s_addr = 0; is also fine
+
+    // Bind a name (i.e. address + port) to a socket
+    if (bind(server_fd, (sockaddr*) &addr, sizeof(addr)) == -1) {
+        perror("bind");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for connections
+    if (listen(server_fd, LISTEN_BACKLOG) == -1) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+    std::cout << "Server listening on port " << PORT << std::endl;
+
+    while (1) {
+        int clientfd = accept(server_fd, nullptr, nullptr);
+        std::thread(worker, clientfd).detach();
+    }
+
+    if (close(server_fd) == -1) {
+        perror("close");
+        exit(EXIT_FAILURE);
+    }
 }
 ```
 
-## Handle connections with worker threads
+## Basic Client
+```cpp title="client.cpp" showLineNumbers
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
+int main() {
+    int client_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_fd == -1) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+    struct sockaddr_in server;
+    memset(&server, 0, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(8080);
+
+    inet_pton(AF_INET, "127.0.0.1", &server.sin_addr);
+
+    if (connect(client_fd, (struct sockaddr *)&server, sizeof(server)) == -1) {
+        perror("connect");
+        exit(EXIT_FAILURE);
+    }
+    std::cout << "Client connected" << std::endl;
+}
+```

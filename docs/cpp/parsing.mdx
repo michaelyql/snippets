@@ -1,0 +1,132 @@
+---
+description: Parsing streams of bytes
+---
+
+# Parsing
+
+To parse a byte array into variables or structures, use `std::memcpy` to safely copy the underlying bytes into the target variables. 
+
+Directly casting pointers (such as `reinterpret_cast<int*>(bytes)`) should be avoided as it can trigger undefined behaviour due to alignment restrictions. 
+
+## Parsing into variable
+
+```cpp
+#include <cstring> // required for std::memcpy
+#include <cstdint>
+#include <iostream>
+
+int main() {
+    uint8_t buffer[4] = {0x00, 0x04, 0x00, 0x00};
+    uint32_t a;
+    memcpy(&a, buffer, sizeof(buffer)); 
+    std::cout << a << std::endl; // 2^10
+}
+```
+
+Note the order in which bytes are parsed, as most host systems are litte-endian (LSB at lower addresses).
+
+## Parsing into struct
+
+If the binary data matches a fixed layout, you can copy the entire byte buffer into a struct, provided the struct is **[trivially copyable](https://en.cppreference.com/cpp/types/is_trivially_copyable)** and contains no dynamic elements like `std::string` or virtual functions.
+
+Use `#pragma pack(push, 1)` and `#pragma pack(pop)` to tell the compiler not to insert padding.
+
+```cpp
+#include <cstring>
+#include <cstdint>
+#include <iostream>
+
+struct DataPacket {
+    uint16_t id;
+    uint32_t timestamp;
+    float value;
+};
+#pragma pack(pop)
+
+int main() {
+    uint8_t buffer = {
+        0x01, 0x00, // id = 1
+        0xEF, 0xBE, 0xAD, 0xDE, // timestamp = 0xDEADBEEF
+        0x00, 0x00, 0x80, 0x3F, // value = 1.0f
+    };
+    DataPacket packet;
+    std::memcpy(&packet, buffer, sizeof(buffer));
+    std::cout << "ID:" << packet.id << " Timestamp: " << packet.timestamp << " Value: " << packet.value << std::endl;
+}
+```
+
+## Checking if trivially copyable
+
+```cpp
+#include <type_traits>
+
+struct X {
+    // ...
+};
+
+static_assert(std::is_trivially_copyable_v<X> == true); 
+
+// C++11 onwards
+if (std::is_trivially_copyable<X>::value) {};
+
+// C++17 shorthand
+if constexpr(std::is_trivially_copyable_v<X>) {};
+```
+A type is trivially copyable if:
+- Scalar type (`int`, `float`, `char`)
+- Simple aggregates e.g. `struct Point {int x, y;};`
+- Explicitly defaulted `struct D { D(const& D) = default; }`
+- Arrays of the above. Arrays are trivially copyable if their element type is.
+
+## Parsing from streams
+
+When parsing incoming variable-length byte streams, keep a moving cursor/pointer to advance through the data buffer, byte by byte.
+
+```cpp
+#include <iostream>
+#include <cstring>
+#include <vector>
+#include <cstdint>
+
+class ByteParser {
+public:
+    ByteParser(const uint8_t* buffer, size_t size): data_(buffer), size_(size), offset(0) {}
+
+    template<typename T>
+    T read() {
+        if (offset_ + sizeof(T) > size_) {
+            throw std::out_of_range("Attempted to read past buffer boundary.");
+
+        }
+        T value;
+        std::memcpy(&value, data_ + offset, sizeof(T));
+        offset_ += sizeof(T);
+        return value;
+    }
+private:
+    const uint8_t* data_;
+    size_t size_;
+    size_t offset_;
+};
+
+int main() {
+    std::vector<uint8_t> stream = {0x0A, 0x00, 0x05, 0x00, 0x00, 0x00}; // uint16_t followed by uint32_t
+    try {
+        ByteParser parser(stream.data(), stream.size());
+        uint16_t shortVal = parser.read<uint16_t>();
+        uint32_t intVal = parser.read<uint32_t>();
+        std::cout << "Short: " << shortval << " Int: " << intVal << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << e.what << std::endl;
+    }
+};
+```
+
+## Handling endianness
+
+If parsing network data (usually big endian), you must use byte-swapping functions like `ntohl` / `ntohs` or `std::byteswap` (introduced in C++23).
+
+## Best Practices
+- Take note of whether you need to handle endianness explicitly
+- Avoid **pointer type-punning** like `DataPacket* pkt = (DataPacket*)buffer;` as it can break strict aliasing and cause UB due to memory alignment exceptions.
+- Handle struct padding by using `#pragma pack(1)` or `[[gnu::packed]]` attributes 

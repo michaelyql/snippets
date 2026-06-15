@@ -1,0 +1,18 @@
+# CF1698E - PermutationForces II
+
+## Summary
+
+- You are given two permutations $a$ and $b$ of 1 to $n$. 
+- $b$ may have missing elements, marked -1.
+- You have to perform exactly $n$ moves. In each move, you can pick any index $i$, and pick $x,y$ such that $i\leq x\leq y\leq \min(i+s,n)$, where $s$ is a fixed constant, and swap the values at $b[x]$ and $b[y]$. You can choose $x=y$, in which case no swap happens.
+- Count the number of ways, modulo $998244353$, that the missing elements in $b$ can be replaced such that you can turn $b$ into $a$ in exactly $n$ moves.
+- Constraints: 
+    - $1\leq n\leq 2\cdot 10^5$
+    - $1\leq s\leq n$
+    - $1\leq a_i,b_i \leq n$
+
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/1698/E)
+
+## Solution
+

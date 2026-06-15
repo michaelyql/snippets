@@ -1,0 +1,8 @@
+{
+  "label": "Competitive Programming",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Problems from Codeforces/Kattis/Leetcode/Other online judges"
+  }
+}
