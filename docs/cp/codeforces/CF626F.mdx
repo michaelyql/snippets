@@ -1,0 +1,77 @@
+# CF626F - Group Project
+
+## Summary
+
+- Given an array of n integers, the array need to be partitioned into groups such that each element is part of exactly one group. 
+- In a group, the imbalance is defined as $\max_i \{a_i\} - \min_i \{a_i\}$ for all $i$ in the group.
+- Count the number of ways to partition the array such that the sum of imbalance over all groups is $\leq k$.
+- Constraints: 
+    - $1\leq n\leq 200$ 
+    - $0\leq k\leq 1000$
+    - $1\leq a_i \leq 500$
+
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/626/F)
+
+## Solution
+
+- We use something called "Open/Close DP"
+- Let $dp[i][j][k]$ = number of ways to partition the first $i$ elements, such that there are $j$ "open" groups, with sum of imbalance $k$.
+- If we sort the array and process them from left to right, we can imagine we are doing a line sweep where the values are points on the $x$ axis.
+- We keep track of how many "active" segments are there (have a left endpoint but no right endpoint to "close" the group)
+- For the current element $a_i$, we have a few choices:
+    - (1) Add it to any of the existing open intervals, and keep the intervals open (extend the interval beyond $a_i$)
+    - (2) Open a new interval using $a_i$ as the left endpoint
+    - (3) Open and close an interval immediately ($a_i$ is by itself in a group)
+    - (4) Close a previously open interval, using $a_i$ as the right endpoint
+- The transitions are then as follows:
+    - For (1), if there are $j$ open intervals, then you can choose any of the $j$ intervals to add $a_i$. Regardless of which one you choose, the total imbalance increases by $j\cdot (a_i-a_{i-1})$
+    - For (2), now there are $j+1$ open intervals. The total imbalance still increases by $j\cdot (a_i-a_{i-1})$
+    - For (3), number of open intervals stays the same, and total imbalance increases by $j\cdot (a_i-a_{i-1})$
+    - For (4), if there are $j$ intervals after closing, then there were $j+1$ intervals before closing. So there are $j+1$ ways to choose the interval to close. The total imbalance increases by $(j+1)\cdot (a_i-a_{i-1})$ regardless of which one you choose to close
+- Note that at each state $i$, we only ever pull from states $i-1$, so you can drop the $i$ parameter for the state.
+- With these transitions, the final answer is $ \sum_{l=0}^k dp[0][l] $ since all groups must be closed
+
+## Code
+
+```cpp
+const int mod = 1e9+7;
+int add(int a,int b){
+    return (a%mod + b%mod) % mod;
+}
+int mul(int a,int b){
+    return ((1ll * a % mod) * b % mod) % mod;
+}
+void solve(){
+    int n, k;
+    cin >> n >> k;
+    vi a(n); rep(i,0,n) cin >> a[i];
+    sort(all(a));
+    vvi dp(n + 1, vi(k + 1, 0));
+    dp[0][0] = 1;
+    for(int i=0;i<n;i++){
+        vvi nxt(n+1, vi(k+1, 0));
+        int d = i>0 ? a[i] - a[i-1] : 0;
+        for(int j=0;j<=n;j++){
+            for(int m=0;m<=k;m++) {
+                // join any of existing j groups and keep them open, or open and close a group immediately
+                if (m - d*j >= 0) {
+                    nxt[j][m] = add(nxt[j][m], mul(dp[j][m-d*j], j+1));
+                }
+                // create new group and keep open
+                if (m - d*(j-1) >= 0 && j>0) {
+                    nxt[j][m] = add(nxt[j][m], dp[j-1][m - d*(j-1)]); 
+                }
+                // close any of the existing j+1 groups
+                if (j<n && m-d*(j+1)>=0) {
+                    nxt[j][m] = add(nxt[j][m], mul(dp[j+1][m - d*(j+1)], j+1));
+                }
+            }
+        }
+        dp = nxt;
+    }
+    int ans = 0;
+    for(int i=0;i<=k;i++) ans = add(ans, dp[0][i]);
+    cout << ans;
+}
+```
