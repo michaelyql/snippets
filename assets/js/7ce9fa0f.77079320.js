@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksnippets=self.webpackChunksnippets||[]).push([["1379"],{5188(s){s.exports=JSON.parse('{"tag":{"label":"dp","permalink":"/snippets/tags/dp","allTagsPath":"/snippets/tags","count":1,"items":[{"id":"cp/codeforces/CF626F","title":"CF626F - Group Project","description":"","permalink":"/snippets/cp/codeforces/CF626F"}],"unlisted":false}}')}}]);
