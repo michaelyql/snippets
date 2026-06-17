@@ -1,3 +1,9 @@
+---
+description: ""
+tags:
+  - dp
+---
+
 # CF626F - Group Project
 
 ## Summary
@@ -15,7 +21,7 @@
 
 ## Solution
 
-- We use something called "Open/Close DP"
+- We use a technique called "Open/Close DP"
 - Let $dp[i][j][k]$ = number of ways to partition the first $i$ elements, such that there are $j$ "open" groups, with sum of imbalance $k$.
 - If we sort the array and process them from left to right, we can imagine we are doing a line sweep where the values are points on the $x$ axis.
 - We keep track of how many "active" segments are there (have a left endpoint but no right endpoint to "close" the group)

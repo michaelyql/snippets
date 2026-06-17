@@ -1,0 +1,132 @@
+---
+description: ""
+tags: []
+---
+
+# CF786C - Till I Collapse
+
+## Summary
+
+- Given an array of n integers, the array needs to be partitioned into contiguous subarrays such that each subarray has at most $k$ distinct values. 
+- The number of subarrays in the partition should be minimized.
+- For each $k=1\dots n$, find the minimum number of subarrays required to partition the array.
+- Constraints:
+    - $1\leq n\leq 10^5$
+    - $1\leq a_i \leq n$
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/786/C)
+
+## Solution 1
+
+### Persistent Segment Tree
+
+- For a fixed $k$, the minimum number of subarrays can be found greedily by repeatedly forming groups as large as possible until the current group exceeds $k$ distinct values.
+    - For a left endpoint $l$, we need to efficiently find the maximum $r$ such that $[l,r]$ has at most $k$ distinct values 
+    - If we could compute the prefix sums starting at every $l$, we could binary search the prefix sums for $r$. But this is slow to compute naively
+- Notice that for a fixed $l$,
+    - As $r$ increases, only the first occurrence of a new distinct value causes the number of distinct values in the range $[l..r]$ to increase by 1
+    - All subsequent occurrences of that same value don't contribute to the sum
+    - So define $f_l(i) = \begin{cases}1 & \text{if } i \text{ is the first occurrence of } a[i] \text{ in } [l..i] \\ 0 & \text{otherwise} \end{cases}$
+    - If $a[i]$ had appeared in some $j>i$, now $i$ replaces $j$ as the first occurrence of $a[i]$
+    - $f_l(j)$ should be 0, and $f_l(i)$ should be 1. 
+    - Notice that this only affects at most two indices, so instead of recomputing the prefix sums from fresh, if we could somehow 'reuse' the prefix sum results starting at $l+1$ for unaffected values, we can save time in computation.
+    - This is the application of **[Persistent Segment Trees](https://cp-algorithms.com/data_structures/segment_tree.html#preserving-the-history-of-its-values-persistent-segment-tree)**
+    - The leaf nodes in the segment tree are 0's or 1's, representing whether that index is the first time a value is seen or not
+    - Internal nodes are simply the sum of their left and right child
+    - This sum represents the number of distinct values in the segment that they cover
+
+```cpp
+struct Node {
+    Node *l;
+    Node *r;
+    int sum;
+    Node(int sum_): l(nullptr), r(nullptr), sum(sum_) {}
+    Node(Node *l_, Node *r_): l(l_), r(r_), sum(0) {
+        if (l) sum += l->sum;
+        if (r) sum += r->sum;
+    }
+};
+
+Node* build(int l, int r, vi& a) {
+    if (l==r) {
+        return new Node(0);
+    } else {
+        int m = (l+r) / 2;
+        return new Node(build(l, m, a), build(m+1, r, a));
+    }
+}
+
+// returns new root after applying update
+Node* update(Node* u, int l, int r, int p, int delta) {
+    if (l == r) {
+        // found node, new value = original value + delta
+        return new Node(u->sum + delta);
+    }
+    int m = (l+r)/2;
+    if (p <= m) {
+        // right stays the same 
+        return new Node(update(u->l, l, m, p, delta), u->r);
+    } else {
+        // left stays the same
+        return new Node(u->l, update(u->r, m+1, r, p, delta));
+    }
+}
+
+// returns first invalid index where sum > k
+int count_k(Node* u, int l, int r, int k) {
+    if (u->sum <= k) return r+1;
+    if (l == r) {
+        return l;
+    }
+    int m = (l+r)/2;
+    if (u->l->sum > k) { 
+        return count_k(u->l, l, m, k);
+    } else {
+        return count_k(u->r, m+1, r, k - u->l->sum);
+    }
+}
+
+void solve(){
+    int n;
+    cin >> n;
+    vi a(n);
+    rep(i,0,n) cin >> a[i];
+    vi nxt(n+1, n);
+    vi lastpos(n+1, n);
+    for(int i=n-1; i>=0; i--) {
+        nxt[i] = lastpos[a[i]];
+        lastpos[a[i]] = i;
+    }
+    vector<Node*> root(n+1);
+    root[n] = build(0, n-1, a);
+    for(int i=n-1; i>=0; i--) {
+        int j = nxt[i];
+        root[i] = update(root[i+1], 0, n-1, i, 1);
+        if (j < n) {
+            root[i] = update(root[i], 0, n-1, j, -1);
+        }
+    }
+    for(int k=1; k<=n; k++) {
+        int i = 0;
+        int ans = 0;
+        while (i < n) {
+            // find rightmost r such that a[i..r] has <= k distinct values
+            int j = count_k(root[i], 0, n-1, k);
+            i = j;
+            ans++;
+        }
+        cout << ans << " ";
+    }
+}
+```
+
+## Solution 2
+
+### Sqrt Decomposition
+(stub)
+
+### Fenwick Tree
+(stub)
+
+### Divide \& Conquer
+(stub)

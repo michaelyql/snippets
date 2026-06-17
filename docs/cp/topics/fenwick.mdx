@@ -1,0 +1,145 @@
+---
+description: Binary Index Tree (BIT)
+tags:
+    - data structures
+    - trees
+---    
+
+# Fenwick Tree
+
+## Template
+
+```cpp
+struct Fenwick { // PURQ
+    int n;
+    vector<long long> bit; // 1-indexed
+    Fenwick(int n): n(n), bit(n+1, 0) {}
+    Fenwick(vector<int>& a): n((int) a.size()), bit(n+1, 0) {
+        for (int i = 1; i <= n; i++) {
+            bit[i] += a[i - 1];
+            int j = i + (i & -i);
+            if (j <= n) bit[j] += bit[i];
+        }
+    }
+    void add(int i, int x) {
+        for (; i <= n; i += i & -i) bit[i] += x;
+    }
+    long long sum(int i) { // Sum of a[1..i]
+        long long ret = 0;
+        while (i > 0) {
+            ret += bit[i];
+            i -= i & -i;
+        }
+        return ret;
+    }
+    long long query(int l, int r) {
+        return sum(r) - sum(l - 1);
+    }
+};
+
+struct RUPQ {
+    int n;
+    Fenwick fenwick;
+    RUPQ(int n): n(n), fenwick(n) {}
+    RUPQ(vector<int>& a): n((int) a.size()), fenwick(n) {
+        // diff array, d[i] = a[i] - a[i-1]
+        vector<int> d(n + 1); 
+        d[1] = a[0];
+        for (int i = 2; i <= n; i++) d[i] = a[i - 1] - a[i - 2];
+        // fenwick tree to compute prefix sums of diff array in O(log n) for point query
+        for (int i = 1; i <= n; i++) {
+            fenwick.bit[i] += d[i];
+            int j = i + (i & -i);
+            if (j <= n) fenwick.bit[j] += fenwick.bit[i];
+        }
+    }
+    long long query(int i) { // Point query (1-indexed)
+        return fenwick.sum(i); // a[i] = ∑ d[k] for k=1..i
+    }
+    void add(int l, int r, int x) { // l and r should be 1-indexed
+        fenwick.add(l, x);
+        fenwick.add(r+1, -x);
+    }
+};
+
+struct RURQ {
+    int n;
+    Fenwick fw1, fw2; 
+    RURQ(int n): n(n), fw1(n), fw2(n) {}
+    RURQ(vector<int>& a): n((int) a.size()), fw1(n), fw2(n) {
+        vector<int> d(n+1);
+        d[1] = a[0];
+        for (int i = 2; i <= n; i++) d[i] = a[i - 1] - a[i - 2];
+        for (int i = 1; i <= n; i++) {
+            fw1.bit[i] += d[i];
+            int j = i + (i & -i);
+            if (j <= n) fw1.bit[j] += fw1.bit[i];
+
+            fw2.bit[i] += d[i] * (i - 1);
+            if (j <= n) fw2.bit[j] += fw2.bit[i];
+        }
+    }
+    void add(int l, int r, int x) {
+        fw1.add(l, x);
+        fw1.add(r + 1, -x);
+        fw2.add(l, x * (l - 1));
+        fw2.add(r + 1, -x * r);
+    }
+    long long sum(int i) {
+        return fw1.sum(i) * i - fw2.sum(i);
+    }
+    long long query(int l, int r) {
+        return sum(r) - sum(l - 1);
+    }
+};
+```
+
+## Derivation for RURQ
+
+Suppose we have an array $A$, and define the difference array 
+$$
+D[i]=A[i]−A[i−1]
+$$
+
+Then 
+$$
+A[i]= \sum_{j=1}^i​ D[j].
+$$
+
+We want the prefix sum
+$$
+P(x)= \sum_{i=1}^x A[i]
+$$
+
+Substitute the expression for A[i]:
+$$
+P(x)=\sum_{i=1}^x A[x]=\sum_{i=1}^x \sum_{j=1}^i D[j]
+$$
+
+Swap the order of summation:
+$$
+P(x)=\sum_{j=1}^x D[j](x−j+1).
+$$
+
+Expand:
+$$
+P(x)=(x+1)\sum_{j=1}^x D[j] - \sum_{j=1}^x D[j]\cdot j 
+$$
+
+Since
+$$
+\sum_{j=1}^x D[j]=A[x],
+$$
+
+we get
+$$
+P(x)=(x+1)A[x] - \sum_{j=1}^x D[j]\cdot j
+$$
+
+Rewrite:
+$$
+P(x)=xA[x]− \sum_{j=1}^x D[j]\cdot (j-1)
+$$
+
+This is the formula usually implemented as `prefix(x) = x * bit1.query(x) - bit2.query(x)` where `bit1 = D`, and `bit2 = D[i] * (i−1).`
+

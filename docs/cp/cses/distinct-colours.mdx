@@ -1,0 +1,57 @@
+---
+description: Count number of distinct colours in each subtree 
+tags:
+  - trees
+---
+
+# Distinct Colours 
+
+## Summary
+
+- Given a tree of $n$ vertices each with value $a_i$, for each vertex count the number of distinct values in its subtree.
+- Constraints: 
+    - $1\leq n\leq 2\cdot 10^5$
+    - $1\leq a_i\leq 10^9$
+
+[Link to Problem Statement](https://cses.fi/problemset/task/1139)
+
+## Solution
+
+See USACO's tutorial on [Small to Large Merging](https://usaco.guide/plat/merging?lang=cpp).
+
+## Code
+
+```cpp
+void solve(){
+    int n;
+    cin>>n;
+    vector<unordered_set<int>> s(n);
+    vi c(n);
+    rep(i,0,n){
+        cin>>c[i];
+        s[i].insert(c[i]);
+    }
+    vvi adj(n);
+    rep(i,0,n-1){
+        int u,v;
+        cin>>u>>v;
+        u--,v--;
+        adj[u].pb(v);
+        adj[v].pb(u);
+    }
+    vi ans(n);
+    auto dfs = [&](auto&& self, int u, int p) -> void {
+        for(int v : adj[u]) {
+            if (v == p) continue;
+            self(self, v, u);
+            if (s[u].size() < s[v].size()) {
+                swap(s[u], s[v]);
+            }
+            for(int x : s[v]) s[u].insert(x);
+        } 
+        ans[u] = (int) s[u].size();
+    };
+    dfs(dfs, 0, -1);
+    for(int i=0;i<n;i++) cout<<ans[i]<< " ";
+}
+```
