@@ -1,0 +1,118 @@
+---
+description: Sqrt Decomposition, Mo's Algorithm
+tags:
+    - trees
+---    
+
+# Square Root Decomposition
+
+## Introduction
+
+- Main idea: break array down into blocks of size $\lceil \sqrt n \; \rceil$ 
+- Each query $[l,r]$ is split into sections of whole blocks and the trailing left and right tails
+- We query at most $\sqrt n$ blocks and for the tails, we iterate over at most $\sqrt n$ elements within a block
+- Variants
+	- Allow update to individual elements + range sum: just add delta to the block's sum
+	- Range update + range sum: add the delta to each block within the range update. When querying an element $i$, it's value is $a[i] + b[i/s]$ where $s$ is the size of one block
+	- Element update + range update + range sum: use two block arrays $b$ and $c$, one for individual element updates, one for range updates
+	- Range max: for each block, compute its initial max. When an element is updated, iterate through all elements in that block to compute the new max. For range max query, take the max over all complete blocks plus the max over the two tails
+
+### Range Sum Template
+
+```cpp
+// preprocessing
+int len = (int) sqrt(n) + 1; // size of the block and the number of blocks
+vector<int> b (len);
+for (int i=0; i<n; ++i) b[i / len] += a[i];
+    
+// query
+int sum = 0;
+
+int c_l = l / len;
+int c_r = r / len;
+
+if (c_l == c_r) { 
+    // l and r in same block
+    // just iterate over all elements in the block (at most sqrt n)
+    for (int i=l; i<=r; ++i) sum += a[i];
+} else {
+    // left tail
+    for (int i=l, end=(c_l+1)*len-1; i<=end; ++i) sum += a[i];
+
+    // full blocks 
+    for (int i=c_l+1; i<=c_r-1; ++i) sum += b[i];
+
+    // right tail
+    for (int i=c_r*len; i<=r; ++i) sum += a[i];
+}
+```
+
+
+## Mo's Algorithm
+
+- Suitable if we know all queries ahead of time (offline), and the order of queries is not important (either each query is temporal or the queries don't make any modifications to the underlying array)
+- Not suitable if the queries involve permanently updating the array elements - in that case we can't sort the queries as it will mess up their timing
+- Example problems
+	- Find the mode of $a[l...r]$: Keep a frequency map `map<int,int>` to map elements to their frequency (to allow increment/decrement quickly) and an ordered set `set<pair<int,int>>`  of $(freq, val)$ to allow finding the mode of the query in $O(\log n)$ 
+
+### Template
+
+```cpp
+void remove(idx);
+void add(idx);
+int get_answer();
+
+int block_size;
+
+struct Query {
+    int l, r, idx;
+    bool operator<(Query other) const {
+        return make_pair(l / block_size, r) < make_pair(other.l / block_size, other.r);
+    }
+};
+
+vector<int> mo_s_algorithm(vector<Query> queries) {
+    vector<int> answers(queries.size());
+    sort(queries.begin(), queries.end());
+
+    // initialize other data structure...
+    int cur_l = 0;
+    int cur_r = -1;
+
+    // invariant: data structure will always reflect the range [cur_l, cur_r]
+    for (Query q : queries) {
+        while (cur_l > q.l) {
+            cur_l--;
+            add(cur_l);
+        }
+        while (cur_r < q.r) {
+            cur_r++;
+            add(cur_r);
+        }
+        while (cur_l < q.l) {
+            remove(cur_l);
+            cur_l++;
+        }
+        while (cur_r > q.r) {
+            remove(cur_r);
+            cur_r--;
+        }
+        answers[q.idx] = get_answer();
+    }
+    return answers;
+}
+```
+
+### Tips for improving runtime
+
+- For **odd** indexed blocks, sort by the right endpoint in **ascending** order; for **even** blocks sort by right endpoint in **descending** order (instead of sorting by right endpoint ascending for all blocks)
+    - This minimizes the movement of the right pointer between odd and even indexed blocks since the right pointer doesn't have to reset to the start of the array 
+```cpp
+bool cmp(pair<int, int> p, pair<int, int> q) { 
+    if (p.first / BLOCK_SIZE != q.first / BLOCK_SIZE) return p < q; 
+    return (p.first / BLOCK_SIZE & 1) 
+        ? (p.second < q.second) 
+        : (p.second > q.second); 
+}
+```
+- Using fixed block sizes (constants) can lead to better runtime, rather than calculating the block size at runtime
