@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksnippets=self.webpackChunksnippets||[]).push([["3696"],{4209(s){s.exports=JSON.parse('{"tags":[{"label":"dp","permalink":"/snippets/tags/dp","count":1},{"label":"trees","permalink":"/snippets/tags/trees","count":3},{"label":"data structures","permalink":"/snippets/tags/data-structures","count":1}]}')}}]);
