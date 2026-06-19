@@ -1,0 +1,28 @@
+---
+description: ""
+tags: []
+---    
+
+# 11990 - Dynamic Inversion
+
+## Summary
+
+- Given a permutation of length $n$, $m$ elements are removed one at a time. 
+- Each time before removal, count the number of inversions in the permutation. 
+- Constraints:
+    - $1\leq n\leq 2\cdot 10^5$
+    - $1\leq m\leq 10^5$
+
+[Link to Problem Statement](https://onlinejudge.org/index.php?option=com_onlinejudge&Itemid=8&page=show_problem&problem=3141)
+
+## Solution
+
+- Break array into blocks
+- When an element $a[i]$ is being removed, we want to count how many elements in the blocks to the left of block $i/s$ are $>a[i]$, and how many elements to the right of block $i/s$ are $<a[i]$ 
+- For each block, maintain an ordered vector of the elements within that block. 
+    - Use binary search to find how many elements in that block are $<$ or $>$ $a[i]$ (depending on whether its left or right of $i$) 
+    - Alternatively, can use gnu pbds ordered set and use `order_of_key(k)` (returns number of items **strictly less than** $k$)
+- For elements within the same block as $a[i]$, just do a linear scan which takes $O(\sqrt n)$ 
+- Subtract the number of inversions from the current inversion count
+
+## Code

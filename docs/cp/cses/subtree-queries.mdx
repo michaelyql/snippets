@@ -1,0 +1,79 @@
+---
+description: Update node value and find sum of subtree rooted at node. 
+tags:
+  - trees
+---
+
+# Subtree Queries
+
+## Summary
+
+- Given a tree with $n$ vertices, process $q$ queries of the following:
+    - (1) change value of node $s$ to $x$
+    - (2) find sum of subtree rooted at node $s$
+- Constraints: 
+    - $1\leq n,q \leq 2\cdot 10^5$
+    - $1\leq s\leq n$
+    - $1\leq v_i, x\leq 10^9$
+
+[Link to Problem Statement](https://cses.fi/problemset/task/1137)
+
+## Solution
+
+- Flatten the tree into an array using DFS traversal (Euler tour). Turn node updates into point updates, and subtree sum queries into range sum queries using Fenwick tree
+
+## Code
+
+```cpp
+struct Fenwick { 
+    // ...
+};
+
+void dfs(int u, int p, vvi& adj, vi& tour, vi& sz, vi& pos) {
+    tour.push_back(u);
+    pos[u] = (int) tour.size();
+    for (int v : adj[u]) {
+        if (v == p) continue;
+        dfs(v, u, adj, tour, sz, pos);
+        sz[u] += sz[v];
+    }
+}
+ 
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    vi val(n + 1);
+    rep(i,1,n+1) cin >> val[i];
+    vvi adj(n + 1);
+    for (int i=0;i<n-1;i++){
+        int u, v;
+        cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    vi tour;
+    vi sz(n + 1, 1);
+    vi pos(n + 1);
+    dfs(1, 0, adj, tour, sz, pos);
+    vi v;
+    for (int u : tour) {
+        v.push_back(val[u]);
+    }
+    Fenwick fw(v);
+   
+    for(int i=0;i<m;i++){
+        int q;
+        cin >> q;
+        if (q == 1) {
+            int s, x;
+            cin >> s >> x;
+            fw.add(pos[s], -val[s] + x);
+            val[s] = x;
+        } else {
+            int s;
+            cin >> s;
+            cout << fw.query(pos[s], pos[s] + sz[s] - 1) << '\n';
+        }
+    }
+}
+```

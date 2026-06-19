@@ -1,0 +1,19 @@
+---
+description: Euler Tour
+tags: [trees]
+---    
+
+# Euler Tour
+
+- Main idea: flatten a tree into an array using DFS with `tin` and `tout` 
+    - Also called `start` / `end`
+- The subtree rooted at a node corresponds to the range of `tin[u]` and `tout[u]`
+- Alternatively, one can just maintain `tin` together with `size`, and the range corresponding the subtree of $u$ is `tin[u] + size[u]`
+- You can build a Fenwick tree / segment tree / sparse table over the flattened array to perform queries like point / range update and query
+- Examples:
+    - Minimum of subtree rooted at $u$ is just the range min query (RMQ) of `start[u]` to `end[u]` which can be queried in $O(1)$ with sparse table
+
+## Practice Problems
+
+- [CSES - Subtree queries](../cses/subtree-queries.mdx)
+

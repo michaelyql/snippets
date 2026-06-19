@@ -1,0 +1,81 @@
+---
+description: ""
+tags: []
+---    
+
+# 12003 - Array Transformer
+
+## Summary
+
+- Given an array $a$ of length $n$, for each of $m$ queries $(l,r,v,pos)$, let $k$ be the number of values in $a[l..r]$ that are $<v$.
+- Set $a[pos]=u\cdot k / (r-l+1)$ for a fixed integer $u$.
+- Output the final array after all queries. 
+- Constraints:
+    - $1\leq n\leq 3\cdot 10^5$
+    - $1\leq m \leq 5\cdot 10^4$
+    - $1\leq u\leq 10^9$
+    - $1\leq a[i], v \leq u$
+
+[Link to Problem Statement](https://onlinejudge.org/index.php?option=com_onlinejudge&Itemid=8&page=show_problem&problem=3154)
+
+## Solution
+
+- Since queries modify the array, Mo's or sorting the queries is not suitable
+- Split the array into $\sqrt(n)$ blocks. Each block is a sorted multiset of values, allowing querying and insert/delete in $O(\log S)$ where $S$ is the size of a block 
+
+## Code
+
+```cpp
+#include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp> // for tree_order_statistics_node_update
+
+using namespace __gnu_pbds;
+
+typedef tree<
+	pair<int,int>,
+	null_type, 
+	less<pair<int,int>>,
+	rb_tree_tag,
+	tree_order_statistics_node_update
+> ordered_set;
+
+void solve() {
+    int n,m,u;
+    cin >> n >> m >> u;
+    vector<ll> a(n);
+    rep(i,0,n)cin>>a[i];
+    int block_sz = ceil(sqrt(n));
+    vector<ordered_set> B(block_sz + 1);
+    for(int i=0;i<n;i++){
+        int block = i / block_sz;
+        B[block].insert(a[i]);
+    }
+    for(int i=0;i<m;i++){
+        int L,R,v,p;
+        cin>>L>>R>>v>>p;
+        L--,R--,p--;
+        int b1 = L/block_sz, b2 = R/block_sz;
+        int k=0;
+        if(b1 != b2){
+            for(int j=b1+1; j<b2; j++){
+                k += B[j].order_of_key(v);
+            }
+            for(int j=L; j < block_sz * (b1 + 1); j++){
+                k += a[j] < v;
+            } 
+            for(int j=block_sz * b2; j <= R; j++) {
+                k += a[j] < v;
+            }
+        }else{
+            for(int j=L;j<=R;j++){
+                k += a[j] < v;
+            }
+        }
+        ll new_val = 1ll * k * u / (R-L+1);
+        B[p / block_sz].erase(a[p]);
+        B[p / block_sz].insert(new_val);
+        a[p] = new_val;
+    }
+    for(int x: a)cout<<x<<endl;
+}
+```
