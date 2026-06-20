@@ -1,0 +1,126 @@
+---
+description: ""
+tags: [graphs, dfs]
+---
+
+# CF62D - Wormhouse
+
+## Summary
+
+- Given a graph with $n$ vertices and a Euler cycle of $m$ edges, find the lexicographically smallest Euler cycle that is just lexicographically bigger than the given Euler cycle.
+- Constraints: 
+    - $3\leq n\leq 100$
+    - $3\leq m\leq 2000$
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/62/D)
+
+## Solution
+
+- Since we want the Euler cycle that is just lexicographically bigger than the original, we want to keep the **longest prefix** of the original cycle as possible
+    - Thus we can try to "deviate" from the original cycle by starting from the back of the sequence and taking alternative routes
+    - At some index $i$, instead of taking the edge $(a_i, a_{i+1})$, we try other edges $(a_i, v)$ for $v > a_{i+1}$
+    - Once we have crossed such an edge, we want the remaining suffix of the Euler path to be as lexicographically small as possible
+    - We can show that as long as $(a_i,v)$ is not a bridge (i.e. removing it separates the graph into $\geq$ 2 connected components), then there always exists a Euler path ending at $a_0$, and we can return that Euler path immediately.
+- Let $G'_i$ be the graph formed by the set of unvisited edges starting from $i$ onwards (i.e. the sequence $a_i,\dots,a_{m+1}$)
+    - Observe that there always exists an Euler path from $a_i$ to $a_0$
+    - This is because in the original graph, there already exists an Euler tour, so every vertex has an even degree
+    - After traversing the initial edge $(a_0, a_1)$ and removing it from the graph, exactly two vertices now have an odd degree, while all other vertices have even degrees
+    - Thus an Euler path exists from $a_1$ to $a_0$
+    - By induction, every edge $(a_i,v)$ traversed and removed causes $a_i$ to have even degree (since we are exiting it) and $v$ to have odd degree (since we are entering it). So the set of vertices with odd degree is always $\{a_0, v\}$, and there always exists an Euler path from $v$ to $a_0$
+- [Fleury's Algorithm](https://en.wikipedia.org/wiki/Eulerian_path#Fleury's_algorithm) can be used to find an Eulerian path
+    - Starting at any vertex (if all vertices have even degree, otherwise start at any of the two vertices with odd degree), repeatedly visit edges that are not bridges. 
+    - You will either end up at the starting vertex (if all vertices have even degrees), or the other vertex with odd degree
+    - Note that after traversing and deleting an edge, you have to recompute bridges, which takes $O(N+M)$ time using [Tarjan's bridge-finding algorithm](https://cp-algorithms.com/graph/bridge-searching.html)
+- Overall Time Complexity:
+    - $O(m)$ to iterate through the original sequence
+    - For each edge $(a_i, a_{i+1})$, we recompute bridges in $O(n+m)$. Then we consider all alternatives $(a_i,v)$ which are not bridges. 
+    - If the edge is not a bridge, we have found an answer, in which we run Fleury's algorithm in $O(m \cdot (n+m))$
+    - Thus overall time is $O(m\cdot (n+m))$
+
+## Code
+
+```cpp
+const int MAXN = 201;
+int tin[MAXN], low[MAXN];
+set<int> adj[MAXN];
+bool isBridge[MAXN][MAXN];
+int timer = 0;
+
+void dfs(int u, int p) {
+    tin[u] = low[u] = timer++;
+    for (int v : adj[u]) {
+        if (v == p) continue;
+        if (tin[v] != -1) { // v is ancestor, already visited
+            low[u] = min(low[u], tin[v]);
+        } else { 
+            // v is descendant, not yet visited
+            dfs(v, u); 
+            low[u] = min(low[u], low[v]);
+            if (low[v] > tin[u]) {
+                isBridge[u][v] = isBridge[v][u] = true;
+            }
+        }
+    }
+}
+
+void recomputeBridges(int u) {
+    timer = 0;
+    fill(tin, tin + MAXN, -1);
+    fill(low, low + MAXN, 0);
+    memset(isBridge, 0, sizeof(isBridge));
+    dfs(u, -1);
+}
+
+void fleury(int u, vector<int>& out){
+    while(!adj[u].empty()){
+        recomputeBridges(u); 
+        int deg = adj[u].size();
+        int nxt = -1;
+        for(int w : adj[u]){ 
+            if(deg == 1 || !isBridge[u][w]){ 
+                nxt = w; 
+                break; 
+            }
+        }
+        adj[u].erase(nxt); 
+        adj[nxt].erase(u);
+        out.push_back(nxt);
+        u = nxt;
+    }
+}
+
+void solve(){
+    int n, m;
+    cin >> n >> m;
+    vi a(m + 1);
+    rep(i, 0, m + 1){
+        cin >> a[i]; 
+        a[i]--;
+    }
+    for (int i = m - 1; i >= 0; i--) {
+        int u = a[i], v = a[i + 1];
+        adj[u].insert(v);
+        adj[v].insert(u);
+
+        recomputeBridges(u);
+
+        for(int w : adj[u]) {
+            if (w <= v || isBridge[u][w]) continue;
+            for (int j = 0; j <= i; j++) cout << a[j] + 1 << " ";
+            adj[u].erase(w);
+            adj[w].erase(u);
+            cout << w + 1 << " ";
+            vi out;
+            fleury(w, out);
+            for (int x : out) cout << x + 1 << " ";
+            return;
+        }
+    }
+    cout << "No solution";
+}
+```
+
+## Related Articles
+
+- [USACO - Eulerian Tours](https://usaco.guide/adv/eulerian-tours?lang=cpp)
+- [Fleury's Algorithm](https://jeremymartinmath.github.io/courses/math105-F11/Lectures/chapter5-part2.pdf)
