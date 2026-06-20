@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksnippets=self.webpackChunksnippets||[]).push([["2196"],{1287(s){s.exports=JSON.parse('{"tag":{"label":"graphs","permalink":"/snippets/tags/graphs","allTagsPath":"/snippets/tags","count":1,"items":[{"id":"cp/codeforces/CF62D","title":"CF62D - Wormhouse","description":"","permalink":"/snippets/cp/codeforces/CF62D"}],"unlisted":false}}')}}]);
