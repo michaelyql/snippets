@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksnippets=self.webpackChunksnippets||[]).push([["4783"],{576(s){s.exports=JSON.parse('{"tag":{"label":"flows","permalink":"/snippets/tags/flows","allTagsPath":"/snippets/tags","count":1,"items":[{"id":"cp/codeforces/CF491C","title":"CF491C - Deciphering","description":"","permalink":"/snippets/cp/codeforces/CF491C"}],"unlisted":false}}')}}]);
