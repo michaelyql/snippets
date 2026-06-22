@@ -1,0 +1,101 @@
+---
+description: Thread Pool 
+---
+
+# Thread Pool 
+
+The number of hardware threads is limited based on the type of CPU used. Creating more threads than there are CPU threads available can lead to degraded performance due to the overhead of context switching between tasks. In this case, it may be better to limit the number of threads and use a thread pool to execute tasks instead.
+
+## Overview
+
+- The `ThreadPool` class will allow you to create an instance of the thread pool with a fixed number of threads. This is capped at the number of hardware threads available on the system. 
+- You can `post()` a task to the thread pool and receive a `std::future` which you can wait on for the result
+
+## Internals
+
+- The thread pool maintains a `std::vector<std::thread> threads`, which is resized to the desired number of threads
+    - The cap on number of threads is given by `std::thread::hardware_concurrency()`, which returns an `unsigned int` representing the number of available hardware threads
+- It also maintains a `std::queue<std::function<void()>>` of outstanding tasks, so that worker threads can fetch a task from the front of the queue when they are ready
+- The queue is protected by a coarse-grained `std::mutex` to handle concurrent reads by worker threads and writes by clients
+- Client `post` loop:
+    - `post` is a templated function, which has one type parameter for the function `typename F`, and a template parameter pack `typename... Args` that accepts zero or more template arguments
+    - It returns a `std::future<typename std::invoke_result_t<F, Args...>>` (since C++17; use `std::result_of<F(Args...)>` until C++17) from `<type_traits>`
+    - `post` takes an rvalue reference to the function to execute `F&&`, as well as the arguments to pass to the function `Args&&...`
+    - Creates a shared pointer to a `std::packaged_task<ReturnType()>` where `using ReturnType = std::invoke_result_t<F, Args...>`
+    - Locks the mutex and pushes a void function to the queue which captures the task
+    - Returns the `std::future` associated with the packaged task
+- Worker loop
+    - Waits on a `std::condition_variable` to check if the queue is not empty, or if the threadpool is shutting down
+    - Locks the associated mutex, then dequeues a task from the front and invokes the function
+
+
+## Implementation
+
+```cpp showLineNumbers
+#include <atomic>
+#include <condition_variable>
+#include <functional>
+#include <type_traits>
+#include <queue>
+#include <mutex>
+#include <future>
+#include <algorithm>
+#include <iostream>
+
+class threadpool {
+private:
+    std::vector<std::thread> threads;
+    std::queue<std::function<void()>> q;
+    std::mutex mtx; 
+    std::condition_variable cv;
+    bool stopping = false;
+    int n;
+public:
+    threadpool(int num_threads) {
+        if (num_threads < 1) throw std::invalid_argument("number of threads must be greater than 0");
+        int max_threads = std::thread::hardware_concurrency();
+        n = std::min(num_threads, max_threads);
+        for (int i = 0; i < n; i++) {
+            threads.emplace_back([this]() {
+                while (true) {
+                    std::unique_lock<std::mutex> lk(mtx);
+                    cv.wait(lk, [this]{ return stopping || !q.empty(); });
+                    if (stopping && q.empty()) break;
+                    std::function<void()> task = std::move(q.front());
+                    q.pop();
+                    task();
+                }
+            });
+        }
+    }
+    threadpool(const threadpool& other) = delete;
+    threadpool& operator=(const threadpool& other) = delete;
+    ~threadpool() {
+        stopping = true;
+        cv.notify_all();
+        for (auto& t : threads) {
+            if (t.joinable()) t.join();
+        }
+    }
+    template<typename F, typename... Args>
+    std::future<typename std::invoke_result_t<F, Args...>> post(F&& f, Args&&... args) {
+        using ReturnType = std::invoke_result_t<F, Args...>;
+        auto task = std::make_shared<std::packaged_task<ReturnType()>>(
+            [f = std::forward<F>(f), ...args = std::forward<Args>(args)]() mutable {
+                return f(std::move(args)...);
+            }
+        );
+        std::future<ReturnType> fut = task->get_future();
+        std::lock_guard<std::mutex> lk(mtx);
+        q.emplace([task]() mutable {
+            (*task)();
+        });
+        return fut;
+    }
+};
+```
+
+### Notes
+- `this` needs to be captured in the constructor, since the spawned threads reference the instance variables `mtx`, the queue `q`, the conditional variable `cv`, and the `stopping` variable
+- A lambda's `operator()` is **const by default**
+    - The lambda wants to move from its captured variables (`args...`), and **moving from a const object is generally not allowed for move-only types** and would not invoke the move constructor.

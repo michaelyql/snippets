@@ -1,0 +1,588 @@
+---
+description: Pack language feature
+title: Pack
+---
+
+# Pack (since C++11)
+
+## Overview
+
+A **pack**[^1] is just "zero or more things". The "things" can be types, values, templates, function parameters, lambda captures, etc.
+
+In the context of variadic template, the ellipsis `...` is used to either pack or unpack parameters/arguments in a template definition, depending on the relative position where it appears:
+
+- it **unpacks** the template parameter pack if it appears on the **right** side of an expression (call this **expression pattern**)
+- or it's a **pack** argument if it appears on **left** side of the name:
+```
+...thing  // pack   : appears as template arguments
+thing...  // unpack : appears when consuming the arguments
+```
+
+The rule is that whatever pattern is on the left side of `...` is repeated — the unpacked patterns (call them *expressions* now) are separated by comma `,`
+
+```cpp
+template <typename ...T> //pack
+void f(T ...args)        //pack
+{
+   // here are unpack patterns
+
+   g( args... );         //pattern = args
+   h( x(args)... );      //pattern = x(args)
+   m( y(args...) );      //pattern = args (as argument to y())
+   n( z<T>(args)... );   //pattern = z<T>(args)
+}
+```
+
+If this function is called passing `T` as `{int, char, short}`, then each of the function call is expanded as:
+```cpp
+g( arg0, arg1, arg2 );           
+h( x(arg0), x(arg1), x(arg2) );
+m( y(arg0, arg1, arg2) );
+n( z<int>(arg0), z<char>(arg1), z<short>(arg2) );
+```
+
+**Note the difference between `x(args)...` and `y(args...)` above**.
+
+You can use `...` to initialize an array also as:
+
+```cpp
+struct data_info
+{
+     boost::any  data;
+     std::size_t type_size;
+};
+std::vector<data_info> v{{args, sizeof(T)}...}; //pattern = {args, sizeof(T)}
+```
+which is expanded to this:
+```cpp
+std::vector<data_info> v 
+{ 
+   {arg0, sizeof(int)},
+   {arg1, sizeof(char)},
+   {arg2, sizeof(short)}
+};
+```
+
+## Technical Definition
+
+A pack is a C++ entity that defines one of the following:
+- a parameter pack
+    - template parameter pack
+    - function parameter pack
+- lambda init-capture pack (since C++20)
+- structured binding pack (since C++26)
+
+**Template parameter pack**: a template parameter that accepts zero or more template arguments (non-types, types, or templates). 
+
+**Function parameter pack**: a function parameter that accepts zero or more function arguments.
+
+**Lambda init-capture pack** (since C++20): a lambda capture that introduces an init-capture for each of the elements in the pack expansion of its initializer.
+
+**Structured binding pack** (since C++26): an identifier in the structured binding declaration that introduces zero or more structured bindings.
+
+
+The **number of elements** of a pack is equal to:
+
+- the number of arguments provided for the parameter pack, if the pack is a template or function parameter pack,
+- the number of elements in the pack expansion of its initializer, if the pack is a lambda init-capture pack,
+(since C++20)
+- structured binding size of the initializer less the number of non-pack elements in the structured binding declaration, if the pack is a structured binding pack.
+(since C++26)
+
+A template with at least one parameter pack is called a **variadic template**.
+
+## Syntax
+
+#### Template parameter pack
+
+- *type* `...` *pack-name* (optional)
+- *type-parameter-key* `...` *pack-name* (optional)
+- *type-constraint* `...` *pack-name* (optional)
+- template < *parameter-list* > *class* `...` *pack-name* (optional)
+- template < *parameter-list* > *type-parameter-key* `...` *pack-name* (optional)
+
+#### Function parameter pack
+
+*pack-name* `...` *pack-param-name* (optional)	
+
+#### Pack expansion
+
+*pattern* `...`
+
+- Expands to a list of zero or more `pattern`s
+- The pattern must include at least one pack.
+
+#### Init-capture pack (since C++20)
+
+`...` *identifer* = *expression*
+
+- Used in lambda capture clauses
+- Ellipsis is to the left 
+- Creates a **new** pack with the name *identifier*
+- Still can use regular pack expansion in the expression  
+- This is different from a regular lambda capture pack `[args...]` which simply expands the pack
+
+Example:
+```cpp
+template <typename... Args>
+auto f(Args&&... args){
+    return [...args = std::forward<Args>(args)]{ // perfect forwarding
+        // use args
+    };
+}
+```
+
+## Basic Rules
+
+A **variadic class template** can be instantiated with any number of template arguments:
+```cpp
+template<typename... T>
+struct Box {};
+
+Box<> b1;           // Types contains no arguments
+Box<int> b2;        // Types contains one argument: int
+Box<int,float> b3;  // Types contains two arguments: int and float
+// Box<0> b4;       // error: 0 is not a type
+```
+
+A **variadic function template** can be called with any number of function arguments (the template arguments are deduced through **template argument deduction**):
+
+```cpp
+template<typename... T>
+void f(T... args) {}
+
+f();        // no args
+f(1);       // int
+f(2, 1.0);  // int, double
+```
+
+In a **primary class template**, the template parameter pack must be the **final** parameter in the template parameter list:
+
+```cpp
+template<typename U, typename... T>    // OK: can deduce U
+struct valid;
+
+// template<typename... T, typename U> // Error: T... not at the end
+// struct Invalid;
+```
+
+In a **function template**, the template parameter pack **may appear earlier** in the list provided that **all following parameters can be deduced** from the function arguments, or have **default arguments**:
+
+```cpp
+template<typename... T, typename U, typename=void>
+void valid(U, T...);    // OK: can deduce U
+// void valid(T..., U); // Can't be used: T... is a non-deduced context in this position
+
+valid(1.0, 1, 2, 3);
+```
+
+## Pack Expansion
+
+A **pattern** followed by an ellipsis, in which the name of at least one pack appears at least once, is **expanded** into zero or more instantiations of the pattern, where the name of the pack is replaced by each of the elements from the pack, in order.
+
+```cpp
+template<class... U>
+void f(U... args) {}
+
+template<class... T>
+void g(T... args)
+{
+    f(&args...); // “&args...” is a pack expansion
+                 // “&args” is its pattern
+}
+
+g(1, 0.2, "a"); // T... args expand to int E1, double E2, const char* E3
+                // &args... expands to &E1, &E2, &E3
+                // U... expand to int* E1, double* E2, const char** E3
+```
+
+If the names of **two** packs appear in the same pattern, they are expanded simultaneously, and they **must have the same length**:
+
+```cpp
+template<typename...>
+struct Tuple {};
+
+template<typename T1, typename T2>
+struct Pair {};
+
+template<class... Args1>
+struct zip
+{
+    template<class... Args2>
+    struct with
+    {
+        typedef Tuple<Pair<Args1, Args2>...> type;
+        // Pair<Args1, Args2>... is the pack expansion
+        // Pair<Args1, Args2> is the pattern
+    };
+};
+
+typedef zip<short, int>::with<unsigned short, unsigned>::type T1;
+// Pair<Args1, Args2>... expands to
+// Pair<short, unsigned short>, Pair<int, unsigned int> 
+// T1 is Tuple<Pair<short, unsigned short>, Pair<int, unsigned>>
+
+// typedef zip<short>::with<unsigned short, unsigned>::type T2;
+// error: pack expansion contains packs of different lengths
+```
+
+If a pack expansion is **nested** within another pack expansion, the packs that appear **inside** the innermost pack expansion are expanded by it, and there must be **another** pack mentioned in the enclosing pack expansion, but not in the innermost one:
+
+```cpp
+template<class... U>
+void f(U... args) {}
+
+template<class... Args>
+void g(Args... args)
+{
+    f(const_cast<const Args*>(&args)...); 
+    // const_cast<const Args*>(&args) is the pattern, it expands two packs
+    // (Args and args) simultaneously
+
+    f(h(args...) + args...); // Nested pack expansion:
+    // inner pack expansion is "args...", it is expanded first
+    // outer pack expansion is h(E1, E2, E3) + args..., it is expanded
+    // second (as h(E1, E2, E3) + E1, h(E1, E2, E3) + E2, h(E1, E2, E3) + E3)
+}
+```
+
+When the number of elements in a pack is **zero** (empty pack), the instantiation of a pack expansion **does not alter** the syntactic interpretation of the enclosing construct, even in cases where omitting the pack expansion entirely would otherwise be ill-formed or would result in a syntax ambiguity. The instantiation produces an **empty list**.
+
+```cpp
+template<class... Bases> 
+struct X : Bases... { };
+
+template<class... Args> 
+void f(Args... args) 
+{
+    X<Args...> x(args...);
+}
+
+template void f<>(); // OK, X<> has no base classes
+                     // x is a variable of type X<> that is value-initialized
+```
+
+### Expansion loci
+
+Depending on **where** the expansion takes place, the resulting **comma-separated** (or space-separated for alignment specifiers) list is a different kind of list. The following is the list of all allowed contexts:
+
+- **Function argument lists**: A pack expansion may appear **inside the parentheses of a function call operator**, in which case the **largest expression or brace-enclosed initializer list** to the left of the ellipsis is the pattern that is expanded:
+```cpp
+f(args...);              // expands to f(E1, E2, E3)
+f(&args...);             // expands to f(&E1, &E2, &E3)
+f(n, ++args...);         // expands to f(n, ++E1, ++E2, ++E3);
+f(++args..., n);         // expands to f(++E1, ++E2, ++E3, n);
+
+f(const_cast<const Args*>(&args)...);
+// f(const_cast<const E1*>(&X1), const_cast<const E2*>(&X2), const_cast<const E3*>(&X3))
+
+f(h(args...) + args...); // expands to 
+// f(h(E1, E2, E3) + E1, h(E1, E2, E3) + E2, h(E1, E2, E3) + E3)
+```
+- **Parenthesized initializers**: A pack expansion may appear **inside the parentheses** of a direct initializer, a function-style cast, and other contexts (member initializer, new-expression, etc.)
+```cpp
+Class c1(&args...);             // calls Class::Class(&E1, &E2, &E3)
+Class c2 = Class(n, ++args...); // calls Class::Class(n, ++E1, ++E2, ++E3);
+
+::new((void *)p) U(std::forward<Args>(args)...) // std::allocator::allocate
+```
+- **Brace-enclosed initializers**
+```cpp
+template<typename... Ts>
+void func(Ts... args)
+{
+    const int size = sizeof...(args) + 2;
+    int res[size] = {1, args..., 2};
+    
+    // since initializer lists guarantee sequencing, this can be used to
+    // call a function on each element of a pack, in order:
+    int dummy[sizeof...(Ts)] = {(std::cout << args, 0)...};
+}
+```
+- **Template argument lists**
+```cpp
+template<class A, class B, class... C>
+void func(A arg1, B arg2, C... arg3)
+{
+    container<A, B, C...> t1; // expands to container<A, B, E1, E2, E3> 
+    container<C..., A, B> t2; // expands to container<E1, E2, E3, A, B> 
+    container<A, C..., B> t3; // expands to container<A, E1, E2, E3, B> 
+}
+```
+- **Function parameter list**: if an ellipsis appears in a parameter declaration (whether it names a function parameter pack (as in, `Args... args` or not) the parameter declaration is the pattern
+```cpp
+template<typename... Ts>
+void f(Ts...) {}
+
+f('a', 1); // Ts... expands to void f(char, int)
+f(0.1);    // Ts... expands to void f(double)
+
+template<typename... Ts, int... N>
+void g(Ts (&...arr)[N]) {}
+// Note: In the pattern Ts (&...arr)[N], the ellipsis is the innermost element, 
+// not the last element as in all other pack expansions.
+
+int n[1];
+
+g<const char, int>("a", n); // Ts (&...arr)[N] expands to 
+                            // const char (&)[2], int(&)[1]
+```
+- **Template parameter list**
+```cpp
+template<typename... T>
+struct value_holder
+{
+    template<T... Values> // expands to a non-type template parameter 
+    struct apply {};      // list, such as <int, char, int(&)[5]>
+};
+```
+- **Base specifiers and member initializer lists**: A pack expansion may designate the **list of base classes** in a class declaration. Typically, this also means that the constructor needs to use a pack expansion in the **member initializer list** to call the constructors of these bases:
+```cpp
+template<class... T>
+class X : public T...
+{
+public:
+    X(const T&... t) : T(t)... {}
+};
+```
+- **Lambda captures** (not the same as *init-captures*)
+```cpp
+template<class... Args>
+void f(Args... args)
+{
+    auto lm = [&, args...] { return g(args...); };
+    lm();
+}
+```
+- **The `sizeof...` operator**
+```cpp
+template<class... Types>
+struct count
+{
+    static const std::size_t value = sizeof...(Types);
+};
+```
+- **Alignment specifier**
+```cpp
+template<class... T>
+struct Align
+{
+    alignas(T...) unsigned char buffer[128];
+};
+
+Align<int, short> a; // the alignment specifiers after expansion are
+                     // alignas(int) alignas(short)
+                     // (no comma in between)
+```
+- **Attribute list**
+```cpp
+template<int... args>
+[[vendor::attr(args)...]] void* f();
+```
+- **[Fold expressions](#fold-expressions)**
+- **Using-declarations**
+```cpp
+template<typename... bases>
+struct X : bases...
+{
+    using bases::g...;
+};
+X<B, D> x; // OK: B::g and D::g introduced
+```
+- **Pack indexing**
+```cpp
+consteval auto first_plus_last(auto... args)
+{
+    return args...[0] + args...[sizeof...(args) - 1];
+}
+
+static_assert(first_plus_last(5) == 10);
+static_assert(first_plus_last(5, 4) == 9);
+static_assert(first_plus_last(5, 6, 2) == 7);
+```
+- **Friend declarations** (since C++26)
+```cpp
+struct C {};
+struct E { struct Nested; };
+
+template<class... Ts>
+class R
+{
+    friend Ts...;
+};
+
+template<class... Ts, class... Us>
+class R<R<Ts...>, R<Us...>>
+{
+    friend Ts::Nested..., Us...;
+};
+
+R<C, E> rce;           // classes C and E are friends of R<C, E>
+R<R<E>, R<C, int>> rr; // E::Nested and C are friends of R<R<E>, R<C, int>>
+```
+- **Annotation list**
+```cpp
+template<auto... Ann>
+[[=Ann...]] int x;
+```
+
+## Fold Expressions
+ 
+Reduces (folds) a pack over a binary operator.
+
+Syntax:
+- `(pack op ...)` (Unary right fold)
+- `(... op pack)` (Unary left fold)
+- `(pack op ... op init)` (Binary right fold)
+- `(init op ... op pack)` (Binary left fold)
+
+`op`: any of the following 32 binary operators `+ - * / % ^ & | = < > << >> += -= *= /= %= ^= &= |= <<= >>= == != <= >= && || , .* ->*`. In a binary fold, both ops must be the same.
+
+Unary right fold `(E op ...)` becomes `(E1 op (... op (EN-1 op EN)))`
+
+Unary left fold `(... op E)` becomes `(((E1 op E2) op ...) op EN)`
+
+Binary right fold `(E op ... op I)` becomes `(E1 op (... op (EN−1 op (EN op I))))`
+
+Binary left fold `(I op ... op E)` becomes `((((I op E1) op E2) op ...) op EN)`
+
+(where `N` is the number of elements in the pack expansion)
+
+Examples:
+```cpp
+template<typename... Args>
+bool all(Args... args) { return (... && args); }
+
+bool b = all(true, true, true, false);
+// within all(), the unary left fold expands as
+//  return ((true && true) && true) && false;
+// b is false
+```
+
+```cpp
+// Basic usage, folding variadic arguments over operator<< 
+template<typename... Args>
+void printer(Args&&... args)
+{
+    (std::cout << ... << args) << '\n';
+}
+// Folding an expression that uses the pack directly over operator,
+template<typename... Ts>
+void print_limits()
+{
+    ((std::cout << +std::numeric_limits<Ts>::max() << ' '), ...) << '\n';
+}
+
+// Both a fold over operator&& using the pack
+// and over operator, using the variadic arguments
+template<typename T, typename... Args>
+void push_back_vec(std::vector<T>& v, Args&&... args)
+{
+    static_assert((std::is_constructible_v<T, Args&&> && ...));
+    (v.push_back(std::forward<Args>(args)), ...);
+}
+
+// Using an integer sequence to execute an expression
+// N times by folding a lambda over operator,
+template<class T, std::size_t... dummy_pack>
+constexpr T bswap_impl(T i, std::index_sequence<dummy_pack...>)
+{
+    T low_byte_mask = static_cast<unsigned char>(-1);
+    T ret{};
+    ([&]
+    {
+        (void)dummy_pack;
+        ret <<= CHAR_BIT;
+        ret |= i & low_byte_mask;
+        i >>= CHAR_BIT;
+    }(), ...);
+    return ret;
+}
+ 
+constexpr auto bswap(std::unsigned_integral auto i)
+{
+    return bswap_impl(i, std::make_index_sequence<sizeof(i)>{});
+}
+ 
+int main()
+{
+    printer(1, 2, 3, "abc");
+    print_limits<uint8_t, uint16_t, uint32_t>();
+ 
+    std::vector<int> v;
+    push_back_vec(v, 6, 2, 45, 12);
+    push_back_vec(v, 1, 2, 9);
+    for (int i : v)
+        std::cout << i << ' ';
+    std::cout << '\n';
+
+    static_assert(bswap<std::uint16_t>(0x1234u) == 0x3412u);
+    static_assert(bswap<std::uint64_t>(0x0123456789abcdefull) == 0xefcdab8967452301ULL);
+}
+```
+Output:
+```
+123abc
+255 65535 4294967295 
+6 2 45 12 1 2 9
+```
+
+## Examples
+
+Non-type template parameter pack
+```cpp
+template<int... Ints>
+int sum_2_int()
+{
+    return (int)(Ints + ...);
+}
+
+sum_2_int<1, 2, 3>(); // template arguments must be known at compile time
+```
+
+Type template parameter pack
+```cpp
+template<typename... Ints>
+int sum_2_int(Ints... args)
+{
+    return (int)(args + ...);
+}
+
+sum_2_int(1, 2, 3); // function arguments must be summable
+```
+
+Expansion rules
+```
+Use            Expansion
+------------------------------------------
+Ts...          T1, ..., Tn
+Ts&&...        T1&&, ..., Tn&&
+x<Ts,Y>::z...  x<T1,Y>::z, ..., x<Tn,Y>::z
+x<Ts&,Us>...   x<T1&,U1>, ..., x<Tn&,Un>
+func(5,vs)...  func(5,v1), ..., func(5,vn)
+```
+Expansion proceeds inwards outwards. When expanding two lists in lock-step, they have to have the same size. 
+
+```cpp
+gun(A<Ts...>::hun(vs)...); 
+// Expands all Ts in the template argument list of A and then the function 
+// hun gets expanded with all vs.
+
+gun(A<Ts...>::hun(vs...));
+// Expands all Ts in the template argument list of A and all vs as the function 
+// arguments for hun.
+
+gun(A<Ts>::hun(vs)...);
+// Expands the function hun with Ts and vs in lock-step.
+```
+
+#### Note
+`Ts` is not a type and `vs` is not a value! They are aliases for a list of types/values. Either list may be potentially empty. Both obey only specific actions. So the following is not possible:
+```cpp
+typedef Ts MyList;  // error!
+Ts var;             // error!
+auto copy = vs;     // error!
+```
+
+
+[^1]: https://stackoverflow.com/questions/17652412/what-are-the-rules-for-the-token-in-the-context-of-variadic-templates
