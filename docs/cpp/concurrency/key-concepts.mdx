@@ -1,0 +1,36 @@
+---
+description: Obstruction-free vs lock-free vs wait-free
+sidebar_position: 1
+---
+
+# Key Concepts
+
+## Definitions
+
+- **Blocking**
+    - A thread is suspended until another thread performs an action
+    - E.g. mutexes, conditional variables, futures to synchronize data
+
+- **Non-blocking**
+    - Failure or suspension of a thread cannot cause failure or suspension of another thread
+
+- **Obstruction-free**
+    - If all other threads are paused, a thread will complete its execution in a bounded number of steps
+    - Generally considered the weakest guarantee
+
+- **Lock-free**
+    - At least one thread makes progress 
+    - Can be thought of as system-wide progress guarantee
+    - Individual threads might starve
+    - Mutxes and spinlocks are not considered lock-free, since if the thread that has acquired the lock is suspended/fails, other threads cannot proceed
+
+- **Wait-free**
+    - All threads complete execution in a bounded number of steps
+    - Can be thought of as per thread progress guarantee
+    - Considered the hardest form of concurrency to achieve
+
+## Motivation
+
+- Blocking a thread can be undesirable e.g. it is a **high priority** task, or it is a **real-time** task that has a deadline.
+- Locks can lead to **deadlock**, **livelock**, and **priority inversion**.
+- Using locks involves a trade-off between **coarse-grained** locking, which can significantly reduce opportunities for parallelism, and **fine-grained** locking, which requires more careful design, increases locking overhead and is more prone to bugs

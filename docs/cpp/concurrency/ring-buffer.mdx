@@ -1,0 +1,857 @@
+---
+description: Ring Buffers and their applications
+---
+
+# Ring Buffer
+
+A concurrent ring buffer is a **fixed-size**, **circular** data structure designed for ultra-low-latency communication between threads. By using atomic indices, it enables lock-free or wait-free producer-consumer patterns without the overhead of dynamic memory allocation.
+
+## Key Concepts \& Mechanics
+- **Fixed Capacity**: The buffer reuses a pre-allocated block of memory. Once full, old data is either overwritten, or producers are blocked until consumers catch up.
+- **Read/Write Indices**: It uses atomic pointers for the `read_idx` (consumer) and `write_idx` (producer). When an index hits the end of the buffer, it wraps back to zero.
+- **Memory Safety**: In multithreaded environments, indices are manipulated using atomic memory operations to prevent race conditions without acquiring heavy OS-level locks.
+
+## Common Architectures
+- **SPSC (Single Producer, Single Consumer)**: The most efficient variant. Since only one thread modifies the write index and one modifies the read index, it requires no locks or mutexes. It is entirely wait-free.
+- **MPMC/MPSC (Multi-Producer / Multi-Consumer)**: Requires more complex synchronization (like atomic compare-and-swap operations) to ensure that multiple threads do not overwrite the same slot or double-read the same item.
+
+## Performance Optimizations
+- **Power-of-2 Sizing**: Setting the buffer size to a power of 2 allows replacing expensive modulo (`%`) operations with fast bitwise AND (`&`) masking.
+- **Cache Line Padding**: Atomic variables are often padded (e.g., `alignas(64)` in C++) so read and write indices sit on different CPU cache lines. This prevents false sharing, a severe performance penalty that occurs when threads on different cores constantly invalidate each other's caches.
+- **Batching**: Systems can claim a block of slots at once before performing operations, drastically cutting down synchronization costs.
+
+## Real-World Implementations
+
+Concurrent ring buffers are the backbone of high-frequency trading platforms and networking drivers:
+- **LMAX Disruptor**: A highly regarded concurrent ring buffer pattern widely used in financial software for handling inter-thread message routing and event publishing.
+- **Aeron**: Used in financial market data distribution for zero-copy message exchanges over shared memory.
+- **io_uring \& DPDK**: Linux kernel asynchronous I/O and Intel's data plane development kit leverage concurrent ring buffers to queue packets and I/O completion events between NICs and drivers.
+
+## MPMC Queue[^1]
+
+```cpp title="lock_free_queue.h"
+#include <stdint.h>
+#include <stdbool.h>
+
+/*
+ * +--------------+-----------------+----------------+-------------------+-------------+
+ * | unused       | Pop in progress |     Items      | Push in progress  | Unused      |
+ * +--------------+-----------------+----------------+-------------------+-------------+
+ *                ^                 ^                ^                   ^
+ *                temp_head         head             tail                temp_tail
+ */
+
+struct lock_free_queue {
+
+    _Atomic(uint64_t) head;
+    _Atomic(uint64_t) tail;
+    _Atomic(uint64_t) temp_head;
+    _Atomic(uint64_t) temp_tail;
+
+    // The following aren't written to by
+    // push and pop operations, therefore
+    // don't need to be atomic.
+    uint64_t size; // Capacity of the queue (item count)
+    uint64_t cell; // Size of a single item (in bytes)
+    char *base; // Pointer to the first item
+};
+
+void lock_free_queue_init(struct lock_free_queue *q, void *arrptr, int arrlen, int item_size);
+void lock_free_queue_push(struct lock_free_queue *q, void *src);
+void lock_free_queue_pop(struct lock_free_queue *q, void *dst);
+bool lock_free_queue_try_push(struct lock_free_queue *q, void *src);
+bool lock_free_queue_try_pop(struct lock_free_queue *q, void *dst);
+
+#define lock_free_queue_INIT(q, arr) lock_free_queue_init(q, arr, sizeof(arr), sizeof((arr)[0]))
+```
+
+```cpp title="lock_free_queue.c"
+#include <string.h>
+#include <assert.h>
+#include <stdatomic.h>
+#include "lock_free_queue.h"
+
+void
+lock_free_queue_init(struct lock_free_queue *q, 
+                     void *arrptr, int arrlen,
+                     int cell)
+{
+    assert(arrlen % cell == 0);
+
+    q->head = 0;
+    q->tail = 0;
+    q->temp_head = 0;
+    q->temp_tail = 0;
+    q->size = arrlen / cell;
+    q->base = arrptr;
+    q->cell = cell;
+}
+
+static void*
+item_addr(struct lock_free_queue *q, int index)
+{
+    return q->base + q->cell * (index % q->size);
+}
+
+static uint64_t
+acquire_push_location(struct lock_free_queue *q)
+{
+    uint64_t old_temp_tail;
+    uint64_t new_temp_tail;
+
+    do {
+
+        uint64_t old_temp_head;
+
+        old_temp_tail = q->temp_tail;
+        old_temp_head = q->temp_head;
+
+        if (old_temp_head + q->size == old_temp_tail)
+            return UINT64_MAX; // Queue is full
+
+        assert(old_temp_head + q->size > old_temp_tail);
+
+        new_temp_tail = old_temp_tail + 1;
+    } while (!atomic_compare_exchange_weak(&q->temp_tail, &old_temp_tail, new_temp_tail));
+
+    return old_temp_tail;
+}
+
+static void
+release_push_location(struct lock_free_queue *q, uint64_t index)
+{
+    // The current thread already inserted an
+    // item at position "index", which comes
+    // after the queue's tail.
+    //
+    // It may be possible that other threads
+    // inserted items before this one, but still
+    // after the tail
+    //
+    // Before being able to move the tail over
+    // this element, we need to wait for other
+    // threads to do it.
+
+    while (q->tail != index);
+
+    q->tail++;
+}
+
+bool
+lock_free_queue_try_push(struct lock_free_queue *q, void *src)
+{
+    uint64_t index = acquire_push_location(q);
+    if (index == UINT64_MAX) return false;
+
+    void *dst = item_addr(q, index);
+    memcpy(dst, src, q->cell);
+
+    release_push_location(q, index);
+    return true;
+}
+
+void
+lock_free_queue_push(struct lock_free_queue *q, void *src)
+{
+    while (!lock_free_queue_try_push(q, src));
+}
+
+static uint64_t
+acquire_pop_location(struct lock_free_queue *q)
+{
+    uint64_t old_head;
+    uint64_t new_head;
+    do {
+        uint64_t old_tail;
+
+        // It's important to get head before tail
+        // or head may be incremented over tail before
+        // querying it.
+        old_head = q->head;
+        old_tail = q->tail;
+
+        if (old_head == old_tail)
+            return UINT64_MAX;
+
+        assert(old_tail > old_head);
+
+        new_head = old_head + 1;
+    } while (!atomic_compare_exchange_weak(&q->head, &old_head, new_head));
+    return old_head;
+}
+
+static void
+release_pop_location(struct lock_free_queue *q, uint64_t index)
+{
+    while (q->temp_head != index);
+
+    q->temp_head++;
+}
+
+bool
+lock_free_queue_try_pop(struct lock_free_queue *q, void *dst)
+{
+    uint64_t index = acquire_pop_location(q);
+    if (index == UINT64_MAX)
+        return false;
+
+    void *src = item_addr(q, index);
+    memcpy(dst, src, q->cell);
+
+    release_pop_location(q, index);
+    return true;
+}
+
+void
+lock_free_queue_pop(struct lock_free_queue *q, void *dst)
+{
+    while (!lock_free_queue_try_pop(q, dst));
+}
+```
+
+## Ring Buffer[^2]
+
+```cpp title="ring.h"
+#include <atomic>
+// - std::atomic
+#include <cstddef>
+// - std::size_t
+// - std::ptrdiff_t
+#include <new>
+// - ::new(ptr)
+#include <type_traits>
+// - std::is_nothrow_copy_constructible
+// - std::is_nothrow_move_constructible
+// - std::is_nothrow_move_assignable
+// - std::is_nothrow_destructible
+#include <utility>
+// - std::move
+
+// This structure aims to access elements in a ring buffer from multiple
+// concurrent readers and writers in a lock-free manner.
+
+// The class works by allocating the array and storing two pointers (for the
+// beginning and end of the allocated space). Two atomic pointers are used to
+// track the beginning and end of the currently used storage space. To
+// facilitate concurrent reads and writes, theres a read buffer pointer before
+// the read pointer for data currently being read, and a corresponding write
+// buffer pointer beyond the write pointer for data currently being written.
+// These buffer pointers cannot overlap. Just using these pointers suffer from
+// some minute inefficiencies and a few ABA problems. Therfore, atomic
+// integers are used to store the currently used and currently free sizes.
+
+// It allows multiple readers and multiple writers by implementing a reserve-
+// commit system. A thread wanting to read will check the used size to see if
+// there's enough data. If there is, it subtracts from the used size to
+// 'reserve' the read. It then does a compare-exchange to 'commit' by
+// increasing the read pointer. If that fails, then it backs out ('un-
+// reserves') by adding back to the used size and tries again. If it
+// succeeds, then it proceeds to read the data. In order to complete, the
+// reader must update the read buffer pointer to where it just finished
+// reading from. However, because other readers that started before may not be
+// done yet, the reader must wait until the read buffer pointer points to
+// where the read started. Only, then is the read buffer pointer updated, and
+// the free size increased. So while this implementation is lock-free, it is
+// not wait-free. This same principle works the same when writing (ammended
+// for the appropriate pointers).
+// 
+// If two readers try to read at the same time and there is only enough data
+// for one of them. The used size MAY be negative because they both 'reserve'
+// the data. This is an over-reserved state. But the compare-exchange will
+// only allow one reader to 'commit' to the read and the other will 'un-
+// reserve' the read.
+// 
+// |beg           |rptr      used=5             |wbuf         - unused
+// |----|----|++++|====|====|====|====|====|++++|----|        + modifying
+//  free=3   |rbuf                         |wptr     |end     = used
+// 
+// The diagram above shows a buffer of size 10 storing 5 bytes with a reader
+// reading one byte and one writer reading one byte.
+// 
+// Out of the box, the class works by reading and writing raw bytes from POD
+// data types and arrays. A wrapper could allow for a nicer interface for
+// pushing and popping elements. As it stands, this structure cannot be easily
+// modified to store types of variable size.
+
+class Ring_
+{
+private:
+    typedef char*                       data_ptr;
+    typedef std::atomic<std::ptrdiff_t> size_type;
+    typedef std::atomic<char*>          atom_ptr;
+
+private:
+    // Beginning and end pointers don't need to be atomic because they don't 
+    // change. used_ and free_ can be negative in certain cases (and that's ok).
+
+    data_ptr  beg_;  // pointer to beginning of data block
+    data_ptr  end_;  // pointer to end of data block
+
+    alignas(64)
+    size_type used_; // size of unreserved used space
+
+    alignas(64)
+    size_type free_; // size of unreserved free space
+
+    alignas(64)
+    atom_ptr  rbuf_; // pointer to beginning of data being read
+    atom_ptr  rptr_; // pointer to beginning of data
+
+    alignas(64)
+    atom_ptr  wptr_; // pointer to end of data
+    atom_ptr  wbuf_; // pointer to end of data being written
+
+public:
+    // Constructs a ring without a buffer (capacity() == 0)
+    Ring_();
+
+    // Constructs a ring with a buffer with a size
+    Ring_(std::size_t size);
+
+    // Moves the buffer between rings, assumes no concurrent operations
+    Ring_(Ring_&& ring);
+
+    // Moves the buffer between rings, assumes no concurrent operations on
+    // either ring. Deallocates the buffer
+    Ring_& operator= (Ring_&& ring);
+
+    // No copying
+    Ring_(const Ring_&)             = delete;
+    Ring_& operator= (const Ring_&) = delete;
+
+    // Deallocates the buffer
+    ~Ring_();
+
+public:
+    // Functions only report on the state of the ring
+
+    // Returns the current amount of non-reserved used space (amount of written 
+    // data that a read hasn't yet reserved). Over-reserved scenarios mean this
+    // number is not the ultimate source of truth with concurrent operations,
+    // but its the closest safe approximation. This, of course, doesn't report
+    // writes that have not completed.
+    std::size_t size() const;
+
+    // Maximum amount of data that can be held
+    std::size_t capacity() const;
+
+public:
+    // All operations assume object has not been moved. Blocking operations run
+    // until operation is completed. Non-blocking operations fail if there is
+    // not enough space
+
+    void read(void* data, std::size_t length) noexcept;
+    void write(const void* data, std::size_t length) noexcept;
+    bool try_read(void* data, std::size_t length) noexcept;
+    bool try_write(const void* data, std::size_t length) noexcept;
+
+protected:
+    // Helper functions
+
+    // Wraps a pointer within the array. Assumes 'beg_ <= ptr < end_+capacity()'
+    char* normalize_(char*);
+
+    char* acquire_read_block_(std::size_t length);
+    char* try_acquire_read_block_(std::size_t length);
+    void  copy_read_block_(const char* block, char* data, std::size_t length);
+    void  release_read_block_(char* block, std::size_t length);
+
+    char* acquire_write_block_(std::size_t length);
+    char* try_acquire_write_block_(std::size_t length);
+    void  copy_write_block_(char* block, const char* data, std::size_t length);
+    void  release_write_block_(char* block, std::size_t length);
+
+    char* begin_alloc_()             { return beg_;  }
+    const char* begin_alloc_() const { return beg_;  }
+    char* end_alloc_()               { return end_;  }
+    const char* end_alloc_() const   { return end_;  }
+    char* begin_data_()              { return rptr_; }
+    const char* begin_data_() const  { return rptr_; }
+    char* end_data_()                { return wptr_; }
+    const char* end_data_() const    { return wptr_; }
+
+}; // class Ring_
+
+template <class T>
+class Ring : protected Ring_
+{
+public:
+    // Constructs a ring without a buffer (capacity() == 0)
+    Ring();
+
+    // Constructs a ring with a buffer with a size
+    Ring(std::size_t size);
+
+    // Moves the buffer between rings, assumes no concurrent operations
+    Ring(Ring<T>&& ring);
+
+    // Moves the buffer between rings, assumes no concurrent operations on
+    // either ring. Deallocates the buffer
+    Ring<T>& operator= (Ring<T>&& ring);
+
+    // No copying
+    Ring(const Ring_&)             = delete;
+    Ring& operator= (const Ring_&) = delete;
+
+    // Deallocates the buffer, destructs stored data.
+    ~Ring();
+
+public:
+    // Functions only report on the state of the ring
+
+    // Returns the current amount of non-reserved used space (amount of written 
+    // data that a read hasn't yet reserved). Over-reserved scenarios mean this
+    // number is not the ultimate source of truth with concurrent operations,
+    // but its the closest safe approximation. This, of course, doesn't report
+    // writes that have not completed.
+    std::size_t size() const;
+
+    // Maximum amount of data that can be held
+    std::size_t capacity() const;
+
+public:
+    // All operations assume object has not been moved. Blocking operations run
+    // until operation is completed. Non-blocking operations fail if there is
+    // not enough space
+
+    void read(T& data) noexcept;            // blocking read
+    void write(const T& data) noexcept;     // blocking write
+    void write(T&& data) noexcept;          // blocking write
+    bool try_read(T& data) noexcept;        // non-blocking read
+    bool try_write(const T& data) noexcept; // non-blocking write
+    bool try_write(T&& data) noexcept;      // non-blocking write
+
+private:
+    void destruct_();
+}; // class Ring<T>
+
+template <class T>
+Ring<T>::Ring()
+: Ring_()
+{ }
+
+template <class T>
+Ring<T>::Ring(std::size_t size)
+: Ring_(size * sizeof(T))
+{ }
+
+template <class T>
+Ring<T>::Ring(Ring<T>&& ring)
+: Ring_(std::move(ring))
+{ }
+
+template <class T>
+Ring<T>& Ring<T>::operator= (Ring<T>&& ring)
+{
+    destruct_();
+
+    Ring_::operator= (ring);
+
+    return *this;
+}
+
+template <class T>
+Ring<T>::~Ring()
+{
+    destruct_();
+}
+
+template <class T>
+void Ring<T>::destruct_()
+{
+    if (size() == 0)
+        return;
+
+    auto itr = begin_data_();
+    auto end = end_data_();
+    do
+    {
+        auto t = reinterpret_cast<T*>(itr);
+        t->~T();
+
+        itr = normalize_(itr + sizeof(T));
+    } while (itr != end);
+}
+
+template <class T>
+std::size_t Ring<T>::size() const
+{
+    return Ring_::size() / sizeof(T);
+}
+
+template <class T>
+std::size_t Ring<T>::capacity() const
+{
+    return Ring_::capacity() / sizeof(T);
+}
+
+template <class T>
+void Ring<T>::read(T& data) noexcept
+{
+    static_assert(std::is_nothrow_move_assignable<T>::value, "T move assignment must not throw");
+    static_assert(std::is_nothrow_destructible<T>::value, "T destructor must not throw");
+
+    auto block = acquire_read_block_(sizeof(T));
+
+    // critical section
+    auto t = reinterpret_cast<T*>(block);
+    data = std::move(*t);
+    t->~T();
+
+    release_read_block_(block, sizeof(T));
+}
+
+template <class T>
+void Ring<T>::write(const T& data) noexcept
+{
+    static_assert(std::is_nothrow_copy_constructible<T>::value, "T copy constructor must not throw");
+
+    auto block = acquire_write_block_(sizeof(T));
+
+    // critical section
+    new(block) T(data);
+
+    release_write_block_(block, sizeof(T));
+}
+
+template <class T>
+void Ring<T>::write(T&& data) noexcept
+{
+    static_assert(std::is_nothrow_move_constructible<T>::value, "T move constructor must not throw");
+
+    auto block = acquire_write_block_(sizeof(T));
+
+    // critical section
+    new(block) T(std::move(data));
+
+    release_write_block_(block, sizeof(T));
+}
+
+template <class T>
+bool Ring<T>::try_read(T& data) noexcept
+{
+    static_assert(std::is_nothrow_move_assignable<T>::value, "T move assignment must not throw");
+    static_assert(std::is_nothrow_destructible<T>::value, "T destructor must not throw");
+
+    auto block = try_acquire_read_block_(sizeof(T));
+    if (block == nullptr)
+      return false;
+
+    // critical section
+    auto t = reinterpret_cast<T*>(block);
+    data = std::move(*t);
+    t->~T();
+
+    release_read_block_(block, sizeof(T));
+
+    return true;
+}
+
+template <class T>
+bool Ring<T>::try_write(const T& data) noexcept
+{
+    static_assert(std::is_nothrow_copy_constructible<T>::value, "T copy constructor must not throw");
+
+    auto block = try_acquire_write_block_(sizeof(T));
+    if (block == nullptr)
+        return false;
+
+    // critical section
+    new(block) T(data);
+
+    release_write_block_(block, sizeof(T));
+
+    return true;
+  }
+
+template <class T>
+bool Ring<T>::try_write(T&& data) noexcept
+{
+    static_assert(std::is_nothrow_move_constructible<T>::value, "T move constructor must not throw");
+
+    auto block = try_acquire_write_block_(sizeof(T));
+    if (block == nullptr)
+        return false;
+
+    // critical section
+    new(block) T(std::move(data));
+
+    release_write_block_(block, sizeof(T));
+
+    return true;
+}
+```
+
+```cpp title="ring.cpp"
+#include "ring.h"
+using namespace wilt;
+
+#include <cstring>
+// - std::memcpy
+
+Ring_::Ring_()
+  : beg_(nullptr)
+  , end_(nullptr)
+{
+    std::atomic_init(&used_, static_cast<std::ptrdiff_t>(0));
+    std::atomic_init(&free_, static_cast<std::ptrdiff_t>(0));
+    std::atomic_init(&rbuf_, static_cast<char*>(0));
+    std::atomic_init(&rptr_, static_cast<char*>(0));
+    std::atomic_init(&wptr_, static_cast<char*>(0));
+    std::atomic_init(&wbuf_, static_cast<char*>(0));
+}
+
+Ring_::Ring_(std::size_t size)
+  : beg_(new char[size])
+  , end_(beg_ + size)
+{
+    std::atomic_init(&used_, static_cast<std::ptrdiff_t>(0));
+    std::atomic_init(&free_, static_cast<std::ptrdiff_t>(size));
+    std::atomic_init(&rbuf_, beg_);
+    std::atomic_init(&rptr_, beg_);
+    std::atomic_init(&wptr_, beg_);
+    std::atomic_init(&wbuf_, beg_);
+}
+
+Ring_::Ring_(Ring_&& ring)
+  : beg_(ring.beg_)
+  , end_(ring.end_)
+{
+    std::atomic_init(&used_, ring.used_.load());
+    std::atomic_init(&free_, ring.free_.load());
+    std::atomic_init(&rbuf_, ring.rbuf_.load());
+    std::atomic_init(&rptr_, ring.rptr_.load());
+    std::atomic_init(&wptr_, ring.wptr_.load());
+    std::atomic_init(&wbuf_, ring.wbuf_.load());
+
+    ring.beg_ = nullptr;
+    ring.end_ = nullptr;
+
+    ring.used_.store(0);
+    ring.free_.store(0);
+    ring.rbuf_.store(nullptr);
+    ring.rptr_.store(nullptr);
+    ring.wptr_.store(nullptr);
+    ring.wbuf_.store(nullptr);
+}
+
+Ring_& Ring_::operator= (Ring_&& ring)
+{
+    delete[] beg_;
+
+    beg_ = ring.beg_;
+    end_ = ring.end_;
+
+    used_.store(ring.used_.load());
+    free_.store(ring.free_.load());
+    rbuf_.store(ring.rbuf_.load());
+    rptr_.store(ring.rptr_.load());
+    wptr_.store(ring.wptr_.load());
+    wbuf_.store(ring.wbuf_.load());
+
+    ring.beg_ = nullptr;
+    ring.end_ = nullptr;
+
+    ring.used_.store(0);
+    ring.free_.store(0);
+    ring.rbuf_.store(nullptr);
+    ring.rptr_.store(nullptr);
+    ring.wptr_.store(nullptr);
+    ring.wbuf_.store(nullptr);
+
+    return *this;
+}
+
+Ring_::~Ring_()
+{
+    delete[] beg_;
+}
+
+std::size_t Ring_::size() const
+{
+    // The 'used' space can be negative in an over-reserved case, but it can be
+    // clamped to 0 for simplicity.
+
+    auto s = used_.load();
+    return s < 0 ? 0 : static_cast<std::size_t>(s);
+}
+
+std::size_t Ring_::capacity() const
+{
+    return static_cast<std::size_t>(end_ - beg_);
+}
+
+void Ring_::read(void* data, std::size_t length) noexcept
+{
+    auto block = acquire_read_block_(length);
+
+    copy_read_block_(block, (char*)data, length);
+    release_read_block_(block, length);
+}
+
+void Ring_::write(const void* data, std::size_t length) noexcept
+{
+    auto block = acquire_write_block_(length);
+
+    copy_write_block_(block, (const char*)data, length);
+    release_write_block_(block, length);
+}
+
+bool Ring_::try_read(void* data, std::size_t length) noexcept
+{
+    auto block = try_acquire_read_block_(length);
+    if (block == nullptr)
+        return false;
+
+    copy_read_block_(block, (char*)data, length);
+    release_read_block_(block, length);
+
+    return true;
+}
+
+bool Ring_::try_write(const void* data, std::size_t length) noexcept
+{
+    auto block = try_acquire_write_block_(length);
+    if (block == nullptr)
+        return false;
+
+    copy_write_block_(block, (const char*)data, length);
+    release_write_block_(block, length);
+
+    return true;
+}
+
+char* Ring_::normalize_(char* ptr)
+{
+    return ptr < end_ ? ptr : ptr - capacity();
+}
+
+char* Ring_::acquire_read_block_(std::size_t length)
+{
+    auto size = static_cast<std::ptrdiff_t>(length);
+    while (true)                                                // loop while conflict
+    {
+        auto old_rptr = rptr_.load(std::memory_order_consume);  // read rptr
+        while (used_.load(std::memory_order_consume) < size);   // check for data
+                                                                // spin until success
+
+        auto new_rptr = normalize_(old_rptr + size);            // get block end
+        used_.fetch_sub(size);                                  // reserve
+        if (rptr_.compare_exchange_strong(old_rptr, new_rptr))  // try commit
+            return old_rptr;                                    // committed
+
+        used_.fetch_add(size, std::memory_order_relaxed);       // un-reserve
+    }
+}
+
+char* Ring_::try_acquire_read_block_(std::size_t length)
+{
+    auto size = static_cast<std::ptrdiff_t>(length);
+    while (true)                                                // loop while conflict
+    {
+        auto old_rptr = rptr_.load(std::memory_order_consume);  // read rptr
+        if (used_.load(std::memory_order_consume) < size)       // check for data
+            return nullptr;                                     // return failure
+
+        auto new_rptr = normalize_(old_rptr + size);            // get block end
+        used_.fetch_sub(size);                                  // reserve
+        if (rptr_.compare_exchange_strong(old_rptr, new_rptr))  // try commit
+            return old_rptr;                                    // committed
+
+        used_.fetch_add(size, std::memory_order_relaxed);       // un-reserve
+    }
+}
+
+void Ring_::copy_read_block_(const char* block, char* data, std::size_t length)
+{
+    if (block + length < end_)
+    {
+        std::memcpy(data, block, length);
+    }
+    else
+    {
+        auto first = end_ - block;
+        std::memcpy(data, block, first);
+        std::memcpy(data + first, beg_, length - first);
+    }
+}
+
+void Ring_::release_read_block_(char* old_rptr, std::size_t length)
+{
+    auto new_rptr = normalize_(old_rptr + length);            // get block end
+    while (rbuf_.load() != old_rptr);                         // check for earlier reads
+                                                              // spin until reads complete
+
+    rbuf_.store(new_rptr);                                    // finish commit
+    free_.fetch_add(length, std::memory_order_relaxed);       // add to free space
+}
+
+char* Ring_::acquire_write_block_(std::size_t length)
+{
+    auto size = static_cast<std::ptrdiff_t>(length);
+    while (true)                                                // loop while conflict
+    {
+        auto old_wbuf = wbuf_.load(std::memory_order_consume);  // read wbuf
+        while (free_.load(std::memory_order_consume) < size);   // check for space
+                                                                // spin until success
+
+        auto new_wbuf = normalize_(old_wbuf + size);            // get block end
+        free_.fetch_sub(size);                                  // reserve
+        if (wbuf_.compare_exchange_strong(old_wbuf, new_wbuf))  // try commit
+            return old_wbuf;                                    // committed
+
+        free_.fetch_add(size, std::memory_order_relaxed);       // un-reserve
+    }
+}
+
+char* Ring_::try_acquire_write_block_(std::size_t length)
+{
+    auto size = static_cast<std::ptrdiff_t>(length);
+    while (true)                                                // loop while conflict
+    {
+        auto old_wbuf = wbuf_.load(std::memory_order_consume);  // read wbuf
+        if (free_.load(std::memory_order_consume) < size)       // check for space
+            return nullptr;                                     // return failure
+
+        auto new_wbuf = normalize_(old_wbuf + size);            // get block end
+        free_.fetch_sub(size);                                  // reserve
+        if (wbuf_.compare_exchange_strong(old_wbuf, new_wbuf))  // try commit
+            return old_wbuf;                                    // committed
+
+        free_.fetch_add(size, std::memory_order_relaxed);       // un-reserve
+    }
+}
+
+void Ring_::copy_write_block_(char* block, const char* data, std::size_t length)
+{
+    if (block + length < end_)
+    {
+        std::memcpy(block, data, length);
+    }
+    else
+    {
+        auto first = end_ - block;
+        std::memcpy(block, data, first);
+        std::memcpy(beg_, data + first, length - first);
+    }
+}
+
+void Ring_::release_write_block_(char* old_wbuf, std::size_t length)
+{
+    auto new_wbuf = normalize_(old_wbuf + length);            // get block end
+    while (wptr_.load() != old_wbuf)                          // wait for earlier writes;
+                                                              // spin until writes complete
+
+    wptr_.store(new_wbuf);                                    // finish commit
+    used_.fetch_add(length, std::memory_order_relaxed);       // add to used space
+}
+```
+
+## Relevant Links \& Articles
+
+- https://psy-lob-saw.blogspot.com/2014/04/notes-on-concurrent-ring-buffer-queue.html
+- https://github.com/sysprog21/concurrent-programs/blob/master/ringbuffer/ringbuffer.c
+- https://www.cs.rochester.edu/~scott/papers/1996_PODC_queues.pdf
+
+[^1]: https://github.com/cozis/lock_free_queue/blob/main/lock_free_queue.h
+[^2]: https://kmdreko.github.io/posts/20191003/a-simple-lock-free-ring-buffer/

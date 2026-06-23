@@ -8,7 +8,7 @@ The number of hardware threads is limited based on the type of CPU used. Creatin
 
 ## Overview
 
-- The `ThreadPool` class will allow you to create an instance of the thread pool with a fixed number of threads. This is capped at the number of hardware threads available on the system. 
+- The `ThreadPool` class allows you to create an instance of the thread pool with a fixed number of threads. This is capped at the number of hardware threads available on the system. 
 - You can `post()` a task to the thread pool and receive a `std::future` which you can wait on for the result
 
 ## Internals
