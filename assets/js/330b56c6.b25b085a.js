@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksnippets=self.webpackChunksnippets||[]).push([["8658"],{812(e){e.exports=JSON.parse('{"tag":{"label":"games","permalink":"/snippets/tags/games","allTagsPath":"/snippets/tags","count":1,"items":[{"id":"cp/codeforces/CF1970C3","title":"CF1970C3 - Game on Tree","description":"","permalink":"/snippets/cp/codeforces/CF1970C3"}],"unlisted":false}}')}}]);
