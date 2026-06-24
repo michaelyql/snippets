@@ -1,0 +1,113 @@
+---
+description: ""
+tags: [dp, greedy]
+---
+
+# CF1714D - Color with Occurrences
+
+## Summary
+
+- Given a string $t$ and $n$ strings $s_1,\dots,s_n$, in one move you can use any $s_i$ to cover an occurrence of $s_i$ in $t$ at any index. 
+- Each $s_i$ can be used zero or more times. 
+- Strings used to cover can overlap each other.
+- Find the minimum number of moves needed to cover $t$ entirely, and output the strings used and the positions they cover.
+- Constraints: 
+    - $1\leq |t|\leq 100$
+    - $1\leq n\leq 10$
+    - $1\leq |s_i|\leq 10$
+    - $1\leq q\leq 100$
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/1714/D)
+
+## Solution
+
+- Let $dp[i]$ be the min. strings needed to cover $t[0..i]$
+- Brute force all suffixes $t[j..i]$ ending at $i$
+- If there is a match between $t[j..i]$ with some $s_i$, then set $dp[i]=\min(dp[i], 1 + \min_{k=j-1}^{i-1} dp[j])$
+- Time Complexity: $O(|t| \cdot \sum_{i=1}^n |s|)$ per query
+
+
+## Code
+
+```cpp
+string t;
+int n;
+unordered_set<string> strs;
+unordered_map<string, int> str_to_id;
+vi sz;
+const int inf = 1e9;
+int m;
+vi dp, par, use;
+
+int f(int i) {
+    if (i < 0) return 0;
+    if (dp[i] != inf) return dp[i];
+    int j = i;
+    string cur= "";
+    int curmin = inf+1;
+
+    int bestdp_i = -1;
+    bool found=false;
+
+    while (j >= 0) {
+        cur = t[j] + cur;
+        int res = f(j-1);
+        if (res < curmin) {
+            bestdp_i = j-1;
+            curmin = res;
+        }
+        if (strs.find(cur) != strs.end()) {
+            if (curmin + 1 < dp[i]) {
+                dp[i] = curmin+1;
+                par[i] = bestdp_i;
+                use[i] = str_to_id[cur];
+                found=true;
+            }
+        }
+        j--;
+    }
+    if (bestdp_i == -1 && !found) return dp[i] = inf+1;
+    return dp[i];
+}
+
+void solve(){
+    cin >> t;
+    cin >> n;
+    strs.clear();
+    str_to_id.clear();
+    sz.resize(n, 0);
+
+    dp.clear();
+    par.clear();
+    use.clear();
+
+    rep(i,0,n){
+        string s;
+        cin >> s;
+        strs.insert(s);
+        str_to_id[s]=i;
+        sz[i]=(int)s.size();
+    } 
+
+    m = (int) t.size();
+    dp.assign(m, inf);
+    par.assign(m, -1);
+    use.assign(m, -1);
+
+    int minsteps = f(m - 1);
+    if (minsteps==inf+1) {
+        cout << -1 << '\n';
+        return;
+    }
+    else cout << minsteps << '\n';
+    int cur = m - 1;
+    vector<pii> ans;
+    while (cur > -1) {
+        int s = sz[use[cur]];
+        int start = cur - s + 1;
+        ans.pb({use[cur] + 1, start + 1});
+        cur = par[cur];
+    }
+    for(auto [w, p]: ans) cout << w << " " << p << '\n';
+}
+```

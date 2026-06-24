@@ -1,0 +1,106 @@
+---
+description: ""
+tags: [trees, dfs, dp, games]
+---
+
+# CF1970C3 - Game on Tree
+
+## Summary
+
+- Given a tree on $n$ nodes, A and B take turns playing a game. 
+- A token is placed on a starting node which is marked as visited. 
+- In one turn, the player can choose any adjacent unvisited node and move the token there. 
+- The player who cannot make a move loses. 
+- A moves first. 
+- For each of $t$ starting nodes, find the winner assuming optimal play.
+- Constraints: 
+    - $2\leq n\leq 2\cdot 10^5$
+    - $1\leq t\leq n$
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/1970/C3)
+
+## Solution
+
+- DP + rerooting on tree
+- A node is winning only if it has no winning children
+- If it has at least one winning child, then it is a losing node, since the opponent will move to the winning child node, forcing a loss at the current node
+- Overall Time Complexity: $O(n)$
+
+## Code
+
+```cpp
+void solve(){
+    int n,t;
+    cin>>n>>t;
+    vvi adj(n+1); 
+    vi deg(n+1);
+    rep(i,0,n-1){
+        int u,v;
+        cin>>u>>v;
+        adj[u].pb(v);
+        adj[v].pb(u);
+        deg[u]++, deg[v]++;
+    }
+    vi win(n+1,0);
+    vi cnt(n+1,0);
+    auto dfs1=[&](auto&&self, int u,int p)->void{
+        int w=1;
+        for(int v:adj[u]){
+            if(v==p)continue;
+            self(self, v, u);
+            if(win[v]) {
+                w=0;
+                cnt[u]++;
+            }
+        }
+        win[u]=w;
+    };
+    dfs1(dfs1,1,0);
+    vi ans(n+1,0);
+    auto dfs2=[&](auto&&self, int u,int p)->void{
+        int prev = win[u];
+        for(int v:adj[u]){
+            if (win[v]) {
+                ans[u]=1;
+                win[u]=0;
+            }
+        }
+        for(int v:adj[u]){
+            if(v==p)continue;
+            
+            if (win[v]) {
+
+                if(cnt[u]==1){
+                    win[u]=1;
+                    cnt[v]++;
+                    cnt[u]--;
+                    self(self,v,u);
+                    cnt[v]--;
+                    cnt[u]++;
+                    win[u]=0;
+                }else{
+                    cnt[u]--; 
+                    self(self,v,u);
+                    cnt[u]++;
+                }
+            }else{
+                if (cnt[u]) {
+                    self(self,v,u);
+                }else{
+                    cnt[v]++;
+                    self(self,v,u);
+                    cnt[v]--;
+                }
+            }
+        }
+        win[u]=prev;
+    };
+    dfs2(dfs2,1,0);
+    rep(i,0,t){
+        int s; cin>>s;
+        if (ans[s])cout<<"Ron\n";
+        else cout<<"Hermione\n";
+    }
+}
+```
+
