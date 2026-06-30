@@ -1,0 +1,56 @@
+---
+description: ""
+tags: [number theory]
+---
+
+# CF1920C - Partitioning the Array
+
+## Summary
+
+- Given an array of length $n$, for each divisor $k$ of $n$, partition the array into contiguous subarrays of size $k$ 
+- Gain a point if there exists some $m > 1$ such that if all elements in the array are replaced with their remainder mod $m$, then each subarray is identical
+- Find the total number of points gained
+- Constraints: 
+    - $2\leq n\leq 2\cdot 10^5$
+    - $1\leq a_i \leq n$
+    
+[Link to Problem Statement](https://codeforces.com/problemset/problem/1920/C)
+
+## Solution
+
+- We need $|a_i-a_{i+k}|\equiv 0 \pmod m$ for $0\leq i < n-k$
+- So if $m$ exists, it must divide all $|a_i-a_{i+k}|$ 
+- Must divide everything $\rightarrow$ GCD
+- Find $\gcd$ of all $|a_i-a_{i+k}|$. As long as this is not equal to 1, an $m$ exists.
+    - Note that the gcd can be equal to 0
+    - In this case, it means that all $|a_i-a_{i+k}|=0$, so we can pick any $m>1$
+
+## Code 
+```cpp
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n);
+    rep(i,0,n) cin >> a[i];
+    int ans = 0;
+    for(int i=1; i*i <= n; i++) {
+        if (n % i == 0) {
+            int g = 0;
+            for(int j=0; j+i<n; j++) {
+                g = gcd(g, abs(a[j] - a[j+i]));
+            } 
+            if (g != 1) {
+                ans++;
+            }
+            int k = n / i;
+            if (k == i) continue;
+            g = 0;
+            for(int j=0;j+k<n;j++){
+                g = gcd(g, abs(a[j] - a[j+k]));
+            }
+            if (g != 1) ans++;
+        }
+    } 
+    cout << ans << '\n';
+}
+```

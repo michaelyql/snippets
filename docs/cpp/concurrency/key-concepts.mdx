@@ -34,3 +34,37 @@ sidebar_position: 1
 - Blocking a thread can be undesirable e.g. it is a **high priority** task, or it is a **real-time** task that has a deadline.
 - Locks can lead to **deadlock**, **livelock**, and **priority inversion**.
 - Using locks involves a trade-off between **coarse-grained** locking, which can significantly reduce opportunities for parallelism, and **fine-grained** locking, which requires more careful design, increases locking overhead and is more prone to bugs
+
+## Race Conditions
+When two or more threads are accessing the same shared memory and at least one of them is a write and the operations are not atomic, the result of execution depends on which thread accessed the shared memory first.
+
+## sequenced-before
+In a single thread, a line earlier in the code is sequenced before a line later in the code and should always executed first.
+
+## happens-before
+Between threads, synchronization establishes a happens-before relationship, which guarantees that memory writes (and other side effects) before the synchronization in one thread become visible to memory operations after the synchronization in the other thread.
+
+## synchronizes-with
+A **runtime** relationship between two operations on different threads that creates a formal "happens-before" order, guaranteeing that memory modifications made by one thread are visibly complete to another
+
+## Challenges of Lock-free programs
+
+### ABA problem
+Another thread which modifies the shared memory back to its original value makes it seem as though no other thread had accessed it before. 
+
+### Memory management
+Freeing memory has to ensure that no other thread is using that memory, otherwise it could lead to use-after-free and UB. Some solutions include **memory reclamation schemes**, **hazard pointers** and **reference counting**.
+
+## Performance
+
+### False Sharing
+When two threads access and update different but adjacent variables that happen to fall on the same cache line, the cache line is invalidated for each access even though the writes aren't updating the same memory location
+
+### Contention
+When multiple threads compete for the same resource, a lot of time is wasted on waiting instead of doing useful work
+
+### Oversubscription
+Having more threads than there are hardware threads leads to excessive context switching and high overhead.
+
+## Strategies
+Write a single-threaded version of the program first to ensure correctness, then gradually introduce concurrency

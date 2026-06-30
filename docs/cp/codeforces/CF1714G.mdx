@@ -1,0 +1,115 @@
+---
+description: ""
+tags: [trees, binary search]
+---
+
+# CF1714G - Path Prefixes
+
+## Summary
+
+- Given a tree on $n$ vertices rooted at vertex 1, each edge has a value $A[i]$ and $B[i]$. 
+- For $i=2\dots n$, find the longest prefix of the path from 1 to $i$ such that the sum of $B[i]$ along the prefix does not exceed the sum of $A[i]$ on the path from 1 to $i$
+- Constraints: 
+    - $2\leq n\leq 2\cdot 10^5$
+    - $1\leq A[i],B[i]\leq 10^9$
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/1714/G)
+
+## Solution
+
+- Compute $\sum A[i]$ and $\sum B[i]$ for each path 1 to $i$ with BFS/DFS
+- For a specific vertex, use binary search + binary lifting to find the longest prefix
+- Time Complexity: $O(n\log^2 n)$
+- Alternatively, in one pass DFS, you can store the previous values of $\sum B[i]$ seen along the prefix path, and directly perform binary search on it in $O(n\log n)$
+
+## Code
+
+```cpp
+int n;
+vi a, b;
+vvi p;
+vll A, B;
+vvi adj;
+
+void solve(){
+    cin >> n;
+
+    a.clear(), b.clear();
+    a.resize(n+1), b.resize(n+1);
+    p.clear();
+    p.resize(n+1, vi(18, 0));
+
+    adj.clear();
+    adj.resize(n+1);
+
+    rep(i,2,n+1){
+        int p_, a_, b_;
+        cin >> p_ >> a_ >> b_;
+        p[i][0] = p_;
+        a[i] = a_;
+        b[i] = b_;
+        adj[i].pb(p_);
+        adj[p_].pb(i);
+    } 
+
+    A.clear(), B.clear();
+    A.resize(n+1, 0ll), B.resize(n+1, 0ll);
+
+    queue<pii> q;
+    q.push({1,0});
+    vi depth(n+1);
+
+    while (!q.empty()) {
+        auto [u, d] = q.front();
+        q.pop();
+        depth[u] = d;
+        for(int v:adj[u]) {
+            if (v == p[u][0]) {
+                A[u] += A[v] + a[u];
+                B[u] += B[v] + b[u];
+            } else {
+                q.push({v, d+1});
+            }
+        }
+    }
+
+    for(int k=1;k<18;k++){
+        for(int i=2;i<=n;i++){
+            p[i][k] = p[p[i][k-1]][k-1];
+        }
+    }
+
+    auto kth_parent=[&](int i, int k) -> int {
+        int pow = 0;
+        while (k) {
+            if (k & 1) {
+                i = p[i][pow];
+            }
+            pow++;
+            k >>= 1;
+        }
+        return i;
+    };
+
+    for(int i=2;i<=n;i++){
+        if (B[i] <= A[i]) {
+            cout << depth[i] << ' ';
+            continue;
+        } 
+        int lo = 0, hi = depth[i] - 1;
+        int ans = lo;
+        while (lo <= hi) {
+            int mid = (lo+hi)/2;
+            int j = kth_parent(i, mid);
+            if (B[j] <= A[i]) {
+                ans = depth[i] - mid;
+                hi = mid - 1;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        cout << ans << ' ';
+    }
+    cout << '\n';
+}
+```

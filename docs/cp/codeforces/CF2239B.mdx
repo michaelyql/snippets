@@ -1,0 +1,59 @@
+---
+description: ""
+tags: [greedy]
+---
+
+# CF2239B - Decidophobia
+
+## Summary
+
+- Given a circular array $a$ of length $n$, for each person you can either give them a present or not.
+- If you give person $i$ a present and there are $x$ people in the range $[i-d, i+d]$ (not including $i$) that don't receive a present, then person $i$ will have $a_i \cdot x$ happiness
+- If person $i$ does not receive a gift and there are $x$ people in $[i-d,i+d]$ that receive a gift, the person will have $-a_i\cdot x$ happiness
+- Find the maximum sum of happiness.
+- Constraints: 
+    - $3\leq n\leq 2\cdot 10^5$
+    - $1\leq d<\frac{n}{2}$
+    - $1\leq a_i\leq 10^8$
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/2239/B)
+
+## Solution
+
+- Interesting problem where it seems like a local choice depends on how it influences neighbours (may or may not be optimal to give person $i$ a present depending on neighbour's happiness values)
+- But a trick allows to solve for each person independently whether to give them a gift or not
+- If a person $j$ in the vicinity of person $i$ has a present, and $i$ is now given a present
+    - Person $j$'s happiness decreases by $a_j$ (one less person in $j$'s vicinity that doesn't have a present)
+    - Person $i$'s happiness increases by $a_i$ (since he was previously unhappy that $j$ received a present, the value changes from $-a_i$ to 0)
+- Likewise, if $j$ previously didn't have a present and $i$ was given a present
+    - Now $j$'s happiness decreases by $a_j$ since there is one more person in his vicinity with a present
+    - $i$'s happiness increases by $a_i$ since $j$ has no present
+- So for every pair $(i,j)$ for $j$ in $[i-d,i+d]$, the net contribution to happiness is always $a-p$ regardless of whether $j$ has a present or not
+- Thus the decision to give a person a gift can be determined independently and we give a person a gift as long as the net contribution is positive
+
+
+## Code
+```cpp
+void solve() {
+    int n,d;cin>>n>>d;
+    vi a(n);rep(i,0,n)cin>>a[i];
+    ll s=0;
+    for(int i=n-d; i<n;i++) s += a[i];
+    for(int i=1; i<=d; i++) s += a[i];
+    ll ans = 0;
+    auto prev = [&](int i) -> int {
+        return (i - d + n) % n;
+    };
+    auto nxt = [&](int i) -> int {
+        return (i + d + 1) % n;
+    };
+    for(int i=0; i<n; i++) {
+        ans += max(0ll, 2ll*d*a[i] - s);
+        s -= a[prev(i)];
+        s += a[i];
+        s -= a[(i + 1) % n];
+        s += a[nxt(i)];
+    }
+    cout << ans << '\n';
+}
+```
