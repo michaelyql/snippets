@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunksnippets=self.webpackChunksnippets||[]).push([["3648"],{5346(s){s.exports=JSON.parse('{"tag":{"label":"sorting","permalink":"/snippets/tags/sorting","allTagsPath":"/snippets/tags","count":1,"items":[{"id":"cp/spoj/dquery","title":"DQUERY","description":"","permalink":"/snippets/cp/spoj/dquery"}],"unlisted":false}}')}}]);
