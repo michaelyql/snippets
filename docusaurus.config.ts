@@ -118,7 +118,7 @@ const config: Config = {
           items: [
             {
               label: 'LinkedIn',
-              href: 'https://www.linkedin.com/in/michael-yang-68b670204/',
+              href: 'https://www.linkedin.com/in/michael-y-68b670204/',
             },
             {
               label: 'GitHub',
@@ -149,6 +149,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
+      additionalLanguages: ['java']
     },
   } satisfies Preset.ThemeConfig,
 };

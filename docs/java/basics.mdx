@@ -1,0 +1,181 @@
+---
+description: ""
+title: Basics
+---
+
+# Basics
+
+This is a summary of the notes I used to study for the **[Oracle Certified Professional: Java SE17 Programmer (OCP 1Z0-829)](https://education.oracle.com/java-se-17-developer/pexam_1Z0-829)** exam.
+
+## Data Types
+
+- `byte` - 1 signed byte 
+- `short` / `char` - 2 signed bytes
+- `int` - 4 signed bytes
+- `long` - 8 signed bytes
+- `float` - 32-bit IEEE754 floating point
+- `double` - 64-bit IEEE754 floating point
+- `boolean` - `true` or `false`
+
+Notes
+
+- Floating point literals are treated as `double` by default, you need to append `f` to use it as a float e.g. `1.0f`
+- Integers are not boolean 
+
+### Type Casting
+
+- Widening (small to larger type) is automatic
+- Narrowing (large to smaller) is manual
+
+### Local Variable Type Inference
+
+```java
+var a = new ArrayList<String>();
+```
+- Saves you from typing
+- Can only be used on local variables
+- Type must be deducible 
+- Cannot be used on class or instance variables
+
+```java
+// does not compile
+var x;
+var x = null;
+var a = 2, b = 2; // can't use in multiple assignment
+
+void f(var a) {} // can't use in method parameter
+```
+
+## Control Flow
+
+## Strings
+
+- Strings are **immutable** - modifying a String will return a different String object instead of changing the original one
+- `str1 == str2` checks **object equality** (pointing to same string object in memory)
+- `str1.equals(str2)` checks for **logical equality** (same characters)
+
+### Concatenation
+
+### String Methods 
+
+```java
+// Parsing
+String.valueOf(1);
+
+String.join("-", str1, str2, str3);
+```
+
+### StringBuilder
+
+### Formatting
+
+
+
+## Arrays
+
+## Methods
+
+## Class Design
+
+## Beyond Classes
+
+### Interfaces
+
+### Enums
+
+### Records
+
+### Nested Classes
+
+### Polymorphism
+
+
+## Collections
+
+### Priority Queue
+
+### ArrayList
+
+### Map (HashMap, TreeMap)
+
+### Set (HashSet, TreeSet)
+
+### Deque
+
+### Collections vs Arrays
+
+- Collections is the library for dynamic sized generic containers that can only store objects
+- Arrays are fixed size built in data structure that can store objects or primitive types
+- Collections offer flexibility and function while Arrays offer performance
+
+## Streams
+
+## Exceptions
+
+
+## I/O
+### Scanner
+
+```java
+import java.util.Scanner
+
+// Usage
+Scanner scanner = new Scanner(System.in);
+int u = scanner.nextInt();
+String s = scanner.nextLine();
+
+scanner.close();
+```
+- Good for general usage, simple text, not so much for performance
+- 1KB buffer
+- `next()`, `nextInt()`, `nextDouble()` etc. leave the newline in the input buffer
+- Call `nextLine()` once to discard the newline before reading again
+
+### Buffered Reader/Writer 
+
+```java
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+
+// Usage
+BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+String s = reader.readLine();
+
+var reader = new BufferedReader(new FileInputStream("input.txt")); // byte stream (raw binary)
+var reader = new BufferedReader(new FileReader("input.txt")); // character stream with encoding
+```
+- Requires handling `IOException` explicitly
+- 8KB buffer 
+- Only reads text; manual conversion required
+- Good for large text files
+
+### Reading Arrays
+
+```java
+try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+    BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out))) {
+    
+    // Input
+    int n = Integer.parseInt(br.readLine());
+    StringTokenizer st = new StringTokenizer(br.readLine());
+    int[] a = new int[st.countTokens()];
+    for (int i = 0; st.hasMoreTokens(); i++) a[i] = Integer.parseInt(st.nextToken());
+
+    // Output
+    for (int i = 0; i < n; i++) {
+        bw.write(Integer.toString(a[i]));
+        bw.write(" ");
+    }
+} catch (Exception e) {
+    System.err.println(e);
+}
+```
+- `bw.write(1)` writes the character with ASCII value 1 instead of actually printing 1, so you have to convert numbers into strings beforehand
+- `br.read()` reads a single `char` 
+
+### PrintWriter
+
+## Concurrency
+
+## JDBC

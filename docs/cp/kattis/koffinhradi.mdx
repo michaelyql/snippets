@@ -1,0 +1,124 @@
+---
+description: ""
+tags: [sorting, greedy]
+---
+
+# Koffinhradi 
+
+## Summary
+
+- Given $n$ tasks with duration $t_i$ and deadline $s_i$, in one move we can change any duration to $\lfloor t_i/2 \rfloor$. 
+- Find the minimum moves required to complete all tasks by their deadline.
+- Constraints: 
+    - $2\leq n\leq 2\cdot 10^5$
+    - $1\leq t_i,s_i\leq 10^9$
+
+[Link to Problem Statement](https://open.kattis.com/problems/koffinhradi)
+
+## Solution
+
+- Process the tasks in ascending order of deadline
+- Keep completing tasks without using moves while the total time stays under the current deadline
+- Keep track of completed tasks and their duration
+- If the current time exceeds the deadline, repeatedly take the longest completed task and halve it until the current time is within the deadline
+
+## Code
+
+
+```java
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.PriorityQueue;
+import java.util.StringTokenizer;
+
+public class Sol {
+
+    public static void main(String[] args) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out))) {
+
+            int n = IO.nextInt(br);
+            ArrayList<Pair<Integer, Integer>> tasks = new ArrayList<>();
+
+            for (int i = 0; i < n; i++) {
+                StringTokenizer st = new StringTokenizer(br.readLine());
+                int t = Integer.parseInt(st.nextToken());
+                int s = Integer.parseInt(st.nextToken());
+                tasks.add(new Pair<>(s, t));
+            }
+            Collections.sort(tasks);
+            PriorityQueue<Integer> pq = new PriorityQueue<>(Collections.reverseOrder());
+            long cur = 0;
+            int ans = 0;
+            for (int i = 0; i < n; i++) {
+                var task = tasks.get(i);
+                int s = task.first(), t = task.second();
+                cur += t;
+                pq.add(t);
+                while (!pq.isEmpty() && cur > s) {
+                    int c = pq.poll();
+                    cur -= (c - c / 2);
+                    ans++;
+                    if (c / 2 > 0) pq.add(c / 2);
+                }
+            }
+            bw.write(Integer.toString(ans));
+        } catch (Exception e) {
+            System.err.println(e);
+        }
+    }
+}
+
+class IO {
+    public static int[] readIntArray(BufferedReader br) throws IOException {
+        StringTokenizer st = new StringTokenizer(br.readLine());
+        int[] a = new int[st.countTokens()];
+        for (int i = 0; st.hasMoreTokens(); i++) a[i] = Integer.parseInt(st.nextToken());
+        return a;
+    }
+
+    public static int nextInt(BufferedReader br) throws IOException {
+        return Integer.parseInt(br.readLine());
+    }
+
+    public static long nextLong(BufferedReader br) throws IOException {
+        return Long.parseLong(br.readLine());
+    }
+}
+
+class Pair<T extends Comparable, U extends Comparable>
+        implements Comparable<Pair<T, U>> {
+    T a;
+    U b;
+
+    Pair(T a_, U b_) {
+        this.a = a_;
+        this.b = b_;
+    }
+
+    @Override
+    public int compareTo(Pair<T, U> other) {
+        int res = a.compareTo(other.a);
+        if (res != 0) return res;
+        return b.compareTo(other.b);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("(%s, %s)", a, b);
+    }
+
+    public T first() {
+        return a;
+    }
+
+    public U second() {
+        return b;
+    }
+}
+```

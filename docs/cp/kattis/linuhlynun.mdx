@@ -1,0 +1,96 @@
+---
+description: ""
+tags: [sorting, greedy]
+---
+
+# Línuhlýnun
+
+## Summary
+
+- Given $n$ points $x_i$ on a number line each with a penalty $c_i$, choose a position $y$ on the number line that minimizes the sum weighted distance of all points to $y$ i.e. minimize $\sum_{i=1}^n |x_i-y|*c_i$
+- Constraints: 
+    - $2\leq n\leq 2\cdot 10^5$
+    - $1\leq c_i\leq 10^3$
+    - $1\leq x_i\leq 10^9$
+
+[Link to Problem Statement](https://open.kattis.com/problems/linuhlynun)
+
+## Solution
+
+- The weighted median occurs at one of the distinct points, so we can sort them and process them left to right
+
+## Code
+
+```java
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.StringTokenizer;
+import java.util.TreeMap;
+
+public class ps0 {
+
+    public static void main(String[] args) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out))) {
+
+            int n = IO.nextInt(br);
+            TreeMap<Integer, Integer> p = new TreeMap<>();
+
+            long R = 0;
+            int rc = 0;
+            for (int i = 0; i < n; i++) {
+                StringTokenizer st = new StringTokenizer(br.readLine());
+                int x = Integer.parseInt(st.nextToken());
+                int c = Integer.parseInt(st.nextToken());
+                p.put(x, p.getOrDefault(x, 0) + c);
+                R += (long) x * c;
+                rc += c;
+            }
+
+            int prev = 0;
+            long best = Long.MAX_VALUE;
+            long L = 0;
+            int lc = 0;
+            int ans = 0;
+
+            for (int x : p.keySet()) {
+                int d = x - prev;
+                lc += p.getOrDefault(prev, 0);
+                L += (long) lc * d;
+                R -= (long) rc * d;
+                rc -= p.get(x);
+                if (L + R < best) {
+                    best = L + R;
+                    ans = x;
+                }
+                prev = x;
+            }
+            bw.write(Long.toString(ans));
+
+        } catch (Exception e) {
+            System.err.println(e);
+        }
+    }
+}
+
+class IO {
+    public static int[] readIntArray(BufferedReader br) throws IOException {
+        StringTokenizer st = new StringTokenizer(br.readLine());
+        int[] a = new int[st.countTokens()];
+        for (int i = 0; st.hasMoreTokens(); i++) a[i] = Integer.parseInt(st.nextToken());
+        return a;
+    }
+
+    public static int nextInt(BufferedReader br) throws IOException {
+        return Integer.parseInt(br.readLine());
+    }
+
+    public static long nextLong(BufferedReader br) throws IOException {
+        return Long.parseLong(br.readLine());
+    }
+}
+```
+

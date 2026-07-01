@@ -1,0 +1,41 @@
+---
+description: ""
+tags: [number theory, greedy]
+---
+
+# CF1907E - Good Triples
+
+## Summary
+
+- Count the number of ordered triplets $(a,b,c)$ for $a,b,c\geq 0$ such that $D(a)+D(b)+D(c)=D(n)$ and $a+b+c=n$ where $D(x)$ is the digit sum of $x$.
+- Constraints: 
+    - $0\leq n\leq 10^7$
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/1907/E)
+
+## Solution
+
+- Solve for each digit independently 
+- When there is carry out of a digit, the sum $a+b+c$ for that digit will exceed $D(a)+D(b)+D(c)$ for that digit
+- So each digit must not have any carry out
+
+## Code
+```cpp
+void solve() {
+    int n;
+    cin >> n;
+    ll ans=1;
+    while (n) {
+        int v=0;
+        int d=n%10;
+        for(int i=0;i<=d;i++){
+            for(int j=0;j<=d;j++){
+                if(d-i-j>=0)v++;
+            }
+        }
+        ans*=v;
+        n /= 10;
+    }
+    cout << ans << '\n';
+}
+```
