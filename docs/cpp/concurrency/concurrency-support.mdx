@@ -8,6 +8,19 @@ description: Threads, Atomics, Semaphores, Mutexes, Futures
 
 ### Creating a new thread
 
+```cpp
+void f(int a, double b) {}
+
+std::thread t1(f, 1, 2.0);
+
+struct X {
+    int g(string s) {};
+}
+
+X x;
+std::thread t2(&X::g, &x, "a");
+```
+
 ### `jthread`
 
 ## `atomic`

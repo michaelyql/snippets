@@ -46,6 +46,8 @@ var a = 2, b = 2; // can't use in multiple assignment
 void f(var a) {} // can't use in method parameter
 ```
 
+## Operators
+
 ## Control Flow
 
 ## Strings
@@ -93,6 +95,17 @@ String.join("-", str1, str2, str3);
 ## Collections
 
 ### Priority Queue
+
+```java
+PriorityQueue<Integer> pq = new PriorityQueue<>(); // min pq
+PriorityQueue<Integer> pq = new PriorityQueue<>(Collections.reverseOrder()); // max pq
+
+pq.add(1); 
+pq.poll();
+pq.peek();
+
+
+```
 
 ### ArrayList
 

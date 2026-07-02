@@ -24,6 +24,265 @@ description: Classes, virtual functions, constructors etc.
 
 ## Virtual Functions
 
+- Virtual functions are functions that can be overridden by subclasses, and whose behaviour depends on the runtime type of the object, not the base type / reference / pointer to the object
+- Virtual call is suppressed by using *qualified name lookup* (using scope resolution operator `::`)
+- The overriding function must have the same **name**, **parameter type list**, **cv-qualifiers** and **ref-qualifiers**
+    - Does not have to have the same return type as the original function
+
+```cpp
+struct Base {
+    virtual void foo() { cout << "base\n"; }
+};
+
+struct Derived : Base {
+    void foo() override { cout << "derived\n"; } 
+    // 'override' is optional
+};
+
+int main() {
+    Base b;
+    Derived d;
+
+    // virtual function call through reference
+    Base& br = b; // the type of br is Base&
+    Base& dr = d; // the type of dr is Base& as well
+    br.f(); // prints "base"
+    dr.f(); // prints "derived"
+
+    // virtual function call through pointer
+    Base* bp = &b; // the type of bp is Base*
+    Base* dp = &d; // the type of dp is Base* as well
+    bp->f(); // prints "base"
+    dp->f(); // prints "derived"
+
+    // non-virtual function call
+    br.Base::f(); // prints "base"
+    dr.Base::f(); // prints "base"
+}
+```
+
+- The function in the base class **does not have to be accessible or visible** to be overridden
+
+```cpp
+class B {
+    virtual void do_f(); // private member
+public:
+    void f() { do_f(); } // public interface
+};
+
+struct D : public B {
+    void do_f() override; // overrides B::do_f
+};
+
+int main() {
+    D d;
+    B* bp = &d;
+    bp->f(); // internally calls D::do_f();
+}
+```
+
+- `override` ensures that a function actually overrides an inherited function. If a function declares `override` but does not actually override a function, the program is ill-formed
+
+```cpp
+struct B {
+    virtual void f(int);
+};
+
+struct D : B {
+    virtual void f(int) override;  // OK, D::f(int) overrides B::f(int)
+    virtual void f(long) override; // Error: f(long) does not override B::f(int)
+};
+```
+
+- `final` prevents a function from being overridden by a derived class
+
+```cpp
+struct B {
+    virtual void f() const final;
+};
+
+struct D : B {
+    void f() const; // Error: D::f attempts to override final B::f
+};
+```
+
+- **Virtual inheritance** (i.e. `class Derived : virtual Base`) prevents inheriting multiple copies of the same class member
+    - This applies for both function members and data members
+    - The compiler organizes memory such that there is only one Base class **subobject** in `Derived`'s memory block
+    - Note that **both** `B` and `C` have to use virtual inheritance
+    - If either one does not declare `virtual A`, they will still bring their own private copy of `A` into `D`, while the other one sets up a pointer to a shared `A`, so `D` will still end up with two copies of `A`
+
+```cpp
+// The problem
+class A { void f(); }
+class B : public A {};
+class C : public A {};
+class D : public C, D {}
+
+D d;
+d.f(); // Error: multiple candidates
+
+// The solution
+class A { void f(); }
+class B : virtual public A {};
+class C : virtual public A {};
+class D : public C, D {};
+
+D d;
+d.f(); // ok
+
+// Another example of the diamond problem
+struct A {};
+struct B : public A {};
+struct C : virtual public B {};
+struct D : public A {};           // D bypasses B and goes straight to A!
+struct E : public C, public D {}; // E has two copies of A
+
+// The fix 
+struct A {};
+struct B : virtual public A {};
+struct C : virtual public B {};
+struct D : virtual public A {};
+struct E : public C, public D {}; // Only one copy of A
+```
+
+
+- Every virtual function has a **final overrider** which is the actual function that gets executed
+    - A derived class is the final overrider if it does not declare or inherit (through multiple inheritance) another function that overrides the virtual function
+    - Can think of final overrider as the 'last' class which provided an override for the function
+
+```cpp
+struct A { virtual void f(); };     // A::f is virtual
+struct B : A { void f(); };         // B::f overrides A::f in B
+struct C : virtual B { void f(); }; // C::f overrides A::f in C
+
+// D does not introduce an overrider, B::f is final in D
+struct D : virtual B {}; 
+
+// E does not introduce an overrider, C::f is final in E 
+struct E : C, D {        
+    using A::f; // not a function declaration, just makes A::f visible to lookup
+};
+
+int main() {
+    E e;
+    e.f();    // virtual call calls C::f, the final overrider in e
+    e.E::f(); // non-virtual call calls A::f, which is visible in E
+}
+
+/*
+Explanation:
+- D does not override f(), so its final overrider is its parent's version: B::f().
+- C does explicitly override f(), creating C::f(). 
+- Because C inherits from B, C::f() is considered more derived (more dominant) than B::f().
+
+When E inherits from both C and D:
+- The compiler looks down the D path and sees B::f().
+- The compiler looks down the C path and sees C::f().
+- The compiler notices that C::f() is an overrider of B::f() further down the line.
+
+Because C::f() dominates B::f(), C::f() completely hides B::f().
+
+There is no tie or conflict to break, so C::f() wins automatically,
+regardless of the inheritance order.
+*/
+```
+
+- If a function has **more than one final overrider**, the program is *ill-formed*
+    - The multiple final overriders must be **at the same level of dominance** (i.e., they don't know about each other)
+
+```cpp
+struct A { virtual void f(); };
+
+struct VB1 : virtual A { void f(); }; // overrides A::f 
+
+struct VB2 : virtual A { void f(); }; // overrides A::f
+
+// struct Error : VB1, VB2 {
+//     // Error: A::f has two final overriders in Error
+// };
+
+struct Okay : VB1, VB2 {
+    void f(); // OK: this is the final overrider for A::f
+};
+
+struct VB1a : virtual A {}; // does not declare an overrider
+
+struct Da : VB1a, VB2 {
+    // in Da, the final overrider of A::f is VB2::f
+};
+```
+
+- If a function has the **same name** but **different parameter list**, it does not override the base function but instead **hides** it
+    - Additionally, if the base class does not specify `virtual` on a function, even if a child class declares the same function, it **does not override** the base class's function but rather **hides** it (two separate functions are created)
+    - **Name hiding is aggressive**, so **all** of the base class's functions with the function name are **hidden by name alone**, even if it defines multiple functions of that name with different parameter lists
+
+```cpp
+struct B {
+    virtual void f();
+};
+
+struct D : B {
+    void f(int); // D::f hides B::f (wrong parameter list)
+};
+
+struct D2 : D {
+    void f(); // D2::f overrides B::f (doesn't matter that it's not visible)
+};
+
+int main() {
+    B b;
+    B& b_as_b = b;
+    
+    D d;
+    B& d_as_b = d;
+    D& d_as_d = d;
+    
+    D2 d2;
+    B& d2_as_b = d2;
+    D& d2_as_d = d2;
+    
+    b_as_b.f();  // calls B::f()
+    d_as_b.f();  // calls B::f()
+    d2_as_b.f(); // calls D2::f()
+    
+    d_as_d.f();  // Error: lookup in D finds only f(int)
+    d2_as_d.f(); // Error: lookup in D finds only f(int)
+}
+``` 
+
+- The **most derived class** is responsible for **initializing a virtual base class** (call the constructor of the virtual base class)
+    - If the virtual base class provides a default no-args constructor, the call can be omitted
+    - Otherwise, the most derived class must call the constructor of the virtual base class in it's own constructor's initializer list
+    - The most derived class is just the type of the object being created (not whether it is the end of a subclass chain)
+    - A class can have subclasses but when creating an instance of it, it is considered the most derived
+    - Intermediate classes (those that sit between the class and the virtual base class) call to construct the virtual base class is skipped/ignored
+    - This is so that there only exists one instance of the virtual base class object
+- **Initialization Order**
+    1. <u>Virtual base classes first</u>: All virtual base classes in the inheritance tree are constructed first. They are constructed **in the order they are declared** in the class inheritance list, in a **depth-first, left-to-right traversal** of the inheritance graph
+    2. <u>Non-virtual direct base classes second</u>: Only after all virtual bases are completely built does the compiler move to non-virtual bases. These are constructed in the **exact order** they are declared in the class inheritance list (left-to-right).
+    3. <u>Members and Derived Class Last</u>: Non-static member variables are initialized (in the order they are declared in the class body), and finally, the derived class's own constructor body runs.
+
+:::warning[ ‎ ]
+The order you write initializers in the **constructor's initialization list** (e.g., `D() : C(), B() {}`) is **completely ignored** by the compiler. The compiler always relies strictly on the **class declaration order** (`class D: B, C`) to prevent dependency bugs.
+:::
+
+- vtable
+
+```cpp
+class TopLeft {};
+class Left : public TopLeft {};
+
+class TopRight {};
+class Right : public TopRight {};
+
+// Multiple inheritance combining both branches
+class Derived : public Left, public Right {};
+
+// Order: TopLeft -> Left -> TopRight -> Right -> Derived
+```
+
+
 ## Abstract Base Class (ABC)
 
 ## `override` and `final`
