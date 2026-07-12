@@ -2,11 +2,106 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://michaelyql.github.io/snippets/blog</id>
     <title>Code Snippets Blog</title>
-    <updated>2026-06-14T00:00:00.000Z</updated>
+    <updated>2026-07-08T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://michaelyql.github.io/snippets/blog"/>
     <subtitle>Code Snippets Blog</subtitle>
     <icon>https://michaelyql.github.io/snippets/img/code4.svg</icon>
+    <entry>
+        <title type="html"><![CDATA[C/C++ Stuff]]></title>
+        <id>https://michaelyql.github.io/snippets/blog/2026/07/08/</id>
+        <link href="https://michaelyql.github.io/snippets/blog/2026/07/08/"/>
+        <updated>2026-07-08T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[Some deep dives into how components/tools work, and basic implementations]]></summary>
+        <content type="html"><![CDATA[<p>Some deep dives into how components/tools work, and basic implementations</p>
+<!-- -->
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="memory-allocation-malloc">Memory allocation (malloc)<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#memory-allocation-malloc" class="hash-link" aria-label="Direct link to Memory allocation (malloc)" title="Direct link to Memory allocation (malloc)" translate="no">​</a></h2>
+<p>Malloc is the primary way that systems allocate memory to programs and ensure that programs are isolated from each other and do not overwrite each other's memory. It is also mainly used for dynamically allocated (heap) memory.</p>
+<p>To simulate the hardware environment and available memory, we can view memory as an array of bytes. We then process requests for memory and implement allocation algorithms to allocate said memory.</p>
+<p>The most basic/common algorithms include:</p>
+<ul>
+<li class=""><strong>first fit</strong> (find first address with enough memory to fit the request)<!-- -->
+<ul>
+<li class="">Downside: may lead to memory wastage</li>
+</ul>
+</li>
+<li class=""><strong>best fit</strong> (find the smallest slot that is just big enough to fulfil the request)<!-- -->
+<ul>
+<li class="">Downside: slow, have to iterate through all slots to find the best</li>
+</ul>
+</li>
+<li class=""><strong>worst fit</strong> (find the worst slot i.e. the largest block available)</li>
+</ul>
+<p>Common problems faced when allocating memory include:</p>
+<ul>
+<li class=""><strong>Fragmentation</strong>: there are 'patches' of contiguous unallocated and unused memory, which if merged together could allow more memory to be allocated</li>
+</ul>
+<p>Some slightly more optimized strategies are:</p>
+<ul>
+<li class=""><strong>Buddy system allocation</strong> (split memory into blocks of size equal to powers of 2, recursively break down blocks to fulfil requests and merge unused adjacent blocks together to reduce wastage and fragmentation)</li>
+<li class=""><strong>Memory pools</strong> (preallocate large chunk of memory upfront, split into uniformly sized chunks)</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="memory-pages--frames">Memory pages / frames<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#memory-pages--frames" class="hash-link" aria-label="Direct link to Memory pages / frames" title="Direct link to Memory pages / frames" translate="no">​</a></h2>
+<p>Typical Linux page size: 4KB</p>
+<ul>
+<li class="">Purpose: it saves a lot of memory and because of TLB (translation lookaside buffer) it doesn't impact performance aas much</li>
+<li class="">Page size is enforced at hardware level so you can only support what hardware supports<!-- -->
+<ul>
+<li class="">Linux uses 8KiB page size on SPARC chips because that's what that chip uses</li>
+<li class="">On Intel, it is 4KiB and, on more recent Intel chips, it also supports 2MiB and, most recently, 1GiB</li>
+<li class="">Linux can also use 2MiB via the hugepages feature, but it's not default because you waste half a page, on average, per process and that can add up</li>
+<li class="">ARM64, as used for Apple Silicon, apparently can support 4KiB, 16KiB, and 64KiB.</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="benefit-of-larger-pages-16-64kb">Benefit of larger pages (16, 64KB)<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#benefit-of-larger-pages-16-64kb" class="hash-link" aria-label="Direct link to Benefit of larger pages (16, 64KB)" title="Direct link to Benefit of larger pages (16, 64KB)" translate="no">​</a></h2>
+<p>Almost all architectures support a 4kB page size. Some architectures support larger pages (and a few also support smaller pages), but 4kB is a very widespread default.</p>
+<p>Linux supports two page sizes:</p>
+<p>Normal-sized pages, which I believe are 4kB by default on all architectures, though some architectures allow other values, e.g. 16kB on ARM64 or 8kB, 16kB or 64kB on IA64. These correspond to the deepest level of descriptors on the MMU (what Linux calls PTE).</p>
+<p>Huge pages, if compiled in (<code>CONFIG_HUGETLB_PAGE</code> is necessary, and <code>CONFIG_HUGETLBFS</code> as well for most uses). This corresponds to the second-deepest level of MMU descriptors (what Linux calls PMD) (or at least it usually does, I don't know if this holds on all architectures).</p>
+<p>The page size is a compromise between memory usage, memory usage and speed.</p>
+<ul>
+<li class="">A larger page size means more waste when a page is partially used, so the system runs out of memory sooner.</li>
+<li class="">A deeper MMU descriptor level means more kernel memory for page tables.</li>
+<li class="">A deeper MMU descriptor level means more time spent in page table traversal.</li>
+</ul>
+<p>The gains of larger page sizes are tiny for most applications, whereas the cost is substantial. This is why most systems use only normal-sized pages.</p>
+<p>Using huge pages requires mounting the <code>hugetlbfs</code> filesystem and <code>mmap</code>ping files there.</p>
+<p>See: <a href="https://unix.stackexchange.com/questions/128213/how-is-page-size-determined-in-virtual-address-space" target="_blank" rel="noopener noreferrer" class="">https://unix.stackexchange.com/questions/128213/how-is-page-size-determined-in-virtual-address-space</a></p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="virtual-memory">Virtual memory<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#virtual-memory" class="hash-link" aria-label="Direct link to Virtual memory" title="Direct link to Virtual memory" translate="no">​</a></h3>
+<p>Linux uses a virtual memory system where all of the addresses are virtual addresses and not physical addresses. These virtual addresses are converted into physical addresses by the processor.</p>
+<p>To make this translation easier, virtual and physical memory are divided into pages. Each of these pages is given a unique number; the page frame number.</p>
+<p>Some page sizes can be 2 KB, 4 KB, etc. For example, a 32-bit bus will have 4 GB address space.</p>
+<p>You can find out a system's default page size by querying its configuration via the getconf command:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">$ getconf PAGE_SIZE</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">4096</span><br></div></code></pre></div></div>
+<p>The units are typically in bytes, so the 4096 equates to 4096 bytes or 4kB.
+This is hardwired in the Linux kernel's source here:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">$ more /usr/src/kernels/3.13.9-100.fc19.x86_64/include/asm-generic/page.h</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">...</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">...</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">/* PAGE_SHIFT determines the page size */</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">#define PAGE_SHIFT  12</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">#ifdef __ASSEMBLY__</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">#define PAGE_SIZE   (1 &lt;&lt; PAGE_SHIFT)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">#else</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">#define PAGE_SIZE   (1UL &lt;&lt; PAGE_SHIFT)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">#endif</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">#define PAGE_MASK   (~(PAGE_SIZE-1))</span><br></div></code></pre></div></div>
+<p>The hardware (specifically, the MMU, which is part of the CPU) determines what page sizes are possible.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="basic-file-system">Basic file system<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#basic-file-system" class="hash-link" aria-label="Direct link to Basic file system" title="Direct link to Basic file system" translate="no">​</a></h2>
+<ul>
+<li class="">Fragmentation</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="thread-scheduling-algorithms">Thread scheduling algorithms<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#thread-scheduling-algorithms" class="hash-link" aria-label="Direct link to Thread scheduling algorithms" title="Direct link to Thread scheduling algorithms" translate="no">​</a></h2>
+<ul>
+<li class="">Round robin, priority based, FCFS</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="caching">Caching<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#caching" class="hash-link" aria-label="Direct link to Caching" title="Direct link to Caching" translate="no">​</a></h2>
+<ul>
+<li class="">L1/2/3 cache</li>
+<li class="">Cache locality</li>
+<li class="">Working set</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="template-programming">Template Programming<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#template-programming" class="hash-link" aria-label="Direct link to Template Programming" title="Direct link to Template Programming" translate="no">​</a></h2>
+<p>What does it actually do under the hood?</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="system-calls">System calls<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#system-calls" class="hash-link" aria-label="Direct link to System calls" title="Direct link to System calls" translate="no">​</a></h2>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="atomics">Atomics<a href="https://michaelyql.github.io/snippets/blog/2026/07/08/#atomics" class="hash-link" aria-label="Direct link to Atomics" title="Direct link to Atomics" translate="no">​</a></h2>]]></content>
+        <author>
+            <name>Michael Yang</name>
+            <uri>https://www.linkedin.com/in/michael-yang-68b670204/</uri>
+        </author>
+        <category label="c++" term="c++"/>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Greetings!]]></title>
         <id>https://michaelyql.github.io/snippets/blog/2026/06/14/first-blog-post</id>
