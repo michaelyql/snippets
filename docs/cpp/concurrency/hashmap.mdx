@@ -4,9 +4,32 @@ description: Concurrent Hashmaps
 
 # Hashmaps
 
+- Main idea: Each bucket is a linked list with its own mutex (fine grained locking). When the linked list grows too long, convert it to a balanced tree 
+    - Good if the table isn't resized 
+- Lock striping: one lock is assigned to a range of buckets (not resized)
+- Thin locks: if level of contention is expected to be low, use lightweight locking mechanism: CAS + busy wait, calling yield if can't obtain lock after certain number of tries
+- Reader/writer lock: allow multiple readers or single writer at a time for a bucket
+- Safe reclamation with hazard pointers (see Folly implementation)
+- To handle resizing:
+    - (Naive method) Use a global lock / have one thread lock all mutexes, create new hash table of bigger size, copy data over, then unlock all mutexes / global lock
+
+## Java ConcurrentHashMap
+
+- Pre Java 8, the map was split into smaller chunks (segments) each with its own lock
+- Post Java 8, the map uses CAS, fine-grained synchronization, and linked list per bin turns into trees when the bin grows too big
+- Reads are almost always lock-free 
+- Writes use fine-grained locking + CAS
+- Resizing is handled by multiple threads
 
 ## Relevant Links \& Articles 
 
-- https://bluuewhale.github.io/posts/concurrent-hashmap-designs/
-- https://medium.com/@shivu.a.1945/concurrenthashmap-how-it-works-and-why-its-so-damn-fast-also-where-s-my-thread-605bccbad7a7
-- https://github.com/facebook/folly/blob/main/folly/concurrency/ConcurrentHashMap.h
+- [Concurrent Hash Table Designs: Synchronized, Sharding, ConcurrentHashMap, and NonBlockingHashMap](https://bluuewhale.github.io/posts/concurrent-hashmap-designs/)
+- [Java ConcurrentHashMap](https://medium.com/@shivu.a.1945/concurrenthashmap-how-it-works-and-why-its-so-damn-fast-also-where-s-my-thread-605bccbad7a7) + [Deeper analysis](https://medium.com/@kaustubh.saha/hashmap-and-concurrenthashmap-360a8d682141)
+- [Folly ConcurrentHashMap](https://github.com/facebook/folly/blob/main/folly/concurrency/ConcurrentHashMap.h)
+- [EPFL CS206 - Concurrent Hash Tables Lecture Slides](https://parsa.epfl.ch/course-info/cs206/slides/L09-Hashs.pdf)
+- [Preshing's Junction C++ Hash Map Library](https://github.com/preshing/junction/tree/master/junction) + [Writeup](https://preshing.com/20160201/new-concurrent-hash-maps-for-cpp/)
+- [StackExchange: implementing a hash table with true concurrency](https://softwareengineering.stackexchange.com/questions/401503/implementing-a-hash-table-with-true-concurrency)
+- [Compare-And-Swap (CAS): Building a Concurrent HashMap from Scratch - Dhairya Chauhan](https://memoizethebackend.substack.com/p/compare-and-swap-cas-building-a-concurrent)
+- [(Rust) Designing A Fast Concurrent Hash Table: Ibraheem Ahmed
+](https://ibraheem.ca/posts/designing-papaya/)
+- [Thermadiag Seq C++ Concurrent Map](https://github.com/Thermadiag/seq/blob/main/seq/concurrent_map.hpp)

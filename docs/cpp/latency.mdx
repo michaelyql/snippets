@@ -1,0 +1,71 @@
+---
+description: Latency in C++ 
+---
+
+# Latency
+
+
+## Measuring L1 cache latency
+
+- Cache line size is usually 64 bytes for modern processors (may be 128 bytes on enterprise processors or 32 bytes on older architecturse)
+- L1 cache is between 16KB to 128KB per core
+- L2 cache is between 256KB to 2MB per core
+- L3 cache is between 4MB to 64MB, depending on the processor
+- Cache is split into instruction and data cache
+- `sink` is declared `volatile` so the compiler does not optimize it away as a no-op
+
+```cpp
+#include <new>
+#include <chrono>
+#include <iostream>
+#include <iomanip>
+#include <vector>
+
+using namespace std;
+
+double measureL1CacheLatency() {
+    constexpr auto CacheLineSize = std::hardware_destructive_interference_size;
+    constexpr auto CacheLineFloodSize = CacheLineSize * (2 << 12); // larger than L1 cache size 
+    constexpr auto TRIALS = 20'000;
+
+    cout << "Number of trials: " << TRIALS << '\n';
+
+    std::vector<uint8_t> CacheLineData(CacheLineSize), CacheLineEvictData(CacheLineFloodSize);
+
+    using namespace chrono;
+
+    volatile uint64_t sink = 0;
+    auto start = steady_clock::now();
+    auto floodTime = 0.0;
+
+    for (size_t trial = 0; trial < TRIALS; trial++) {
+        auto floodStart = steady_clock::now();
+        for (size_t i = 0; i < CacheLineEvictData.size(); i += CacheLineSize) {
+            sink += CacheLineEvictData[i];
+        }
+        auto floodEnd = steady_clock::now();
+        const auto iterFloodTime = static_cast<double>(duration_cast<nanoseconds>(floodEnd - floodStart).count());
+        floodTime += iterFloodTime;
+
+        sink += CacheLineData[0];
+    }
+
+    auto end = steady_clock::now();
+
+    // subtract time spent flushing L1 cache to get time spent accessing cache for cold miss 
+
+    const auto elapsedTime = static_cast<double>(duration_cast<nanoseconds>(end - start).count());
+
+    return (elapsedTime - floodTime) / TRIALS;
+}
+```
+
+- Caveats:
+    - `steady_clock` is called every iteration and adds overhead and noise
+    - Steady clock granularity: underlying timer may not be as granular as 1ns on some systems, may be coarser which leads to loss in precision 
+    - CPU can prefetch cache lines into L1 cache which will reduce latency, especially with predictable workloads 
+    - Thread migration: OS might move thread to another CPU, causing a different core cold read
+
+## Relevant Articles
+
+- https://medium.com/@AlexanderObregon/writing-low-latency-c-applications-f759c94f52f8

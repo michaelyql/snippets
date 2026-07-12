@@ -1,0 +1,30 @@
+---
+description: Default-init, value-init, copy-init, direct-init, list-init and more
+---
+
+# Initialization
+
+Initialization of a variable provides its initial value **at the time of construction**.
+
+## Default Initialization
+
+Syntax: `T object;` or `new T` (no initializer)
+- The **default constructor** is called. (See [default constructor](./classes.mdx#default-constructor))
+
+## Value Initialization 
+
+## Direct Initialization
+
+## Copy Initialization
+
+## List Initialization
+
+## Summary Cheat Sheet
+
+| Method | Syntax Example | Best Used For... |
+| :--- | :--- | :--- |
+| **Default** | `int x;` | Avoid for fundamental types (leaves local variables with garbage values). |
+| **Value** | `int x{};` | Safely resetting a variable to 0 or its default state. |
+| **Direct** | `int x(5);` | Calling specific multi-argument constructors. |
+| **Copy** | `int x = 5;` | Intuitive, simple assignments where narrowing isn't a risk. |
+| **List (Uniform)** | `int x{5};` | **Modern Standard.** Use by default to catch type-mismatch errors. |

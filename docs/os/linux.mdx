@@ -1,0 +1,19 @@
+
+# Linux
+
+## Memory Management
+
+### Theory
+
+- Each process has its own virtual (logical) address 
+- All virtual memory accesses go through the memory management unit (MMU) of the CPU to translate it to a physical RAM address
+- The translation step is expensive, so the MMU uses a Translation Lookaside Buffer (TLB) to cache recently translated addresses 
+- Memory is divided into small, fixed size memory pages
+- Each page frame in physical RAM can be mapped on to by different process's memory pages
+- The MMU uses the higher bits of the virtual address to index into page tables to find the mapped frame and the lower bits for the offset into the frame
+- If the memory page is not in RAM, the MMU raises a page fault. The OS loads the page from disk into ram, updates the page table, and lets the CPU retry the instruction. This is demand paging. 
+- If there was previously a page in the frame, it is evicted via page replacement policies (LRU, FIFO)
+- Linux allows selecting the page size at compile time. The page size differs between architectures.
+- File-backed memory is tying a portion of the program's memory to a file on disk. Writes to the file-backed memory are stored in RAM and mark the page as 'dirty'. When the page is swapped out of RAM, the 
+
+### Implementation
