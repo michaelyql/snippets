@@ -1,0 +1,54 @@
+
+# Networking
+
+## TCP/IP Model
+
+- Network Access Layer: handle physical connections e.g. using Ethernet vs WiFi, transmitting raw bits over cables
+- Internet Layer: using Internet Protocol (IP, IPv4/IPv6) to determine where to route a packet
+- Transport Layer: the protocol used, typically TCP (Transmission Control Protocol) or UDP (user datagram protocol)
+- Application Layer: interface with user, define what to send/structure and layout of data being sent using standard protocols (HTTP, FTP, SMTP) or custom network protocols
+
+## Internet Protocol (IP)
+
+- Each device has IPv4 (32 bit / 4 byte address) or IPv6 (8 groups of 4 hexadecimal digits)
+    - IPv6 supports up to ~10^38 unique addresses, so each device can have its own unique device and no NAT is required
+    - IPv6 has shortform: trailing zeros can be omitted, and consecutive zero segments can be replaced with `::`
+- Subnet mask: prefix bits form the network portion, suffix bits form the host portion
+    - The mask is used to 'switch off' or 'keep' certain bits of the IP address using bitwise AND
+- CIDR: Classless Inter-Domain Routing
+    - IP address followed by forward slash `/` and a number
+    - The number denotes how many bits in the prefix are fixed, and form the network portion
+    - The remaining bits are free to use, and form the host portion
+- Two IP addresses are in the same network if they are equal after masking with the network portion of the subnet mask
+- NAT: Network Address Translation
+    - When sending packets to another IP address, if it is on the same local network, the router can route using the private local IP address directly (`192.168.x.x`)
+    - Otherwise, it has to perform NAT to convert from private local IP to a public IP address before forwarding the packet
+    - Similarly, when receiving incoming packet from outside the local network, the router performs NAT to find the target device 
+- Port Numbers: a particular logical destination on a device 
+    - Kind of like which room in particular in a hotel
+    - Is 16 bit unsigned integer, range is from 0 to 65535
+    - Well known ports (0-1023) are reserved and standardized by IANA (Internet Assigned Numbers Authority) e.g. port 21,22 for FTP, 22 for SSH, 25 for SMTP, 53 for DNS, 80 for HTTP, 443 for HTTPS
+    - Registered ports (1024-49151) are assigned to specific applications e.g. 3306 for MySQL
+    - Ephemeral ports (49152-65535) are temporarily assigned to clients when connected to servers
+- Socket: IP Address + Port
+    - Can think of as one end of a two-way communication connection
+    - For example, an app will create a socket to establish connection with another server
+- Network 5-tuple: (Source IP, Source Port, Dest IP, Dest Port, Protocol)
+    - Used to uniquely identify which application on a device is the target of an incoming packet
+    - Allows multiple devices to share a single public IP
+- Loopback address: address to loop back to server itself
+    - For IPv4 this is 127.0.0.1 (mapped to the name localhost). For IPv6 this is ::1
+
+## POSIX Sockets
+
+Sockets are used to establish logical connections between devices/endpoints. 
+
+For servers, the flow typically is: create socket -> bind IP+port to socket -> listen on socket -> accept connections -> send/recv data -> finally close socket, clean up resources
+
+For clients, the flow typically is: create socket -> connect to server's IP+port -> send/recv data -> close connection 
+
+## Custom Networking Protocols
+
+- You may want to write a custom protocol for the application layer to send and receive data
+- Standard protocols may not be optimized e.g. HTTPS has large headers 
+- First, decide on which transport method to use (TCP vs UDP) based on the application needs (order of data sent matters, want retry/error/checking/ack mechanism like in FTP/SMTP vs packets can be dropped, speed matters e.g. video streaming, gaming)

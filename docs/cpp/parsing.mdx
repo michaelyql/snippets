@@ -131,3 +131,9 @@ If parsing network data (usually big endian), you must use byte-swapping functio
 - Take note of whether you need to handle endianness explicitly
 - Avoid **pointer type-punning** like `DataPacket* pkt = (DataPacket*)buffer;` as it can break strict aliasing and cause UB due to memory alignment exceptions.
 - Handle struct padding by using `#pragma pack(1)` or `[[gnu::packed]]` attributes 
+
+## Protobuf
+
+Protobuf is Google's open source mechanism for serializing/deserializing structured data into highly compact, language-neutral binary format. It uses several compression techniques to achieve a tiny footprint and high processing speeds.
+
+You define the structure of data (the schema definition) in `.proto` files 
