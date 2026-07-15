@@ -28,3 +28,183 @@ Syntax: `T object;` or `new T` (no initializer)
 | **Direct** | `int x(5);` | Calling specific multi-argument constructors. |
 | **Copy** | `int x = 5;` | Intuitive, simple assignments where narrowing isn't a risk. |
 | **List (Uniform)** | `int x{5};` | **Modern Standard.** Use by default to catch type-mismatch errors. |
+
+## Copy Elision
+
+The compiler can optimize away constructor calls when **initializing** an object, so as to avoid creating unnecessary extra copies. The elision of object creation is known as **copy elision**. Certain conditions must be met first. 
+
+There is one main rule/use case where copy elision applies, though there are certain other niche cases where copy elision applies as well.
+
+### Named RVO
+
+> In a **return** statement in a **function** with a **class return type**, when the **operand** is the **name** of a **non-volatile object** `obj` with **automatic storage duration** (other than a **function parameter** or a **handler parameter**), the **copy-initialization** of the result object can be omitted by constructing `obj` directly into the function call’s result object. This variant of copy elision is known as *named return value optimization (NRVO)*.
+
+<br/>
+
+Basically, in functions that return a class/struct object, and the object returned is a (non-static)  local variable with a name (having automatic storage duration), the object is directly constructed in the target site. For example,
+
+```cpp
+struct A {
+    A() { 
+        cout << "ctor " << this << '\n'; // prints address
+    }
+    A(const A& o) { 
+        cout << "copy, this: " << this << ", other: " << &o << '\n'; 
+    }
+    A(A&& o) { 
+        cout << "move, this: " << this << ", other: " << &o << '\n'; 
+    }
+    ~A() {
+        cout << "dtor " << this << '\n';
+    }
+};
+
+A f() {
+    A o;
+    return o;
+}
+
+int main() {
+    A o1 = f(); // copy elision here
+}
+```
+
+The function `f` returns a named object `o`. When `o1` is created in the main function, the object is directly created at the call site (at the address for `o1`). Instead of calling the default constructor to create the local object `o`, returning it and calling the copy constructor for `o1` (thus calling two constructors and having two objects in total), the object is directly constructed at `o1` and only a single default constructor is called.
+
+Running the program, you can expect to see an output like:
+
+```
+ctor 0x7ffcd3144d2f
+dtor 0x7ffcd3144d2f
+```
+
+We can modify the function `f` to gain a better understanding. If we modify `f` as such:
+
+```cpp
+A f() {
+    A o;
+    cout << "In f()\n";
+    return o;
+}
+```
+
+We will see the following output:
+
+```
+ctor 0x7ffcd3144d2f
+In f()
+dtor 0x7ffcd3144d2f
+```
+
+`f` still executes its statements normally line by line, but the object is constructed at the address of `o1` only once using the default constructor. No copy constructor is invoked at all.
+
+### Unnamed RVO
+
+The other common case of copy elision is *unnamed* RVO. 
+
+> When a **class object** `target` is **copy-initialized** with a **temporary** class object `obj` that **has not been bound to a reference**, the **copy-initialization can be omitted** by constructing `obj` directly into target. This variant of copy elision is known as *unnamed return value optimization* (URVO). **Since C++17, URVO is mandatory** and no longer considered a form of copy elision.
+
+This form is also known as **guaranteed copy elision** (since C++17). Actually, since nothing is being elided, the standard does not formally consider it as copy elision.
+
+Unnamed RVO applies when copy-initializing any class/struct using a temporary object (a prvalue) in general. The temporary value is **not materialized** until it is needed, and is constructed directly into the storage of its final destination. In the following example, all initializations only call the default constructor once, and no copy constructor is called.
+
+```cpp
+A o2 = A();
+A o3 { A() };
+A o4 = { A() };
+```
+
+As no copy/move is performed, the type **does not** actually need to have an accessible move/copy constructor. We could declare the copy/move constructors as private and the following example would still work with unnamed RVO:
+
+```cpp
+struct A {
+public:
+    A() { 
+        cout << "ctor " << this << '\n'; // prints address
+    }
+    ~A() {
+        cout << "dtor " << this << '\n';
+    }
+private:
+    A(const A& o) { 
+        cout << "copy, this: " << this << ", other: " << &o << '\n'; 
+    }
+    A(A&& o) { 
+        cout << "move, this: " << this << ", other: " << &o << '\n'; 
+    }
+};
+
+void g(A a) {} // unnamed RVO also applies to function parameters
+
+A h() {
+    return A();
+}
+
+int main() {
+    g(A(h()));
+}
+```
+
+The output of the program above is a single call to the constructor and destructor.
+
+```
+ctor 0x7ffe5a4a948f
+dtor 0x7ffe5a4a948f
+``` 
+
+This also demonstrates how copy elision can be **combined to eliminate multiple** copies. The only condition to take note of here is that the destructor must be accessible and non-deleted. 
+
+There is one more caveat: in order for guaranteed copy elision to apply, the **type** of the temporary object returned **must be the same** as the **return type** of the function. In the following example, URVO does not apply as the return type and the object type are not the same:
+
+```cpp
+struct A {
+    A() = default;
+    A(const A&) { std::cout << "A copy\n"; }
+    A(A&&) { std::cout << "A move\n"; }
+    int x = 1;
+};
+
+struct B : A {
+    int y = 2;
+};
+
+A foo() {
+    return B{}; // no copy elision: a temporary B is created, then A's move (preferred) 
+                // or copy ctor is called
+                // this is object slicing - only x survives, y is lost
+}
+```
+
+### Special cases
+
+
+> In a `throw` expression, when the operand is the name of a non-volatile object `obj` with automatic storage duration (other than a function parameter or a handler parameter) that belongs to a scope that does not contain the innermost enclosing try block (if exists), the copy-initialization of the exception object can be omitted by constructing `obj` directly into the exception object.
+
+```cpp
+A a;
+try {
+    throw a;
+} catch (const A& o) { // copy elision here
+}
+```
+
+Lastly, in **constant expressions** and **constant initialization**, copy elision is *never* performed.
+
+### Other notes
+
+Copy elision only applies for **initialization**, i.e. object **creation** (giving an initial value at the time of construction). It **does not apply** for **assignment** operators. 
+
+```cpp
+A a;
+a = A(); // default ctor, move assignment, then dtor is called
+```
+
+Copy elision is one of two allowed forms of optimization, alongside **allocation elision and extension** (using `new`) that can **change observable side effects** since C++14. That is, even if constructors/destructors have side effects, the compiler is allowed to change the observed behaviour. Prior to C++14, copy elision was the only allowed form of optimization. Thus, programs **should not** rely on the side effects of copy/move constructors and destructors. 
+
+In a `return` or `throw` expression, if the compiler cannot perform copy elision but the conditions for copy elision are met, or would be met except that the source is a function parameter, the compiler will attempt to use the move constructor even if the source operand is an lvalue (until C++23) / the source operand will be treated as an rvalue (since C++23).
+
+
+## Relevant Articles
+
+- [Copy Elision - cppref](https://en.cppreference.com/cpp/language/copy_elision)
+- [\[class.copy.elision\] -  C++ Drafts](https://eel.is/c++draft/class.copy.elision)

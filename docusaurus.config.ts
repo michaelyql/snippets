@@ -144,7 +144,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Built with Docusaurus.`,
+      copyright: `Built with Docusaurus`,
     },
     prism: {
       theme: prismThemes.github,
