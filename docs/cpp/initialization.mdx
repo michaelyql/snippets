@@ -4,12 +4,12 @@ description: Default-init, value-init, copy-init, direct-init, list-init and mor
 
 # Initialization
 
-Initialization of a variable provides its initial value **at the time of construction**.
+Initialization provides a variable its initial value at the time of construction.
 
 ## Default Initialization
 
-Syntax: `T object;` or `new T` (no initializer)
-- The **default constructor** is called. (See [default constructor](./classes.mdx#default-constructor))
+Syntax: `T object;` or `new T;`
+- The **default constructor** is called.
 
 ## Value Initialization 
 
@@ -25,7 +25,7 @@ Syntax: `T object;` or `new T` (no initializer)
 | :--- | :--- | :--- |
 | **Default** | `int x;` | Avoid for fundamental types (leaves local variables with garbage values). |
 | **Value** | `int x{};` | Safely resetting a variable to 0 or its default state. |
-| **Direct** | `int x(5);` | Calling specific multi-argument constructors. |
+| **Direct** | `int x(5);` | Calling specific multi-argument constructors. Be careful with the *most vexing parse*. |
 | **Copy** | `int x = 5;` | Intuitive, simple assignments where narrowing isn't a risk. |
 | **List (Uniform)** | `int x{5};` | **Modern Standard.** Use by default to catch type-mismatch errors. |
 
@@ -158,22 +158,58 @@ There is one more caveat: in order for guaranteed copy elision to apply, the **t
 
 ```cpp
 struct A {
-    A() = default;
-    A(const A&) { std::cout << "A copy\n"; }
-    A(A&&) { std::cout << "A move\n"; }
+    A() { 
+        cout << "[A] ctor " << this << '\n'; // prints address
+    }
+    ~A() {
+        cout << "[A] dtor " << this << '\n';
+    }
+    A(const A& o) { 
+        cout << "[A] copy, this: " << this << ", other: " << &o << '\n'; 
+    }
+    A(A&& o) { 
+        cout << "[A] move, this: " << this << ", other: " << &o << '\n'; 
+    }
     int x = 1;
 };
 
 struct B : A {
+    B() { 
+        cout << "[B] ctor " << this << '\n'; 
+    }
+    ~B() {
+        cout << "[B] dtor " << this << '\n';
+    }
+    B(const A& o) { 
+        cout << "[B] copy, this: " << this << ", other: " << &o << '\n'; 
+    }
+    B(A&& o) { 
+        cout << "[B] move, this: " << this << ", other: " << &o << '\n'; 
+    }
     int y = 2;
 };
 
-A foo() {
-    return B{}; // no copy elision: a temporary B is created, then A's move (preferred) 
+A h() {
+    return B(); // no copy elision: a temporary B is created, then A's move (preferred) 
                 // or copy ctor is called
-                // this is object slicing - only x survives, y is lost
+                // this is object slicing - only x survives, y is lost;
+}
+
+int main() {
+    h(); 
 }
 ```
+
+The output is as follows:
+```
+[A] ctor 0x7ffd77ed952f
+[B] ctor 0x7ffd77ed952f
+[A] move, this: 0x7ffd77ed955f, other: 0x7ffd77ed952f
+[B] dtor 0x7ffd77ed952f
+[A] dtor 0x7ffd77ed952f
+[A] dtor 0x7ffd77ed955f
+```
+From the output, we can see that `A`'s constructor is called first, followed by `B` (as per normal constructor hierarchy). Then since the return type `B()` is not the same as the function's return type `A`, there is no guaranteed copy elision. `A`'s move constructor is called to create an object of `A` (at `0x7ffd77ed955f`) to be returned. It moves from the `A` subobject (at `0x7ffd77ed952f`) inside the `B` object. The moved-from object is then destroyed, with the destructors being called in reverse. Finally, the return value from `h()` is discarded, so the returned `A` object's destructor is called.
 
 ### Special cases
 
