@@ -117,6 +117,163 @@ void foo(typename T::iterator it) {
 
 ## Concepts
 
+Concepts lets you enforce constraints on template type parameters at compile time.  A concept is just a compile-time boolean predicate.  There are three main ways concepts / requires can be used. 
+```cpp
+// using concepts
+template<typename T>
+concept Integral = std::is_integral_v<T>;
+
+template<Integral T>
+void f(T x);
+
+// using requires
+template<typename T>
+requires Integral<T>
+void f(T x);
+```
+
+Predicates can be joined with logical operators.
+
+```cpp
+template<typename T>
+concept Arithmetic =
+    std::is_integral_v<T> ||
+    std::is_floating_point_v<T>;
+
+template<Arithmetic T>
+T square(T x)
+{
+    return x * x;
+}
+
+square(5);
+square(3.14);
+// square("abc); // invalid
+
+template<typename T>
+requires Integral<T> && sizeof(T) >= 4
+void f(T);
+```
+
+**Requires expressions** checks if a set of expressions compiles. You can also check the return type of expressions.
+
+```cpp
+// syntax: requires((optional) param-list) { requirement-sequence }
+template<typename T>
+concept Addable = 
+requires(T a, T b) 
+{
+    a + b; // the statement "a+b;" must be able to compile
+};
+
+template<typename T>
+concept EqualityComparable =
+requires(T a, T b)
+{
+    { a == b } -> std::same_as<bool>; // "a == b" must return bool
+};
+template<typename T>
+concept Incrementable =
+requires(T x)
+{
+    { ++x } -> std::same_as<T&>;
+};
+
+// Multiple requirements
+template<typename T>
+concept VectorLike =
+requires(T x)
+{
+    x.size();
+    x.begin();
+    x.end();
+};
+```
+
+Concepts can be nested and built on each other.
+```cpp
+template<typename T>
+concept Addable =
+requires(T a, T b)
+{
+    a + b;
+};
+
+template<typename T>
+concept AddableAndComparable =
+    Addable<T> &&
+    requires(T a, T b)
+{
+    a == b;
+};
+```
+
+You can also require nested types:
+```cpp
+template<typename T>
+concept HasValueType =
+requires
+{
+    typename T::value_type;
+};
+HasValueType<std::vector<int>>   // true
+HasValueType<int>                // false
+```
+
+The standard library defines a few concepts, which you can use out of the box.
+
+```cpp
+std::integral
+std::floating_point
+std::same_as
+std::derived_from
+std::convertible_to
+std::copyable
+std::movable
+std::default_initializable
+std::constructible_from
+std::assignable_from
+std::invocable
+std::predicate
+std::regular
+
+template<std::integral T>
+void f(T);
+
+void f(std::integral auto x);
+```
+
+Concepts also participate in overload resolution, with the more constraint function being preferred when both are viable:
+
+```cpp
+template<typename T>
+void print(T)
+{
+    std::cout << "generic\n";
+}
+
+template<std::integral T>
+void print(T)
+{
+    std::cout << "integral\n";
+}
+print(5);      // integral
+print(3.14);   // generic
+```
+
+Comparing with SFINAE, the concepts version is easier to read, gives clearer compiler diagnostics, and integrates directly into overload resolution.
+
+```cpp
+// SFINAE
+template<typename T,
+         std::enable_if_t<std::is_integral_v<T>, int> = 0>
+void foo(T);
+
+// concepts
+template<std::integral T>
+void foo(T);
+```
+
 ## Trailing Return types
 
 In C++, a trailing return type allows you to specify a function's return type after its parameter list. It requires using the `auto` keyword at the beginning as a placeholder.
