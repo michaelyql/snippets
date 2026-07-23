@@ -4,14 +4,92 @@ description: Value categories, evaluation order, constant expressions, operators
 
 # Expressions
 
+## Value Categories
 
-## lvalue, rvalue
+Each expression in C++ is categorized by its _type_ and its _value category_.
 
-### Binding rvalue to const lvalue reference
+There are five main value categories in C++: glvalue, lvalue, xvalue, rvalue, prvalue. 
+
+- An lvalue can be thought of as anything that you can refer to by name that has a specific address in memory
+- An xvalue can be thought of as an object which is expiring and whose resources can be used up  
+- A glvalue ("generalized" lvalue) is an lvalue or an xvalue
+- A prvalue ("pure" rvalue) can be thought of as a temporary object which does not have a fixed address in memory
+- An rvalue is a prvalue or an xvalue
+
+The following diagram summarizes this relationship:
+
+![Value Categories](./value-categories.png)
+
+rvalues can be bound to const lvalue references:
 
 ```cpp
 String& a = String("test");         // Error, can't hold reference to a temporary value
 const String& a = String("test");   // Ok
 ```
 
-###
+## Evaluation Order
+
+The C++ standard does not specify the order in which expressions must be evaluated in (with a few exceptions). The evaluation order may differ from one run to another. This is not to be confused with operator associativity. 
+
+The most basic example of unspecified order of evaluation is:
+
+```cpp
+f(a) + g(b) * h(c); 
+```
+The compiler can compute `f(a)`, `g(b)` and `h(c)` in any order it wants, but `g(b)` will always be multipled with `h(c)` before being added to `f(a)`. 
+
+This applies to function arguments as well.
+
+```cpp
+f(x(a), y(b), z(c));
+```
+The compiler is free to order `x(a)`, `y(b)` and `z(c)` in any order it wants. 
+
+Evaluations are split into two types: *value computations* (the "return value" of the expression), and _side effects_ (read/writes to an object). Value computations include determining the identity of an object (glvalue evaluation) and reading the value assigned to an object (prvalue evaluation).
+
+Two evaluations A and B can be related in three ways: _sequenced before_, _unsequenced_, or _indeterminately sequenced_. 
+- If A is sequenced before B, then A will always complete before B (and vice versa) 
+- If A and B are unsequenced, they may be performed in any order, and their CPU instructions may overlap (i.e. be interleaved)
+- If A and B are indeterminately sequenced, they may be performed in any order, but their instructions will not overlap (no interleaving)
+
+The cases in which the relationship is specified are:
+- Each _full expression_ is sequenced before the next full expression
+- The value computation of operands to an operator is sequenced before the value computation of the result of the operator
+- Post-increment and post-decrement operator `x++`, `x--`
+    - The value computation is sequenced before its side effect
+- Pre-increment and pre-decrement operator `++x`, `--x` 
+    - The side effect is sequenced before its value computation
+- `&&`, `||`, `,` operator
+    - The first operand (left) is sequenced before the second operand (right)
+- Ternary operator `? :`
+    - The first operand before `?` is sequenced before the second and third operator
+- Assignment operator `=` and all compound assignment operators e.g. `+=`
+    - The side effect (modification of the left operand) is sequenced **after** the value computation of both left and right operands, and  sequenced **before** the value computation of the assignment expression (returning the reference to the modified object)
+    - Basically, evaluate left and right sides, then the assignment side effect becomes visible, then the reference to the object is returned
+- List initialization (i.e. using curly braces, either direct-list `T t{...}` or copy-list `T t = {...}`)
+    - In a comma-separated list of initializers e.g. `T t1{...}, t2{...}` or `T t1 = {...}, t2 = {...}` each initializer clause is sequenced before all other init clauses that follow after it
+- Function calls
+    - Function calls in the same expression are indeterminately sequenced with respect to one another
+    - They can be evaluated in any order, but the program must behave as though their evaluations are not interleaved 
+    - From C++17: function calls to standard library algorithms executing under `std::execution::par_unseq` are unsequenced and may be interleaved
+- `operator new` 
+    - Before C++17: the call to `new` is indeterminately sequenced with the constructor arguments
+    - From C++17: the call to `new` is sequenced before the evaluation of the constructor arguments
+- Function return values
+    - The copy-initialization of the return value is sequenced before the destruction of temporaries used in the return value, which is sequenced before the destruction of local variables in scope
+- From C++17:
+    - In a function call expression (i.e. calling the function), the evaluation of the function name is sequenced before every function argument evaluation
+    - In a function call (i.e. actually running the function), the initialization of function _parameters_ is indeterminately sequenced w.r.t each other
+    - Overloaded operators obey the sequencing rules of the built-in operator
+    - In subscript expression `E1[E2]`, `E1` is sequenced before `E2`
+    - In pointer-to-member expression `E1.*E2` or `E1->*E2`, `E1` is sequenced before `E2` 
+    - In shift operations `E1 << E2` and `E1 >> E2`, `E1` is sequenced before `E2` 
+    - In every simple assignment `E1 = E2` and every compound assignment `E1 @= E2`, `E2` is sequenced before `E1`
+    - (+ two more rules for direct initialization of aggregate and non-aggregate types)
+
+The following are cases of undefined behaviour. 
+
+## Operators \& Precedence
+
+## Relevant Articles
+- [Evaluation Order](https://cppreference.com/cpp/language/eval_order)
