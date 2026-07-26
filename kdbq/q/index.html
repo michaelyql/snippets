@@ -1,0 +1,302 @@
+<!doctype html><html lang=en dir=ltr class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-kdbq/q" data-has-hydrated=false><head><meta charset=UTF-8><meta name=generator content="Docusaurus v3.10.1"><title data-rh=true>q Language | Code Snippets</title><meta data-rh=true name=viewport content="width=device-width, initial-scale=1.0"/><meta data-rh=true name=twitter:card content=summary_large_image /><meta data-rh=true property=og:url content=https://michaelyql.github.io/snippets/kdbq/q /><meta data-rh=true property=og:locale content=en /><meta data-rh=true name=docusaurus_locale content=en /><meta data-rh=true name=docsearch:language content=en /><meta data-rh=true name=docusaurus_version content=current /><meta data-rh=true name=docusaurus_tag content=docs-default-current /><meta data-rh=true name=docsearch:version content=current /><meta data-rh=true name=docsearch:docusaurus_tag content=docs-default-current /><meta data-rh=true property=og:title content="q Language | Code Snippets"/><link data-rh=true rel=icon href=/snippets/img/code4.svg /><link data-rh=true rel=canonical href=https://michaelyql.github.io/snippets/kdbq/q /><link data-rh=true rel=alternate href=https://michaelyql.github.io/snippets/kdbq/q hreflang=en /><link data-rh=true rel=alternate href=https://michaelyql.github.io/snippets/kdbq/q hreflang=x-default /><script data-rh=true type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://michaelyql.github.io/snippets/category/kdbq","name":"KDB+/Q","position":1},{"@type":"ListItem","item":"https://michaelyql.github.io/snippets/kdbq/q","name":"q Language","position":2}]}</script><link rel=alternate type=application/rss+xml href=/snippets/blog/rss.xml title="Code Snippets RSS Feed"><link rel=alternate type=application/atom+xml href=/snippets/blog/atom.xml title="Code Snippets Atom Feed"><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css type=text/css integrity=sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM crossorigin=anonymous><link rel=stylesheet href=/snippets/assets/css/styles.75851252.css /><script src=/snippets/assets/js/runtime~main.7ded77cc.js defer></script><script src=/snippets/assets/js/main.468ea4fb.js defer></script></head><body><svg style="display: none;"><defs>
+<symbol id=theme-svg-external-link viewBox="0 0 24 24"><path fill=currentColor d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme-5fb")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{for(var[t,e]of new URLSearchParams(window.location.search).entries())if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id=__docusaurus><link rel=preload as=image href=/snippets/img/code1.svg /><div role=region aria-label="Skip to main content"><a class=skipToContent_fXgn href=#__docusaurus_skipToContent_fallback>Skip to main content</a></div><nav aria-label=Main class="theme-layout-navbar navbar navbar--fixed-top"><div class=navbar__inner><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded=false class="navbar__toggle clean-btn" type=button><svg width=30 height=30 viewBox="0 0 30 30" aria-hidden=true><path stroke=currentColor stroke-linecap=round stroke-miterlimit=10 stroke-width=2 d="M4 7h22M4 15h22M4 23h22"/></svg></button><a class=navbar__brand href=/snippets/><div class=navbar__logo><img src=/snippets/img/code1.svg alt="My Site Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"/><img src=/snippets/img/code1.svg alt="My Site Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"/></div><b class="navbar__title text--truncate">Code Snippets</b></a><a class="navbar__item navbar__link" href=/snippets/blog>Blog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type=button disabled title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width=24 height=24 aria-hidden=true class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill=currentColor d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"/></svg><svg viewBox="0 0 24 24" width=24 height=24 aria-hidden=true class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill=currentColor d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"/></svg><svg viewBox="0 0 24 24" width=24 height=24 aria-hidden=true class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill=currentColor d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"/></svg></button></div><div class=navbarSearchContainer_Bca1></div></div></div><div role=presentation class=navbar-sidebar__backdrop></div></nav><div id=__docusaurus_skipToContent_fallback class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class=docsWrapper_hBAB><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type=button></button><div class=docRoot_UBD9><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class=sidebarViewport_aRkj><div class=sidebar_njMd><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class=menu__link href=/snippets/><span title=Welcome class=linkLabel_WmDU>Welcome</span></a><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/c><span title=C++ class=categoryLinkLabel_W154>C++</span></a><button aria-label="Expand sidebar category 'C++'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/competitive-programming><span title="Competitive Programming" class=categoryLinkLabel_W154>Competitive Programming</span></a><button aria-label="Expand sidebar category 'Competitive Programming'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/networking><span title=Networking class=categoryLinkLabel_W154>Networking</span></a><button aria-label="Expand sidebar category 'Networking'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class=menu__link href=/snippets/fix><span title=FIX class=linkLabel_WmDU>FIX</span></a><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/java><span title=Java class=categoryLinkLabel_W154>Java</span></a><button aria-label="Expand sidebar category 'Java'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href=/snippets/category/kdbq><span title=KDB+/Q class=categoryLinkLabel_W154>KDB+/Q</span></a><button aria-label="Collapse sidebar category 'KDB+/Q'" aria-expanded=true type=button class="clean-btn menu__caret"></button></div><ul class=menu__list><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class=menu__link tabindex=0 href=/snippets/kdbq/kdb><span title=KDB class=linkLabel_WmDU>KDB</span></a><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current=page tabindex=0 href=/snippets/kdbq/q><span title="q Language" class=linkLabel_WmDU>q Language</span></a></ul><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/operating-systems><span title="Operating Systems" class=categoryLinkLabel_W154>Operating Systems</span></a><button aria-label="Expand sidebar category 'Operating Systems'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div></ul></nav></div></div></aside><main class=docMainContainer_TBSr><div class="container padding-top--md padding-bottom--lg"><div class=row><div class="col docItemCol_VOVn"><div class=docItemContainer_Djhp><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label=Breadcrumbs><ul class=breadcrumbs><li class=breadcrumbs__item><a aria-label="Home page" class=breadcrumbs__link href=/snippets/><svg viewBox="0 0 24 24" class=breadcrumbHomeIcon_YNFT><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill=currentColor /></svg></a><li class=breadcrumbs__item><a class=breadcrumbs__link href=/snippets/category/kdbq><span>KDB+/Q</span></a><li class="breadcrumbs__item breadcrumbs__item--active"><span class=breadcrumbs__link>q Language</span></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type=button class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>q Language</h1></header>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id=q-for-mortals>Q for Mortals<sup><a href=#user-content-fn-1 id=user-content-fnref-1 data-footnote-ref=true aria-describedby=footnote-label class=anchorTargetStickyNavbar_Vzrq>1</a></sup><a href=#q-for-mortals class=hash-link aria-label="Direct link to q-for-mortals" title="Direct link to q-for-mortals" translate=no>​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=basics>Basics<a href=#basics class=hash-link aria-label="Direct link to Basics" title="Direct link to Basics" translate=no>​</a></h3>
+<ul>
+<li class="">Q is a vector programming language. It processes a list of numbers in a single operation.</li>
+<li class="">Q is an interpreted, dynamically typed language.</li>
+<li class="">Q programs are stored as text files called scripts.</li>
+<li class="">Q uses right-to-left evaluation. There is no ambiguity, no operator precedence, so expressions can be written without brackets.</li>
+<li class="">Lists are the fundamental data construct of q.</li>
+<li class="">Tables are first class entities. There are no objects in Q.</li>
+<li class="">Comments use forward slash <code>/</code> and need a leading space before it</li>
+<li class="">Assign values using <code>:</code></li>
+<li class="">Test for equality using <code>=</code></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=data-types>Data Types<a href=#data-types class=hash-link aria-label="Direct link to Data Types" title="Direct link to Data Types" translate=no>​</a></h3>
+<ul>
+<li class="">Integer<!-- -->
+<ul>
+<li class="">By default is <em>long</em>, 64 bit</li>
+</ul>
+</li>
+<li class="">Float<!-- -->
+<ul>
+<li class="">8-byte value conforming to IEEE floating point specification</li>
+<li class="">All arithmetic operations are as expected, except division which is <code>%</code></li>
+<li class="">Division always results in float</li>
+</ul>
+</li>
+<li class="">Boolean<!-- -->
+<ul>
+<li class="">Stored in a singel byte and denoted as binary values</li>
+<li class="">Suffix with <code>b</code></li>
+</ul>
+</li>
+<li class="">Symbols<!-- -->
+<ul>
+<li class="">Starts with a backtick `</li>
+</ul>
+</li>
+<li class="">Date<!-- -->
+<ul>
+<li class=""><code>2000.01.01</code> (this is 0)</li>
+<li class="">A date is an integer - the number of days since the millenium, positive for post and negative for pre</li>
+</ul>
+</li>
+<li class="">Time span<!-- -->
+<ul>
+<li class="">A (long) integer count of the number of nanoseconds since midnight</li>
+<li class=""><code>12:00:00.000000000</code> (noon)</li>
+<li class="">Date and timespan values can participate in arithmetic, e.g. addition, test for equality</li>
+</ul>
+</li>
+<li class="">Lists<!-- -->
+<ul>
+<li class="">Enclose a list with <code>()</code> and separate items using semicolons <code>;</code></li>
+<li class=""><code>(1; 2; 3.4)</code></li>
+<li class="">A list can contain item of different types</li>
+<li class="">A simple list is a list of homogeneous atoms. The semicolon, spaces and parenthese are dropped</li>
+</ul>
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)(1; 2; 3)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)(1b; 0b; 1b)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">101b</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)(`one; `two; `three)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">`one`two`three</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Generate list using <code>til</code></li>
+</ul>
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)til 5</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1 2 3 4</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Join lists using <code>,</code></li>
+</ul>
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)1 2 3, 4 5</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1 2 3 4 5</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Extract items using Take <code>#</code>. Positive means from the front, negative means fom the back.</li>
+</ul>
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)2#til 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)-2#til 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">8 9</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)5#1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1 2 3 1 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)5#42</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">42 42 42 42 42</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Index items using <code>[]</code> (0 based)</li>
+</ul>
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)L:1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[0]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[-1] / just prints 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[4]  / just prints 0</span><br/></div></code></pre></div></div>
+</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=functions>Functions<a href=#functions class=hash-link aria-label="Direct link to Functions" title="Direct link to Functions" translate=no>​</a></h3>
+<ul>
+<li class="">Q is not purely functional, functions can have side effects</li>
+<li class="">Functions correspond to "lambda expressions" or "anonymous functions"<!-- -->
+<ul>
+<li class="">They acquire a name only when assigned to a variable</li>
+</ul>
+</li>
+<li class="">Functions are defined using <code>{}</code>. The <em>formal parameters</em> follow after the braces, enclosed in <code>[]</code>, separated by semicolons<!-- -->
+<ul>
+<li class="">E.g. <code>{[x] x*x}</code></li>
+<li class=""><code>{[x;y] a:x*x; b:y*y; a+b}</code> returns sum of squares</li>
+</ul>
+</li>
+<li class="">To <em>apply</em> a function to arguments, follow it (or its name, if it has been assigned to a variable) by a list of values enclosed in square brackets and separated by semicolons<!-- -->
+<ul>
+<li class="">E.g. <code>{[x] x*x}[2]</code></li>
+<li class="">The argument expression is evaluated first, followed by expressions in the body of the function</li>
+<li class="">Substitution occurs before the function starts. The arguments bind to the parameters first before the function body is executed</li>
+<li class="">Variables created in the function are <em>local</em></li>
+</ul>
+</li>
+<li class="">The first three parameters are assumed to be x, y and z, if no parameters are defined</li>
+<li class="">For functions with one parameter, you can omit the square brackets when applying the function<!-- -->
+<ul>
+<li class="">E.g. <code>{x*x} 5</code></li>
+<li class="">This is called function <em>prefix syntax</em></li>
+</ul>
+</li>
+<li class="">Functions are call by value<!-- -->
+<ul>
+<li class="">Q passes values (immutable references to vectors under q's copy-on-write model)</li>
+<li class="">Modifying an argument inside a function creates a local variable</li>
+</ul>
+</li>
+<li class="">To mutate a global variable or table in-place (without duplicating memory), you pass the symbol name of the variable<!-- -->
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)updateGlobal:{[varName] varName set (get varName) + 10}</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)myVar: 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)updateGlobal `myVar</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)myVar</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">20</span><br/></div></code></pre></div></div>
+</li>
+<li class="">The only place where code is not evaluated once up front is within control flow constructs like <code>$[cond; then_expr; else_expr]</code>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)f:{[x] $[x > 0; 100 % x; 0]}</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">In <code>$[cond; A; B]</code>, <code>cond</code> is evaluated first. If <code>cond</code> is true, only <code>A</code> is evaluated and <code>B</code> is never touched. Else, only <code>B</code> is evaluated.</li>
+</ul>
+</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=functions-on-lists>Functions on Lists<a href=#functions-on-lists class=hash-link aria-label="Direct link to Functions on Lists" title="Direct link to Functions on Lists" translate=no>​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)42+100 200 300</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">142 242 342</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100 200 300+42</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">142 242 342</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100 200 300 + 1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">101 202 303</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100 200 + 1 2 3 / error, must be same length</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">'length</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">[0]  100 200 + 1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">           ^</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100=99 100 101</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">010b</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100 100 100=100 101 102</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">100b</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100&lt;99 100 101</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">001b</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Accumulators / iterators<!-- -->
+<ul>
+<li class="">Apply a function / operator successively on a list based on an initial value (a fold in functional programming)</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)0 +/1 2 3 4 5</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">15</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)0 {x+y}/1+til 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">55</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)0+/1+til 100</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">5050</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)(+/) 1 2 3 4 5 / start with first item of the list</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">15</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)(*/) 1+til 10 / factorial</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">3628800 </span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)(*/) 2#1.4142135623730949</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1.9999999999999996</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)n:5</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)(*/) n#10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">100000</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">There are two types of iterators, Scan and Over</li>
+<li class="">Scan (<code>\</code>) returns the result of each evaluation</li>
+<li class="">Over (<code>/</code>) only returns the last result</li>
+<li class="">Scan can be used to debug Over by looking at intermediate results</li>
+<li class="">Over requires less memory as it does not store intermediate results</li>
+<li class=""><code>|</code> operator returns larger of its operands (max), <code>&</code> returns smaller of its operands (min)<!-- -->
+<ul>
+<li class=""><code>q)(|/) 1 2 3 4</code></li>
+<li class=""><code>q)(&/) 1 2 3 4</code></li>
+</ul>
+</li>
+<li class="">Some uses of <code>/</code> have their own name</li>
+</ul>
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)sum 1+til 10 / this is +/</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)prd 1+til 10 / this is */</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)max 20 10 40 30 / this is |/</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)min 20 10 40 30 / this is &/</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Over <code>/</code> converts a binary function into a <em>unary aggregate function</em> i.e. one that collapses a list to an atoms</li>
+<li class="">Scan <code>\</code> converts a binary function into a <em>unary uniform function</em> i.e. one that returns a list of the same length as the input</li>
+<li class="">Common applications of Scan have their own name, but suffix with <code>s</code> e.g. <code>sums</code>, <code>prds</code>, <code>maxs</code>, <code>mins</code></li>
+</ul>
+</li>
+<li class="">Fibonacci numbers<!-- -->
+<ul>
+<li class="">To generate the next fibonacci number, we have to add the last two numbers</li>
+<li class="">So it takes the form <code>{x,sum -2#x}</code></li>
+<li class=""><code>Do</code> is an overload of <code>/</code>. Prefix <code>/</code> with some integer <span class=katex><span class=katex-mathml><math xmlns=http://www.w3.org/1998/Math/MathML><semantics><mrow><mi>n</mi><mo>≥</mo><mn>0</mn></mrow><annotation encoding=application/x-tex>n \geq 0</annotation></semantics></math></span><span class=katex-html aria-hidden=true><span class=base><span class=strut style=height:0.7719em;vertical-align:-0.136em></span><span class="mord mathnormal">n</span><span class=mspace style=margin-right:0.2778em></span><span class=mrel>≥</span><span class=mspace style=margin-right:0.2778em></span></span><span class=base><span class=strut style=height:0.6444em></span><span class=mord>0</span></span></span></span> and it runs the function <span class=katex><span class=katex-mathml><math xmlns=http://www.w3.org/1998/Math/MathML><semantics><mrow><mi>n</mi></mrow><annotation encoding=application/x-tex>n</annotation></semantics></math></span><span class=katex-html aria-hidden=true><span class=base><span class=strut style=height:0.4306em></span><span class="mord mathnormal">n</span></span></span></span> times</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q){x,sum -2#x}[1 1 2]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1 1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)10 {x,sum -2#x}/ 1 1</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1 1 2 3 5 8 13 21 34 55 89 144</span><br/></div></code></pre></div></div>
+</li>
+<li class="">Converge / N-th square root using Newton's Method<!-- -->
+<ul>
+<li class="">A function can be applied until it converges to some system tolerance (<span class=katex><span class=katex-mathml><math xmlns=http://www.w3.org/1998/Math/MathML><semantics><mrow><msup><mn>10</mn><mrow><mo>−</mo><mn>14</mn></mrow></msup></mrow><annotation encoding=application/x-tex>10^{-14}</annotation></semantics></math></span><span class=katex-html aria-hidden=true><span class=base><span class=strut style=height:0.8141em></span><span class=mord>1</span><span class=mord><span class=mord>0</span><span class=msupsub><span class=vlist-t><span class=vlist-r><span class=vlist style=height:0.8141em><span style=top:-3.063em;margin-right:0.05em><span class=pstrut style=height:2.7em></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">14</span></span></span></span></span></span></span></span></span></span></span></span> as of 2015)</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)\P 0 / display all digits of binary representation</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain"> \ Square root: f(x)=x^2-2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q){[xn] xn-((xn*xn)-2)%2*xn}/[1.5] / for f(x)=x^2-2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain"> / the approximation is xn - f(xn)/f'(xn)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1.414214</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain"> / Abstract for any c to approximate</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q){[c; xn] xn-((xn*xn)-c)%2*xn} </span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q){[c; xn] xn-((xn*xn)-c)%2*xn}[2.0;] / Partial application (currying)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q){[c; xn] xn-((xn*xn)-c)%2*xn}[3.0;]/[1.0] / Apply </span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain"> / Abstract for any kth root, x_{k+1} = x_k - f(x_k) / f'(x_k)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q){[p; c; xn] xn-(((*/)p#xn)-c)%p*(*/)(p-1)#xn}</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q){[p; c; xn] xn-(((*/)p#xn)-c)%p*(*/)(p-1)#xn}[2; 3.0;]/[1.0]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1.7320508075688772</span><br/></div></code></pre></div></div>
+</li>
+<li class="">FIFO Allocation<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)buys:2 1 4 3 5 4f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sell:12f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sell&sums buys</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 12 12f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)deltas sell&sums buys / consecutive differences</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 1 4 3 2 0f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)buys:2 1 4 3 5 4f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sells:2 4 3 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 15 19f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sums[sells]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 6 9 11</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ Cap cumulative buys with each cumulative sell</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)2&sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 2 2 2 2 2f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)6&sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 6 6 6 6f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)9&sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 9 9 9f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)11&sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 11 11f</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Each Left (<code>|:</code>) applies a binary function and a right operand to each item of a list on the left.</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)sums[sells] &\: sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 2 2 2  2  2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 6 6  6  6</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 9  9  9</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 11 11</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ Unwind allocation in vertical direction</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)deltas sums[sells]&\:sums[buys] </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 2 2 2 2 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1 4 4 4 4</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 1 3 3 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 0 1 2 2</span><br/></div></code></pre></div></div>
+</li>
+<li class=""><code>Each</code> iterator<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)count (1 2 3; 10 20)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)count each (1 2 3; 10 20)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">3 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)deltas each deltas sums[sells] &\: sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 0 0 0 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1 3 0 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 1 2 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 0 1 1 0</span><br/></div></code></pre></div></div>
+</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id=qsql>qSQL<a href=#qsql class=hash-link aria-label="Direct link to qSQL" title="Direct link to qSQL" translate=no>​</a></h2>
+<ul>
+<li class="">Data Exploration<!-- -->
+<ul>
+<li class="">View all tables: <code>tables[]</code></li>
+<li class="">Inspect a table:<code>&lt;table></code> / <code>&lt;table>[]</code> / <code>show &lt;table>;</code>
+<ul>
+<li class=""><code>show</code> can also be used to display any value in general</li>
+</ul>
+</li>
+<li class="">Count number of records: <code>count &lt;table></code></li>
+<li class="">Get metadata information about a table: <code>meta &lt;table></code>
+<ul>
+<li class="">In terms of column name <code>c</code>, column type <code>t</code>, foreign keys <code>f</code> and attributes <code>a</code></li>
+<li class="">Attributes e.g. <code>s</code> (sorted) - tells KDB that the data is already sorted, faster queries</li>
+</ul>
+</li>
+<li class=""><code>select from &lt;table></code> (Select all rows and all columns)</li>
+<li class=""><code>select &lt;col1>, &lt;col2> from &lt;table></code></li>
+<li class=""><code>select &lt;col1>, &lt;col2> from &lt;table> where &lt;cond1>, &lt;cond2>...</code>
+<ul>
+<li class="">The order of conditions matter for performance</li>
+</ul>
+</li>
+<li class=""><code>\ts &lt;expr></code> (benchmark execution time in ms and memory usage in bytes)<!-- -->
+<ul>
+<li class=""><code>\ts:n &lt;expr></code> to run <span class=katex><span class=katex-mathml><math xmlns=http://www.w3.org/1998/Math/MathML><semantics><mrow><mi>n</mi></mrow><annotation encoding=application/x-tex>n</annotation></semantics></math></span><span class=katex-html aria-hidden=true><span class=base><span class=strut style=height:0.4306em></span><span class="mord mathnormal">n</span></span></span></span> times</li>
+<li class=""><code>.Q.ts[func; args]</code> (programmatically)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class=""><code>min/max/sum/avg/count</code> : Aggregation on a column<!-- -->
+<ul>
+<li class="">E.g. <code>select date from trips where date = min date</code></li>
+</ul>
+</li>
+<li class=""><code>select a, b, c: a + b from &lt;table></code> (calculated column)</li>
+<li class="">Virtual column: <code>select count i from &lt;table> where ...</code>
+<ul>
+<li class=""><code>i</code> maps to record index in the table</li>
+</ul>
+</li>
+<li class="">Grouping using <code>by</code>
+<ul>
+<li class=""><code>select &lt;col> by &lt;col> from &lt;table></code></li>
+<li class="">Examples: <code>select maxTip: max tip, avgTip: avg tip by vendor from jan09</code>, <code>select sum fare, sum tip by vendor from jan 09</code>, <code>select count i by date from jan09</code></li>
+</ul>
+</li>
+<li class="">Avoiding nested queries with <code>fby</code> (filter-by)<!-- -->
+<ul>
+<li class="">Syntax: <code>fby (aggregation;data) fby group</code></li>
+<li class="">E.g instead of<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">resBy: select avgDuration:avg duration by vendor from jan09</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select from jan09 lj resBy where duration &lt; avgDuration</span><br/></div></code></pre></div></div>
+</li>
+<li class="">Use : <code>select max fare from jan09 where duration &lt; (avg;duration) fby vendor</code></li>
+<li class="">E.g. Find the payment type produces the highest average tip when only trips with a fare larger than the average for each vendor is considered<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">res3:select avg tip by payment_type from jan09 where fare > (avg;fare) fby vendor</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select payment_type from res3 where tip = max tip</span><br/></div></code></pre></div></div>
+</li>
+<li class="">E.g. Find which vendor has the largest number of trips when only considering trips shorter than the average duration for each vendor<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">res4:select trips: count i by vendor from jan09 where duration &lt; (avg;duration) fby vendor</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select vendor from res4 where trips = max trips</span><br/></div></code></pre></div></div>
+</li>
+</ul>
+</li>
+<li class="">Update / delete table values and records (e.g. to fix bad data)<!-- -->
+<ul>
+<li class=""><code>jan09: update passengers: 5 from jan09 where passengers > 5</code> (Save changes by reassigning back to jan09)</li>
+<li class=""><code>jan09:update wAvgfare:passengers wavg fare from jan09</code> (<code>wavg</code> takes two lists as input)</li>
+<li class=""><code>jan09:delete from jan09 where duration=00:00:00.000</code></li>
+</ul>
+</li>
+<li class="">Temporal arithmetic<!-- -->
+<ul>
+<li class="">Values with the data type <code>timestamp</code> can be converted into <code>minute</code>, <code>second</code> data types etc.</li>
+<li class=""><code>select pickup_time, pickup_time.second, pickup_time.minute, pickup_time.hh from jan09</code></li>
+<li class=""><code>select total:sum fare + tip by pickup_time.minute from jan09</code> (Total money earned in each minute)<!-- -->
+<ul>
+<li class="">Evaluation of q syntax is <strong>right-to-left</strong>, that is the only rule</li>
+<li class="">Here <code>fare + tip</code> is the input to <code>sum</code></li>
+<li class="">If it were changed to <code>total:sum(fare) + tip</code>, the value of <code>sum(fare)</code> for that minute would be added to every <code>tip</code> value for that minute</li>
+</ul>
+</li>
+<li class="">Bucket values using <code>xbar</code>: <code>select count i by 60 xbar pickup_time.minute from jan09 where date = 2009.01.10</code>
+<ul>
+<li class=""><code>x xbar y</code> returns <code>y</code> rounded down to the nearest multiple of <code>x</code></li>
+<li class="">This groups minutes into 60 unit buckets to produce hours</li>
+</ul>
+</li>
+<li class=""><code>select max tip by 15 xbar pickup_time.minute from jan09 where month = 2009.01m</code> (Find largest tip every 15 minutes in the month of January)<!-- -->
+<ul>
+<li class="">Note the literal syntax for month is <code>YYYY.MMm</code> (append literal <code>m</code>)</li>
+</ul>
+</li>
+<li class=""><code>select max tip by (15 xbar pickup_time.minute), vendor from jan09 where month = 2009.01m</code> (Further split by vendor)<!-- -->
+<ul>
+<li class="">Note the <code>by</code> syntax is <code>select [aggregates] by column1, column2 from table</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">Grouping dates by week<!-- -->
+<ul>
+<li class=""><code>select max maxtemp, min mintemp by 7 xbar date from weather</code>
+<ul>
+<li class="">When using <code>xbar</code> with dates, it groups starting from the first Saturday of that time period of dates (even if the date range doesn't cover that Saturday)</li>
+<li class="">This is because q dates are stored internally as integer counts of days relative to the epoch date <code>2000.01.01</code>, which happens to be a Saturday.</li>
+</ul>
+</li>
+<li class=""><code>xbar</code> calculates <code>x * floor(y / x)</code></li>
+<li class="">To align it to start on Monday, you can do <code>monBar: {-2 + 7 xbar x + 2}</code> (offset by -2, group, then undo the shift)</li>
+<li class="">E.g. <code>select count i by week: -2 + 7 xbar date + 2 from table</code></li>
+</ul>
+</li>
+</ul>
+<!-- -->
+<section data-footnotes=true class=footnotes><h2 class="anchor anchorTargetStickyNavbar_Vzrq sr-only" id=footnote-label>Footnotes<a href=#footnote-label class=hash-link aria-label="Direct link to Footnotes" title="Direct link to Footnotes" translate=no>​</a></h2>
+<ol>
+<li class=anchorTargetStickyNavbar_Vzrq id=user-content-fn-1>
+<p><a href=https://code.kx.com/q4m3/ target=_blank rel="noopener noreferrer" class="">https://code.kx.com/q4m3/</a> <a href=#user-content-fnref-1 data-footnote-backref="" aria-label="Back to reference 1" class=data-footnote-backref>↩</a></p>
+</li>
+</ol>
+</section></div></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href=/snippets/kdbq/kdb><div class=pagination-nav__sublabel>Previous</div><div class=pagination-nav__label>KDB</div></a><a class="pagination-nav__link pagination-nav__link--next" href=/snippets/category/operating-systems><div class=pagination-nav__sublabel>Next</div><div class=pagination-nav__label>Operating Systems</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href=#q-for-mortals class="table-of-contents__link toc-highlight">Q for Mortals</a><ul><li><a href=#basics class="table-of-contents__link toc-highlight">Basics</a><li><a href=#data-types class="table-of-contents__link toc-highlight">Data Types</a><li><a href=#functions class="table-of-contents__link toc-highlight">Functions</a><li><a href=#functions-on-lists class="table-of-contents__link toc-highlight">Functions on Lists</a></ul><li><a href=#qsql class="table-of-contents__link toc-highlight">qSQL</a></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class=footer__title>Docs</div><ul class="footer__items clean-list"><li class=footer__item><a class=footer__link-item href=/snippets/>Home</a></ul></div><div class="theme-layout-footer-column col footer__col"><div class=footer__title>Socials</div><ul class="footer__items clean-list"><li class=footer__item><a href=https://www.linkedin.com/in/michael-y-68b670204/ target=_blank rel="noopener noreferrer" class=footer__link-item>LinkedIn<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://github.com/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>GitHub<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div><div class="theme-layout-footer-column col footer__col"><div class=footer__title>My Profiles</div><ul class="footer__items clean-list"><li class=footer__item><a href=https://codeforces.com/profile/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>Codeforces <svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://open.kattis.com/users/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>Kattis<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://leetcode.com/u/michaelyql/ target=_blank rel="noopener noreferrer" class=footer__link-item>Leetcode<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div></div><div class="footer__bottom text--center"><div class=footer__copyright>Built with Docusaurus</div></div></div></footer></div></body>
