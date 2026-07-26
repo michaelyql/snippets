@@ -48,13 +48,14 @@ The compiler is free to order `x(a)`, `y(b)` and `z(c)` in any order it wants.
 Evaluations are split into two types: *value computations* (the "return value" of the expression), and _side effects_ (read/writes to an object). Value computations include determining the identity of an object (glvalue evaluation) and reading the value assigned to an object (prvalue evaluation).
 
 Two evaluations A and B can be related in three ways: _sequenced before_, _unsequenced_, or _indeterminately sequenced_. 
-- If A is sequenced before B, then A will always complete before B (and vice versa) 
+- If A is sequenced before B, then A will always complete fully before B (and vice versa) 
 - If A and B are unsequenced, they may be performed in any order, and their CPU instructions may overlap (i.e. be interleaved)
 - If A and B are indeterminately sequenced, they may be performed in any order, but their instructions will not overlap (no interleaving)
 
 The cases in which the relationship is specified are:
 - Each _full expression_ is sequenced before the next full expression
-- The value computation of operands to an operator is sequenced before the value computation of the result of the operator
+- The value computation (but not side effects) of operands to an operator is sequenced before the value computation (but not side effects) of the result of the operator 
+    - (See below on how this impacted UB before C++17)
 - Post-increment and post-decrement operator `x++`, `x--`
     - The value computation is sequenced before its side effect
 - Pre-increment and pre-decrement operator `++x`, `--x` 
@@ -78,7 +79,7 @@ The cases in which the relationship is specified are:
 - Function return values
     - The copy-initialization of the return value is sequenced before the destruction of temporaries used in the return value, which is sequenced before the destruction of local variables in scope
 - From C++17:
-    - In a function call expression (i.e. calling the function), the evaluation of the function name is sequenced before every function argument evaluation
+    - In a function call expression (i.e. calling the function), the evaluation of the function name is sequenced before every argument expression and default argument 
     - In a function call (i.e. actually running the function), the initialization of function _parameters_ is indeterminately sequenced w.r.t each other
     - Overloaded operators obey the sequencing rules of the built-in operator
     - In subscript expression `E1[E2]`, `E1` is sequenced before `E2`
@@ -87,7 +88,31 @@ The cases in which the relationship is specified are:
     - In every simple assignment `E1 = E2` and every compound assignment `E1 @= E2`, `E2` is sequenced before `E1`
     - (+ two more rules for direct initialization of aggregate and non-aggregate types)
 
-The following are cases of undefined behaviour. 
+The following are cases of undefined behaviour due to **two side effects** on a memory location being unsequenced:
+
+```cpp
+i = ++i + 2;       // well-defined
+i = i++ + 2;       // undefined behavior until C++17
+f(i = -2, i = -2); // undefined behavior until C++17
+f(++i, ++i);       // undefined behavior until C++17, unspecified after C++17
+i = ++i + i++;     // undefined behavior
+
+void g(int x, int y);
+g(i++, i++);       // C++17 makes this well-defined, but which x and y do you get?
+```
+
+The problem is that the standard did not specify when the side effect of incrementing/decrementing would take place relative to assigning the value to the left hand side operand.
+
+The following are cases of undefined behaviour due to **side effect** on a memory location being unsequenced relative to a **value computation** using that same memory location:
+
+```cpp
+cout << i << i++; // undefined behavior until C++17
+a[i] = i++;       // undefined behavior until C++17
+n = ++i + i;      // undefined behavior
+```
+
+Before C++11, the concept of _sequence point_ was used.
+A sequence point is a specific point in execution where all previous side effects (like updating a variable's value) were guaranteed to be complete. The concept of sequence points was replaced by sequencing  (sequenced before, unsequenced, indeterminately sequenced) in C++11.
 
 ## Operators \& Precedence
 

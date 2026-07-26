@@ -6,6 +6,39 @@ description: Default-init, value-init, copy-init, direct-init, list-init and mor
 
 Initialization provides a variable its initial value at the time of construction.
 
+There are a few types of initialization: 
+- default initialization
+    - `T t;`
+    - `new T`
+- value initialization 
+    - `T()`
+    - `T t{}`
+    - `T{}` 
+    - `new T()`
+    - `new T{}` 
+    - `Class::Class(...) : member() {...}` (initializer list)
+    - `Class::Class(...) : member{} {...}` (initializer list)
+    - `T t();` does not initialize a class (because of most vexing parse). The way to do direct initialization before C++11 is `T t = T()` to value-initialize a temporary and copy-initialize the object, where the copy is optimized away most of the time due to URVO
+- copy initialization
+    - `T t1 = t2;`
+    - `T t1 = { t2 };`
+    - `f(t)` (passing argument by value)
+    - `return t` (returning from function by value)
+    - `throw t;` (throwing by value)
+    - `catch (T t2)` (catching by value)
+    - `T arr[n] = { other-seq }` as part of aggregate initialization 
+- direct initialization 
+    - `T t(arg);`
+    - `T t(arg1, arg2, ...);`
+    - `T t { arg };`
+    - `T(t2);
+    - `T(arg1, arg2, ...)`
+    - `static_cast<T>(t2)`
+    - `new T(args, ...)`
+    - `Class::Class() : member (args, ...) {...}` (initializer list)
+    - `[arg]() {...}` (capture by copy in lambda)
+
+
 ## Default Initialization
 
 Syntax: `T object;` or `new T;`
