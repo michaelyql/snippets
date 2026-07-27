@@ -29,13 +29,18 @@ description: ""
     - Suffix with `b`
 - Symbols 
     - Starts with a backtick `  
-- Date
-    - `2000.01.01` (this is 0)
-    - A date is an integer - the number of days since the millenium, positive for post and negative for pre
-- Time span
-    - A (long) integer count of the number of nanoseconds since midnight
-    - `12:00:00.000000000` (noon)
-    - Date and timespan values can participate in arithmetic, e.g. addition, test for equality
+- Temporal
+    - Date
+        - `2000.01.01` (this is 0)
+        - A date is an integer - the number of days since the millenium, positive for post and negative for pre
+        - It only has year, month and day precision
+    - Timespan
+        - A (long) integer count of the number of nanoseconds since midnight
+        - `12:00:00.000000000` (noon)
+        - `HH:MM:SS.nanoseconds`
+        - Date and timespan values can participate in arithmetic, e.g. addition, test for equality
+    - Timestamp
+        - Literal syntax: `dateDtimespan` e.g. `2000.01.01D00:00:00.000000000`
 - Lists
     - Enclose a list with `()` and separate items using semicolons `;`
     - `(1; 2; 3.4)`
@@ -82,6 +87,7 @@ description: ""
     q)L[-1] / just prints 0
     q)L[4]  / just prints 0
     ```
+- Data types have an integer representing them and are used for casts. E.g. list has data type 0, int has data type 6, table is 98
 
 ### Functions
 - Q is not purely functional, functions can have side effects
@@ -91,7 +97,7 @@ description: ""
     - E.g. `{[x] x*x}`
     - `{[x;y] a:x*x; b:y*y; a+b}` returns sum of squares
 - To _apply_ a function to arguments, follow it (or its name, if it has been assigned to a variable) by a list of values enclosed in square brackets and separated by semicolons
-    - E.g. `{[x] x*x}[2]`
+    - E.g. `{[x] x*x}[2]`, `{[a,b] a+b}[1; 2]`
     - The argument expression is evaluated first, followed by expressions in the body of the function
     - Substitution occurs before the function starts. The arguments bind to the parameters first before the function body is executed
     - Variables created in the function are _local_
@@ -102,6 +108,11 @@ description: ""
 - Functions are call by value
     - Q passes values (immutable references to vectors under q's copy-on-write model) 
     - Modifying an argument inside a function creates a local variable 
+    - The only place where code is not evaluated once up front is within control flow constructs like `$[cond; then_expr; else_expr]`
+    ``` 
+    q)f:{[x] $[x > 0; 100 % x; 0]}
+    ```
+    - In `$[cond; A; B]`, `cond` is evaluated first. If `cond` is true, only `A` is evaluated and `B` is never touched. Else, only `B` is evaluated.
 - To mutate a global variable or table in-place (without duplicating memory), you pass the symbol name of the variable
     ```q 
     q)updateGlobal:{[varName] varName set (get varName) + 10}
@@ -110,11 +121,6 @@ description: ""
     q)myVar
     20
     ```
-- The only place where code is not evaluated once up front is within control flow constructs like `$[cond; then_expr; else_expr]`
-    ``` 
-    q)f:{[x] $[x > 0; 100 % x; 0]}
-    ```
-    - In `$[cond; A; B]`, `cond` is evaluated first. If `cond` is true, only `A` is evaluated and `B` is never touched. Else, only `B` is evaluated.
 
 ### Functions on Lists
     ```
@@ -140,6 +146,9 @@ description: ""
     q)100<99 100 101
     001b
     ```
+    - `enlist` makes a 1-item list
+        - E.g. `enlist 12:00`
+        - Useful for functions which expect lists, not atoms, so you have to create a one-item list
 - Accumulators / iterators
     - Apply a function / operator successively on a list based on an initial value (a fold in functional programming)
     ```
@@ -260,6 +269,9 @@ description: ""
     0 1 4 4 4 4
     0 0 1 3 3 3
     0 0 0 1 2 2
+
+    / Here deltas computes consecutive differences between lists, 
+    / which calculates pairwise differences (hence vertical direction)
     ```
 - `Each` iterator
     ```
@@ -273,34 +285,154 @@ description: ""
     0 1 3 0 0 0
     0 0 1 2 0 0
     0 0 0 1 1 0
+
+    / Here deltas is applied on each of the lists individually (horizontally)
     ```
 
+### Dictionaries, Tables
+- Dictionary is a key-value pair store. The keys are presumably unique (though unenforced). Dictionary is a first class value and can be assigned to variables.
+- Syntax: `<key list>!<value list>`
+    ```
+    q)d:`a`b`c!10 20 30
+    a| 10
+    b| 20
+    c| 30
+
+    q)d[`a] / Retrieves value
+    ```
+- Column dictionary has keys which are symbols, and values which are lists themselves of uniform length
+    ```
+    q)d:`c1`c2!(10 20 30; 1.1 2.2 3.3)
+    c1| 10 20 30
+    c2| 1.1 2.2 3.3
+
+    q)d[`c1] / Retrieves a column
+    10 20 30
+
+    q)d[`c1][0] / The column is a list which itself can be indexed
+    10
+
+    q)d[`c1; 0] / Indexing at depth syntax
+    10
+
+    q)d[`c1;] / Index is elided, yields a column
+    10 20 30
+
+    q)d[; 0] / Returns a section dictionary
+    c1| 10
+    c2| 1.1
+    ```
+- The `flip` operator ("transpose") reverses the order of indexing. Columns are accessed in the second slot, and section dictionaries are retrieved from the first slot.
+    - The data is still stored as a column dictionary, only the indexing slots are affected
+    ```
+    q)t:flip `c1`c2!(10 20 30; 1.1 2.2 3.3)
+    q)t[0; `c1]
+    10
+
+    q)t[0; `c1]
+    10
+
+    q)t[1; `c1]
+    20
+
+    q)t[2; `c1]
+    30
+
+    q)t[0; `c2]
+    1.1
+
+    q)t[; `c1]
+    10 20 30
+
+    q)t[0;]
+    c1| 10
+    c2| 1.1
+    ```
+- A flipped column dictionary is a _table_. A table is a first-class entity.
+    ```
+    q)flip `c1`c2!(10 20 30; 1.1 2.2 3.3)
+    c1 c2
+    ------
+    10 1.1
+    20 2.2
+    30 3.3
+
+    q)t[0]
+    c1| 10
+    c2| 1.1
+
+    q)([] c1:10 20 30; c2:1.1 2.2 3.3)
+    c1 c2
+    ------
+    10 1.1
+    20 2.2
+    30 3.3
+    ```
+    - The section dictionaries are _records_ of the table. They correspond to the rows.
+    - A table can also be thought of as a list of record dictionaries.
+    - The notation for tables is `([] key1:list; key2:list...)`
+        - The square brackets are necessary to differentiate a table from a list
+        - `:` is not an assignment, it is a syntactic marker that separates the name from column values 
+        - The column names in table definition are not symbols, though they are converted to symbols under the covers 
+
+### Keywords 
+- `wavg`: Weighted average
+- `xbar`
+
+### Operators 
 
 ## qSQL
 
-- Data Exploration
-    - View all tables: `tables[]` 
-    - Inspect a table:`<table>` / `<table>[]` / `show <table>;`
-        - `show` can also be used to display any value in general
-    - Count number of records: `count <table>`
-    - Get metadata information about a table: `meta <table>`
-        - In terms of column name `c`, column type `t`, foreign keys `f` and attributes `a`
-        - Attributes e.g. `s` (sorted) - tells KDB that the data is already sorted, faster queries
-    - `select from <table>` (Select all rows and all columns)
-    - `select <col1>, <col2> from <table>`
-    - `select <col1>, <col2> from <table> where <cond1>, <cond2>...`
-        - The order of conditions matter for performance
-    - `\ts <expr>` (benchmark execution time in ms and memory usage in bytes)
-        - `\ts:n <expr>` to run $n$ times
-        - `.Q.ts[func; args]` (programmatically)
+### Data Exploration
+- View all tables: `tables[]` 
+- Inspect a table:`<table>` / `<table>[]` / `show <table>;`
+    - `show` can also be used to display any value in general
+- Count number of records: `count <table>`
+- Get metadata information about a table: `meta <table>`
+    - In terms of column name `c`, column type `t`, foreign keys `f` and attributes `a`
+    - Attributes e.g. `s` (sorted) - tells KDB that the data is already sorted, faster queries
+- `select from <table>` (Select all rows and all columns)
+- `select <col1>, <col2> from <table>`
+- `select <col1>, <col2> from <table> where <cond1>, <cond2>...`
+    - The order of conditions matter for performance
+- `\ts <expr>` (benchmark execution time in ms and memory usage in bytes)
+    - `\ts:n <expr>` to run $n$ times
+    - `.Q.ts[func; args]` (programmatically)
 - `min/max/sum/avg/count` : Aggregation on a column
     - E.g. `select date from trips where date = min date`
-- `select a, b, c: a + b from <table>` (calculated column)
+    - `select a, b, c: a + b from <table>` (calculated column)
 - Virtual column: `select count i from <table> where ...`
     - `i` maps to record index in the table
+
+### Update and delete 
+- For when you need to fix bad date. Examples:
+    - `jan09: update passengers: 5 from jan09 where passengers > 5` (Save changes by reassigning back to jan09)
+    - `jan09:update wAvgfare:passengers wavg fare from jan09` (`wavg` takes two lists as input)
+    - `jan09:delete from jan09 where duration=00:00:00.000` 
+
+### Temporal arithmetic
+- Values with the data type `timestamp` can be converted into `minute`, `second` data types etc.
+- `select pickup_time, pickup_time.second, pickup_time.minute, pickup_time.hh from jan09`
+- `select total:sum fare + tip by pickup_time.minute from jan09` (Total money earned in each minute)
+    - Evaluation of q syntax is **right-to-left**, that is the only rule
+    - Here `fare + tip` is the input to `sum`
+    - If it were changed to `total:sum(fare) + tip`, the value of `sum(fare)` for that minute would be added to every `tip` value for that minute
+- Bucket values using `xbar`: `select count i by 60 xbar pickup_time.minute from jan09 where date = 2009.01.10`
+    - `x xbar y` returns `y` rounded down to the nearest multiple of `x`
+    - This groups minutes into 60 unit buckets to produce hours
+- `select max tip by 15 xbar pickup_time.minute from jan09 where month = 2009.01m` (Find largest tip every 15 minutes in the month of January)
+    - Note the literal syntax for month is `YYYY.MMm` (append literal `m`)
+- `select max tip by (15 xbar pickup_time.minute), vendor from jan09 where month = 2009.01m` (Further split by vendor)
+
+### Grouping
 - Grouping using `by`
-    - `select <col> by <col> from <table>`
-    - Examples: `select maxTip: max tip, avgTip: avg tip by vendor from jan09`, `select sum fare, sum tip by vendor from jan 09`, `select count i by date from jan09`
+    - `select [aggregates] by [columns] from <table>`
+    - Examples:
+        - `select maxTip: max tip, avgTip: avg tip by vendor from jan09`
+        - `select sum fare, sum tip by vendor from jan 09`
+        - `select count i by date from jan09`
+    - `by` transforms individual column atoms into grouped lists (vecors), which _changes scalar types into vector types_ (e.g. `p` into `P`)
+        - To keep it a scalar, you have to apply an aggregating function to the column in the `select` clause
 - Avoiding nested queries with `fby` (filter-by)
     - Syntax: `fby (aggregation;data) fby group`
     - E.g instead of 
@@ -319,30 +451,101 @@ description: ""
         res4:select trips: count i by vendor from jan09 where duration < (avg;duration) fby vendor
         select vendor from res4 where trips = max trips
         ```
-- Update / delete table values and records (e.g. to fix bad data)
-    - `jan09: update passengers: 5 from jan09 where passengers > 5` (Save changes by reassigning back to jan09)
-    - `jan09:update wAvgfare:passengers wavg fare from jan09` (`wavg` takes two lists as input)
-    - `jan09:delete from jan09 where duration=00:00:00.000` 
-- Temporal arithmetic
-    - Values with the data type `timestamp` can be converted into `minute`, `second` data types etc.
-    - `select pickup_time, pickup_time.second, pickup_time.minute, pickup_time.hh from jan09`
-    - `select total:sum fare + tip by pickup_time.minute from jan09` (Total money earned in each minute)
-        - Evaluation of q syntax is **right-to-left**, that is the only rule
-        - Here `fare + tip` is the input to `sum`
-        - If it were changed to `total:sum(fare) + tip`, the value of `sum(fare)` for that minute would be added to every `tip` value for that minute
-    - Bucket values using `xbar`: `select count i by 60 xbar pickup_time.minute from jan09 where date = 2009.01.10`
-        - `x xbar y` returns `y` rounded down to the nearest multiple of `x`
-        - This groups minutes into 60 unit buckets to produce hours
-    - `select max tip by 15 xbar pickup_time.minute from jan09 where month = 2009.01m` (Find largest tip every 15 minutes in the month of January)
-        - Note the literal syntax for month is `YYYY.MMm` (append literal `m`)
-    - `select max tip by (15 xbar pickup_time.minute), vendor from jan09 where month = 2009.01m` (Further split by vendor)
-        - Note the `by` syntax is `select [aggregates] by column1, column2 from table`
 - Grouping dates by week
     - `select max maxtemp, min mintemp by 7 xbar date from weather`
         - When using `xbar` with dates, it groups starting from the first Saturday of that time period of dates (even if the date range doesn't cover that Saturday)
         - This is because q dates are stored internally as integer counts of days relative to the epoch date `2000.01.01`, which happens to be a Saturday.
-    - `xbar` calculates `x * floor(y / x)`
+    - `xbar` calculates `x * floor(y / x)` for _each_ item in the list
     - To align it to start on Monday, you can do `monBar: {-2 + 7 xbar x + 2}` (offset by -2, group, then undo the shift)
     - E.g. `select count i by week: -2 + 7 xbar date + 2 from table`
+- Grouping by computed column
+    - `select count c by s:a<=40 from t`
+- Sorting table by column names
+    - `x xasc y / xasc[x;y]`
+    - Sorts `y` in ascending order by `x`
+    - E.g. `sym`date xasc t`
+### Joins
+- There are two types of joins, Left Join and As-of Join
+- Left Join
+    - Create keyed tables (required for joins) using `xkey` or `!` (bang)
+    - Keyed tables have an extra vertical bar `|` between the keyed columns and unkeyed columns
+    ```
+    `date xkey weather / keying on date
+    1!weather          / keying on first column
+    3!weather          / key on N number of columns 
+    0!weather          / unkey a keyed table
+    ```
+        - Note: `!` only excepts integers. The syntax is `i!t` / `![i;t]` where `i` is a positive integer and `t` is a simple table
+        - To unkey using `xkey` pass in an empty list `() xkey t`
+    - Keying creates a new table in memory so you have to assign the result to a variable. If you want to update the table globally, pass the table symbol name to `xkey`
+        ```
+        `sym xkey `t
+        ```
+    - The `lj` operator requires that at least the right hand table is keyed
+        - The left hand table can be keyed or unkeyed
+        - The format of the left hand table will dictate the format of the result table
+    - You can also use the `by` clause to key the table
+    ```
+    jan09W:jan09C lj `date xkey select date, precip from weather 
+    jan09W
+
+    jan09W:jan09C lj select avg precip by date from weather / using the by clause to key
+    ```
+    - Left join `t1 lj t2` uses the primary keys of the right hand table to perform a hash lookup against the left hand table
+        - For each row in `t1`, it is hashed and looked up in the `t2`'s key hash table, then the non-key columns are appended 
+        - If a row in `t1` has a key that doesn't exist in the hash table, the appended columns are filled with standard null values
+        - If `t2` is not keyed, q throws a `type` error
+        - `t2` guarantees unique keys, so `lj` will never duplicate rows in `t1`. Every row in `t1` matches _at most one row_ in `t2`
+        - If both tables contain a column with the same name that is not part of `t2`'s key, the values from `t2` overwrites `t1`
+- As-of Join
+    - As-of joins are time series joins
+        - We can ask things like what is the latest pick up time for each vendor, as of a particular time
+    - Syntax: `aj[c; t1; t2]`  
+        - `t2` must be sorted by time within keys
+        - `t2` must be a simple table
+        - `c` is a symbol vector of $n$ column names, common to `t1` and `t2`, and of matching type
+            - The types _must_ match; if one column is of type `p` (timestamp vector) and the other is of type `P` (nested list of timestamp vectors) `aj` will give an error
+        - `cn` (the last common column) must be of a sortable type (typically time)
+    - Example:
+    ```
+    q)t:select passengers, event_time:pickup_time, vendor, pickup_time from jan09
+    q)aj[`passengers`event_time; timetab; t] 
+    ```
+    - Notes
+        - `aj` join always selects the last record before the specified time.
+        - `t1` provides the target lookup timestamps, `t2` provides the historical timeline
+        - `aj` uses `t2` to find the most recent row where `t2.time <= t1.time`
+        - `aj` returns a left-join of `t1` and `t2`
+        - There is no requirement for any of the join columns to be keys, but the join is faster on keys.
+        - `aj` is a multithreaded primitive.
+    - Alternatives 
+        - `ajf` (as-of join forward) provides forward-looking join for the first record in `t2` where `t2.time >= t1.time`
+
+### Generating random data
+- The `x ? y` operator generates pseudo-random data (`x` copies of values between 0 up to but not including `y`)
+```
+q)10?20
+4 13 9 2 7 0 17 14 9 18
+
+q)10?100.0
+39.27524 51.70911 51.59796 40.66642 17.80839 30.17723 78.5033 53.47096 71.11716 41.1597
+
+q)10?`aapl`ibm                   / 10 random selections from a list
+`aapl`ibm`ibm`aapl`aapl`ibm`aapl`ibm`aapl`aapl
+
+q)dts:2015.01.01+1000000?31      / 1,000,000 random dates in Jan 2015
+
+q)tms:1000000?24:00:00.000000000 / 1,000,000 random timespans
+
+q)syms:1000000?`aapl`goog`ibm    / 1,000,000 random tickers
+
+q)vols:10*1+1000000?1000         / 1,000,000 random volumes with a lot size of 10
+
+q)pxs:90.0+(1000000?2001)%100    / 1,000,000 prices in cents uniformly distributed within 10% of 100.0
+
+q)trades:([] dt:dts; tm:tms; sym:syms; vol:vols; px:pxs) 
+/ collect into a table of trades
+```
+
 
 [^1]: https://code.kx.com/q4m3/
