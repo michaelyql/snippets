@@ -66,6 +66,10 @@ description: ""
     q)1 2 3, 4 5
     1 2 3 4 5
     ```
+    - `,` can also extend lists 
+    ```
+    list,:10
+    ```
     - Extract items using Take `#`. Positive means from the front, negative means fom the back. 
     ```q 
     q)2#til 10
@@ -85,9 +89,103 @@ description: ""
     q)L:1 2 3
     q)L[0]
     q)L[-1] / just prints 0
+    
     q)L[4]  / just prints 0
+
+    q)L[0 1 2] / prints 1 2 3
+    
+    q)(5?1+til 10)[1 3 5]
+    10 8 0N
+
+    q)(5?1+til 10)[1 3 4]
+    10 2 9
+
+    q)fares[10+til 10] / extract 11th to 20th element
+
+    q)sortedFares[`long$(count sortedFares) % 2] / Extract middle element
     ```
-- Data types have an integer representing them and are used for casts. E.g. list has data type 0, int has data type 6, table is 98
+    - Simple lists (list with all elements of the same data type) have a type as a positive integer less than 20
+    - General lists (with mixed data types) always have a `type` 0
+    - A list can be empty e.g. if we queried a value that doens't exist in a column
+    - In a simple list, if the index used is too high, a null value of that type is returned
+    - Check for nulls
+        ```
+        q)null list 
+        001010101....
+
+        q)any null list
+        1b
+
+        q)where null list
+        0 2 4 6
+        ```
+    - Amendment `@`
+        ```
+        q)@[sampleFares;(2*til 5);:;99f]  // apply assignment operator : to the indices, assigning them 99f
+        
+        q)@[sampleFares;(2*til 5);+;99f] / add 99f to the indices 
+
+        q)test:@[fares;(2*til 4);:;0Nf]
+
+        q)@[`fares;(2*til 4);:;0Nf]
+
+        q)@[`fares;where null fares; :; avg fares] / amending null values to the average value
+        ```
+        - `@` makes a copy of the list. To persist changes, assign the result to a variable, or pass the list in by its symbol name with a backtick
+
+- Data types have an integer representing them and are used for casts. E.g. general list has data type 0, int has data type 6, table is 98
+- Cast `$`
+    ```
+    `float$1 2 //using it's symbol name 
+    "f"$1 2  //using it's character letter
+    9h$1 2   //using it's short value
+    ```
+    - You can create untyped empty lists or typed empty lists
+    ```
+    () //general list 
+    `long$() //list of type long
+    ```
+
+
+### Basic Data Types - Atoms
+- Integer (short, int, long)
+- Float (float, real, floating point display)
+- Binary (boolean, byte, GUID) 
+- Text (char, symbol)
+- Temporal (date, time, datetime)
+- Infinities and null
+
+
+### Lists
+- List definition and count
+- Simple lists 
+- Empty and singleton lists 
+- Indexing
+- Combining lists
+- Lists as maps
+- Nesting and depth
+- Indexing at depth
+- Iterated Indexing
+- Indexing with lists
+- Elided Indices
+- Rectangular and matrix-like lists
+- Useful operations - til, distinct, where, group
+
+### Operators 
+- Notation 
+- Operator Precedence
+- Match `~`
+- Equality and Relational Operators 
+- Basic Arithmetic: +, -, *, %
+- Greater | and Lesser &
+- Amend :
+- Exponential and Log 
+- Other primitives 
+- Operations on Temporal values 
+- Operations on infinity
+- Alias
+
+
 
 ### Functions
 - Q is not purely functional, functions can have side effects
@@ -149,6 +247,7 @@ description: ""
     - `enlist` makes a 1-item list
         - E.g. `enlist 12:00`
         - Useful for functions which expect lists, not atoms, so you have to create a one-item list
+        - The other way is `(),<item>` 
 - Accumulators / iterators
     - Apply a function / operator successively on a list based on an initial value (a fold in functional programming)
     ```
@@ -255,7 +354,7 @@ description: ""
     q)11&sums[buys]
     2 3 7 10 11 11f
     ```
-    - Each Left (`|:`) applies a binary function and a right operand to each item of a list on the left.
+    - Each Left (`\:`) applies a binary function and a right operand to each item of a list on the left.
     ```
     q)sums[sells] &\: sums[buys]
     2 2 2 2  2  2
@@ -288,6 +387,59 @@ description: ""
 
     / Here deltas is applied on each of the lists individually (horizontally)
     ```
+- `sublist` selects a sub list of a list. The syntax is `x sublist y` or `sublist[x;y]` where `x` is an integer atom or pair and `y` is a list
+    ```
+    q)p:2 3 5 7 11
+    q)3 sublist p                           / 3 from the front
+    2 3 5
+    q)10 sublist p                          / only available values
+    2 3 5 7 11
+    q)2 sublist `a`b`c!(1 2 3;"xyz";2 3 5)  / 2 keys from a dictionary
+    a| 1 2 3
+    b| x y z
+    q)-3 sublist sp                         / last 3 rows of a table
+    s p qty
+    -------
+    3 1 200
+    3 3 300
+    0 4 400
+    q)1 2 sublist p  / 2 items starting from position 1
+    3 5
+    ```
+    - If `x` is an integer atom, if it is positive it takes from the front of the list, else if it is negative it takes from the back 
+    - If `x` is a pair, it returns `x[1]` items starting from `x[0]`
+    - `sublist` caps the result by the number of available items. This is different from Take `#` which loops back to the start and takes exactly the number of items you specify
+    - `first <list>` does the same thing as `1 sublist <list>, but `first` returns an atom, while `sublist` returns a one-item list 
+- Sort lists using `asc` 
+    - E.g. `sortedList: asc list`
+
+### Generating random data
+- The `x ? y` operator generates pseudo-random data (`x` copies of values between 0 up to but not including `y`)
+```
+q)10?20
+4 13 9 2 7 0 17 14 9 18
+
+q)10?100.0
+39.27524 51.70911 51.59796 40.66642 17.80839 30.17723 78.5033 53.47096 71.11716 41.1597
+
+q)10?`aapl`ibm                   / 10 random selections from a list
+`aapl`ibm`ibm`aapl`aapl`ibm`aapl`ibm`aapl`aapl
+
+q)dts:2015.01.01+1000000?31      / 1,000,000 random dates in Jan 2015
+
+q)tms:1000000?24:00:00.000000000 / 1,000,000 random timespans
+
+q)syms:1000000?`aapl`goog`ibm    / 1,000,000 random tickers
+
+q)vols:10*1+1000000?1000         / 1,000,000 random volumes with a lot size of 10
+
+q)pxs:90.0+(1000000?2001)%100    / 1,000,000 prices in cents uniformly distributed within 10% of 100.0
+
+q)trades:([] dt:dts; tm:tms; sym:syms; vol:vols; px:pxs) 
+/ collect into a table of trades
+```
+
+
 
 ### Dictionaries, Tables
 - Dictionary is a key-value pair store. The keys are presumably unique (though unenforced). Dictionary is a first class value and can be assigned to variables.
@@ -374,12 +526,27 @@ description: ""
         - The square brackets are necessary to differentiate a table from a list
         - `:` is not an assignment, it is a syntactic marker that separates the name from column values 
         - The column names in table definition are not symbols, though they are converted to symbols under the covers 
+- Columns of a table can be indexed using the column name 
+    ```
+    t`colName
+    ```
+- Adding dictionaries
+- Catenation (join)
 
 ### Keywords 
 - `wavg`: Weighted average
 - `xbar`
 
 ### Operators 
+
+
+rewrite 
+- lists
+- operators
+- dictionaries and tables 
+- functions 
+- i/o, files, parsing, ipc with server
+
 
 ## qSQL
 
@@ -520,32 +687,6 @@ description: ""
         - `aj` is a multithreaded primitive.
     - Alternatives 
         - `ajf` (as-of join forward) provides forward-looking join for the first record in `t2` where `t2.time >= t1.time`
-
-### Generating random data
-- The `x ? y` operator generates pseudo-random data (`x` copies of values between 0 up to but not including `y`)
-```
-q)10?20
-4 13 9 2 7 0 17 14 9 18
-
-q)10?100.0
-39.27524 51.70911 51.59796 40.66642 17.80839 30.17723 78.5033 53.47096 71.11716 41.1597
-
-q)10?`aapl`ibm                   / 10 random selections from a list
-`aapl`ibm`ibm`aapl`aapl`ibm`aapl`ibm`aapl`aapl
-
-q)dts:2015.01.01+1000000?31      / 1,000,000 random dates in Jan 2015
-
-q)tms:1000000?24:00:00.000000000 / 1,000,000 random timespans
-
-q)syms:1000000?`aapl`goog`ibm    / 1,000,000 random tickers
-
-q)vols:10*1+1000000?1000         / 1,000,000 random volumes with a lot size of 10
-
-q)pxs:90.0+(1000000?2001)%100    / 1,000,000 prices in cents uniformly distributed within 10% of 100.0
-
-q)trades:([] dt:dts; tm:tms; sym:syms; vol:vols; px:pxs) 
-/ collect into a table of trades
-```
 
 
 [^1]: https://code.kx.com/q4m3/

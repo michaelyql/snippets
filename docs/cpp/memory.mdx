@@ -1,8 +1,95 @@
 
 # Memory
 
-## Memory Allocation 
+## Low-Level Basic Memory Management
 
-- `malloc`
+### `malloc`
+- Syntax: `void* malloc(std::size_t size)` 
+- If allocation succeeds, returns a pointer to the lowest (first) byte in the allocated memory block that is suitably aligned for any scalar type 
+- If `size` is zero, the behaviour is implementation defined (null pointer may be returned, or some non-null pointer that may not be used to access storage but has to be passed to `std::free`)
+### `new`
+- Allocates storage and attempts to construct and initialize either a single unnamed object, or an unnamed array of objects in the allocated storage
+- Returns a prvalue pointer to the constructed object, or if an array of objects was constructed, a pointer to the initial element of the array
+- Syntax: 
+    - (1) `new (type) initializer` 
+    - (2) `new type initializer` 
+    - (3) `new (placement-args) (type) initializer`  
+    - (4) `new (placement-args) type initializer`
+    - Syntax (1) or (3) is required if `type` includes parentheses
+    ```cpp
+    new int(*[10])();    // error: parsed as (new int) (*[10])()
+    new (int (*[10])()); // ok, allocate array of 10 pointers to functions
+    ```
+    - If `type` is an array type, all other dimensions other than the first must be specified as positive integral constant expressions
+    - The first dimension _may_ be an expression of integral type, enumeration type, or class type with a single non-explicit conversion function to integral or enum type (before C++14) / any expression convertible to `std::size_t` (since C++14), **only when using un-parenthesized syntax** (2) and (4)
+    ```cpp
+    int n = 42;
+    double a[n][5]; // error
+    auto p1 = new doule[n][5];    // ok
+    auto p2 = new double[5][n];   // error, only first dimension may be non-constant
+    auto p3 = new (double[n][5]); // error, syntax (1) cannot be used for dynamic arrays
+    ```
+    - The behaviour is undefined if the first dimension is negative
+- Type is parsed greedily; it will take every token that can be part of a declarator
+```cpp
+new int + 1; // ok
+new int * 1; // error, parsed as (new int*) (1)
+```
+- `new` can be used with `auto` and class template deduction (there are some extra rules where the initializer is not optional)
+- The objects created by `new` expressions (objects with dynamic storage duration) persist until the pointer returned by the expression is used in a matching _delete-expression_
+    - If the original value of the pointer is lost, the object becomes unreachable and cannot be deallocated, leading to a _memory leak_
+    ```cpp
+    int* p = new int(7);
+    p = nullptr; // memory leak
+
+    void f() {
+        int* p = new int(7);
+        // memory leak
+    }
+
+    void f() {
+        int* p = new int(7);
+        g(); // may throw 
+        delete p; // okay if no exception
+    } // memory leak is g() throws
+    ```
+    - To simplify management of dynamically allocated objects, the result of `new` is often stored in a **smart pointer** (`std::unique_ptr` / `std::shared_ptr`). The pointers guarantee that the delete expression is executed
+- The `new` _expression_ cannot be overloaded, but you can overload the _function_ `operator new` and `operator new[]` (as well as `operator free` and `operator free[]`)
+    - C++ first invokes `operator new` to request raw bytes, then triggers the constructor inside the allocated memory block
+    - You can implement custom memory allocation at _class specific_ scope_ (only affects a single class and its derivatives), or _global_ scope (replaces allocation logic for the _entire_ application)
+    - Whenever you overload `operator new` in a class, always pair it with a matching `operator delete`
+    - Overloading at the global namespace affects how _every_ default `new` allocation acts. This is common for building custom diagnostic loggers, or tracking application-wide leaks
+    - You can append _custom arguments_ to the allocation function i.e. `void* operator new(std::size_t size, (params...))`. Note there must also be a matching delete with the same parameters. This follows the same mechanism as _placement new_
+    ```cpp
+    class A {
+        static void* operator new(std::size_t, int i) {...}
+        static void operator delete(void* ptr, int i) {...} 
+        static void operator delete(void* ptr) {...}
+    };
+    A* a = new (10) A();
+    ```
+    - The matching `operator delete` with placement arguments is only called if `operator new` with those arguments successfully allocated memory **and** the constructor of `A` throws an exception. Otherwise, only the normal `operator delete` is called.
+    - Conceptually, the compiler generates something like 
+    ```
+    void* mem = A::operator new(sizeof(A), 10);
+    try {
+        new (mem) A;
+    } catch (...) {
+        A::operator delete(mem, 10);
+        throw;
+    }
+    ```
+    - The extra placement argument is only used during allocation, and potentially during cleanup if construction fails. 
+
+## `malloc/free` vs `new/delete`
+- `malloc` only allocates memory; it does not initialize or construct the objects. You have to manually construct and initialize the objects 
+    - You can use `memset` or `calloc` to zero initialize the allocated memory
+    - In C++, you can use placement new 
+    - Or you can use `std::make_unique` to safely allocate heap memory and wrap it in a single-owner smart pointer
+- `new` allocates memory and calls the provided constructor 
+
+## Smart Pointers
+
+## `std::allocator` 
 
 ## Custom Memory Allocator

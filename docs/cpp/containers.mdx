@@ -1,0 +1,56 @@
+
+# Containers
+
+## `std::array`
+
+- In modern C++, always prefer `std::array` over C-style array as it offers standard container features and safety with zero performance overhead
+    - Both allocate memory sequentially on the stack (or wherever declared), but `std::array` wraps the raw array inside a class struct to fix legacy C-style bugs
+    - C-style arrays suffer from pointer decay - every time a raw array is passed to a function, it automatically degrades into a pointer to its first element. You lose information of the array's size, forcing you to pass a secondary size parameter
+    - `std::array` does not decay into a pointer, and it can be safely returned from functions or passed into functions by value or reference 
+    - It still offers standard `arr[i]` indexing for raw speed, but you can use `arr.at(i)` which throws an exception for out-of-bounds access
+- Usage:
+    ```cpp
+    // Modern C++ declaration: std::array<Type, Size>
+    std::array<int, 5> modernArray = {5, 3, 1, 4, 2};
+
+    // It knows its own size
+    std::cout << "Elements: " << modernArray.size() << "\n";
+
+    // Easily sort using STL algorithms
+    std::sort(modernArray.begin(), modernArray.end());
+
+    // Safe bounds checking
+    try {
+        int value = modernArray.at(10); // Throws out-of-range exception
+    } catch (const std::out_of_range& e) {
+        std::cerr << "Safe catch: " << e.what() << "\n";
+    }
+    ```
+- Modern usage: can use as fixed-size buffers as an alternative to C-style array buffers
+
+## `std::vector`
+
+- Interesting functions:
+    - `reserve(size_t new_cap)`
+        - If new capacity is greater than current capacity, new storage is allocated, and all iterators and references are invalidated
+        - After reserving enough space, insertions will not cause reallocation unless the size of the vector is greater than `capacity()`
+        - Can throw `std::length_error` if new capacity > max size, or if memory allocation fails e.g. `std::bad_alloc`
+    - `shrink_to_fit()`
+        - Non-binding request to remove the unused memory, reducing `capacity()` to `size()`
+        - If reallocation occurs, all iterators and references are invalidated
+- On reallocation, all elements are copied over to the new memory location
+- Vector has a specialization `vector<bool>` which is a space-efficient dynamic bitset (compared to fixed size `std::bitset`)
+
+## `std::deque`
+
+- Insertions to either end never invalidate iterators or references
+- Elements are not stored contiguously; deque is split into chunks of fixed-sized array with additional bookkeeping
+    - Indexed access performs two pointer dereferences, compared to vector which only performs one
+- Expansion of deque is typically cheaper than vector as it does not involve copying all elements to the new memory location
+    - But a deque has larger minimal memory cost e.g. holding one element requires allocating the entire fixed-size array
+
+## Iterator Invalidation
+
+Read only methods never invalidate iterators or references. Insertion/erasure may invalidate certain iterators/references, so you have to check and make sure they are still valid to use. 
+
+## Non-owning Views 

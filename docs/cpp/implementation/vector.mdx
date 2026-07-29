@@ -1,1 +1,81 @@
 # Vector
+
+```cpp showLineNumbers title="vector.cpp"
+template <typename Element>
+class vector {
+private: 
+    using T = Element;
+public:
+    void push_back(Element element) {
+        if (size_ + 1 >= capacity_) { 
+            // expand by three times
+            capacity_ *= 3; 
+            
+            // allocate new memory 
+            T* new_arr_ = static_cast<T*>(
+                malloc(std::max(static_cast<size_t>(1), capacity_) * sizeof(T))
+            );
+
+            // copy elements over
+            for (size_t i = 0; i < size_; i++) {
+                // Use placement new to construct directly in new_arr_
+                new (new_arr_ + i) T(std::move(arr_[i])); 
+
+                // you can't directly set new_arr_[i] = std::move(arr_[i]) 
+                // because it doesn't have any objects constructed in place yet (UB)
+            }
+
+            // free old memory
+            free(arr_);
+
+            // point to new memory 
+            arr_ = new_arr_;
+        }
+        arr_[size_] = element;
+        size_++;
+    }
+    const Element& at(std::size_t index) const {
+        if (index >= size_) {
+            throw std::out_of_range("index out of bounds");
+        }
+        return arr_[index];
+    }
+    std::size_t get_size() const {
+        return size_;
+    }
+    std::size_t get_capacity() const {
+        return capacity_;
+    }
+    void shrink_to_fit() {
+        if (capacity_ > size_) {
+            capacity_ = size_;
+        }
+    }
+    void pop_back() {
+        arr_[size_ - 1].~T();
+        size_--;
+    }
+    vector() {
+        arr_ = static_cast<T*>(malloc(sizeof(T)));
+    }
+    ~vector() {
+        free(arr_);
+    }
+private:
+    // Data
+
+    std::size_t size_ = 0;
+    std::size_t capacity_ = 1;
+
+    T* arr_;
+};
+```
+- Extensions
+    - Implement `clear()`
+        - According to the standard, `clear()` erases all elements from the container, changing `size()` to 0. Iterators and references are invalidated. `capacity()` remains unchanged
+        - Iterate through all elements currently in the vector and manually call their destructor, then update `size_` to 0.
+        - It can be called in `~vector()` just before memory is freed
+    - Exception safety level of `push_back`
+        - `malloc` does not throw but can fail by returning `nullptr`; the current code does not check for this, leading to UB.
+        - `T`'s move constructor/assignment or copy assignment may throw during reallocation or insertion.
+        - If an exception occurs during reallocation, `new_arr_` is leaked and some original elements may already have been moved from, so the operation does not provide the strong exception guarantee.
