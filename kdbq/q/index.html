@@ -1,4 +1,4 @@
-<!doctype html><html lang=en dir=ltr class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-kdbq/q" data-has-hydrated=false><head><meta charset=UTF-8><meta name=generator content="Docusaurus v3.10.1"><title data-rh=true>q Language | Code Snippets</title><meta data-rh=true name=viewport content="width=device-width, initial-scale=1.0"/><meta data-rh=true name=twitter:card content=summary_large_image /><meta data-rh=true property=og:url content=https://michaelyql.github.io/snippets/kdbq/q /><meta data-rh=true property=og:locale content=en /><meta data-rh=true name=docusaurus_locale content=en /><meta data-rh=true name=docsearch:language content=en /><meta data-rh=true name=docusaurus_version content=current /><meta data-rh=true name=docusaurus_tag content=docs-default-current /><meta data-rh=true name=docsearch:version content=current /><meta data-rh=true name=docsearch:docusaurus_tag content=docs-default-current /><meta data-rh=true property=og:title content="q Language | Code Snippets"/><link data-rh=true rel=icon href=/snippets/img/code4.svg /><link data-rh=true rel=canonical href=https://michaelyql.github.io/snippets/kdbq/q /><link data-rh=true rel=alternate href=https://michaelyql.github.io/snippets/kdbq/q hreflang=en /><link data-rh=true rel=alternate href=https://michaelyql.github.io/snippets/kdbq/q hreflang=x-default /><script data-rh=true type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://michaelyql.github.io/snippets/category/kdbq","name":"KDB+/Q","position":1},{"@type":"ListItem","item":"https://michaelyql.github.io/snippets/kdbq/q","name":"q Language","position":2}]}</script><link rel=alternate type=application/rss+xml href=/snippets/blog/rss.xml title="Code Snippets RSS Feed"><link rel=alternate type=application/atom+xml href=/snippets/blog/atom.xml title="Code Snippets Atom Feed"><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css type=text/css integrity=sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM crossorigin=anonymous><link rel=stylesheet href=/snippets/assets/css/styles.75851252.css /><script src=/snippets/assets/js/runtime~main.7ded77cc.js defer></script><script src=/snippets/assets/js/main.468ea4fb.js defer></script></head><body><svg style="display: none;"><defs>
+<!doctype html><html lang=en dir=ltr class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-kdbq/q" data-has-hydrated=false><head><meta charset=UTF-8><meta name=generator content="Docusaurus v3.10.1"><title data-rh=true>q Language | Code Snippets</title><meta data-rh=true name=viewport content="width=device-width, initial-scale=1.0"/><meta data-rh=true name=twitter:card content=summary_large_image /><meta data-rh=true property=og:url content=https://michaelyql.github.io/snippets/kdbq/q /><meta data-rh=true property=og:locale content=en /><meta data-rh=true name=docusaurus_locale content=en /><meta data-rh=true name=docsearch:language content=en /><meta data-rh=true name=docusaurus_version content=current /><meta data-rh=true name=docusaurus_tag content=docs-default-current /><meta data-rh=true name=docsearch:version content=current /><meta data-rh=true name=docsearch:docusaurus_tag content=docs-default-current /><meta data-rh=true property=og:title content="q Language | Code Snippets"/><link data-rh=true rel=icon href=/snippets/img/code4.svg /><link data-rh=true rel=canonical href=https://michaelyql.github.io/snippets/kdbq/q /><link data-rh=true rel=alternate href=https://michaelyql.github.io/snippets/kdbq/q hreflang=en /><link data-rh=true rel=alternate href=https://michaelyql.github.io/snippets/kdbq/q hreflang=x-default /><script data-rh=true type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://michaelyql.github.io/snippets/category/kdbq","name":"KDB+/Q","position":1},{"@type":"ListItem","item":"https://michaelyql.github.io/snippets/kdbq/q","name":"q Language","position":2}]}</script><link rel=alternate type=application/rss+xml href=/snippets/blog/rss.xml title="Code Snippets RSS Feed"><link rel=alternate type=application/atom+xml href=/snippets/blog/atom.xml title="Code Snippets Atom Feed"><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css type=text/css integrity=sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM crossorigin=anonymous><link rel=stylesheet href=/snippets/assets/css/styles.75851252.css /><script src=/snippets/assets/js/runtime~main.ee6437fc.js defer></script><script src=/snippets/assets/js/main.0d58ee20.js defer></script></head><body><svg style="display: none;"><defs>
 <symbol id=theme-svg-external-link viewBox="0 0 24 24"><path fill=currentColor d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
 </defs></svg>
 <script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme-5fb")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{for(var[t,e]of new URLSearchParams(window.location.search).entries())if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id=__docusaurus><link rel=preload as=image href=/snippets/img/code1.svg /><div role=region aria-label="Skip to main content"><a class=skipToContent_fXgn href=#__docusaurus_skipToContent_fallback>Skip to main content</a></div><nav aria-label=Main class="theme-layout-navbar navbar navbar--fixed-top"><div class=navbar__inner><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded=false class="navbar__toggle clean-btn" type=button><svg width=30 height=30 viewBox="0 0 30 30" aria-hidden=true><path stroke=currentColor stroke-linecap=round stroke-miterlimit=10 stroke-width=2 d="M4 7h22M4 15h22M4 23h22"/></svg></button><a class=navbar__brand href=/snippets/><div class=navbar__logo><img src=/snippets/img/code1.svg alt="My Site Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"/><img src=/snippets/img/code1.svg alt="My Site Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"/></div><b class="navbar__title text--truncate">Code Snippets</b></a><a class="navbar__item navbar__link" href=/snippets/blog>Blog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type=button disabled title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width=24 height=24 aria-hidden=true class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill=currentColor d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"/></svg><svg viewBox="0 0 24 24" width=24 height=24 aria-hidden=true class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill=currentColor d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"/></svg><svg viewBox="0 0 24 24" width=24 height=24 aria-hidden=true class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill=currentColor d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"/></svg></button></div><div class=navbarSearchContainer_Bca1></div></div></div><div role=presentation class=navbar-sidebar__backdrop></div></nav><div id=__docusaurus_skipToContent_fallback class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class=docsWrapper_hBAB><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type=button></button><div class=docRoot_UBD9><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class=sidebarViewport_aRkj><div class=sidebar_njMd><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class=menu__link href=/snippets/><span title=Welcome class=linkLabel_WmDU>Welcome</span></a><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/c><span title=C++ class=categoryLinkLabel_W154>C++</span></a><button aria-label="Expand sidebar category 'C++'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/competitive-programming><span title="Competitive Programming" class=categoryLinkLabel_W154>Competitive Programming</span></a><button aria-label="Expand sidebar category 'Competitive Programming'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/networking><span title=Networking class=categoryLinkLabel_W154>Networking</span></a><button aria-label="Expand sidebar category 'Networking'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class=menu__link href=/snippets/fix><span title=FIX class=linkLabel_WmDU>FIX</span></a><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/java><span title=Java class=categoryLinkLabel_W154>Java</span></a><button aria-label="Expand sidebar category 'Java'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href=/snippets/category/kdbq><span title=KDB+/Q class=categoryLinkLabel_W154>KDB+/Q</span></a><button aria-label="Collapse sidebar category 'KDB+/Q'" aria-expanded=true type=button class="clean-btn menu__caret"></button></div><ul class=menu__list><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class=menu__link tabindex=0 href=/snippets/kdbq/kdb><span title=KDB class=linkLabel_WmDU>KDB</span></a><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current=page tabindex=0 href=/snippets/kdbq/q><span title="q Language" class=linkLabel_WmDU>q Language</span></a></ul><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class=menu__list-item-collapsible><a class="categoryLink_byQd menu__link menu__link--sublist" href=/snippets/category/operating-systems><span title="Operating Systems" class=categoryLinkLabel_W154>Operating Systems</span></a><button aria-label="Expand sidebar category 'Operating Systems'" aria-expanded=false type=button class="clean-btn menu__caret"></button></div></ul></nav></div></div></aside><main class=docMainContainer_TBSr><div class="container padding-top--md padding-bottom--lg"><div class=row><div class="col docItemCol_VOVn"><div class=docItemContainer_Djhp><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label=Breadcrumbs><ul class=breadcrumbs><li class=breadcrumbs__item><a aria-label="Home page" class=breadcrumbs__link href=/snippets/><svg viewBox="0 0 24 24" class=breadcrumbHomeIcon_YNFT><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill=currentColor /></svg></a><li class=breadcrumbs__item><a class=breadcrumbs__link href=/snippets/category/kdbq><span>KDB+/Q</span></a><li class="breadcrumbs__item breadcrumbs__item--active"><span class=breadcrumbs__link>q Language</span></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type=button class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>q Language</h1></header>
@@ -17,43 +17,60 @@
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=data-types>Data Types<a href=#data-types class=hash-link aria-label="Direct link to Data Types" title="Direct link to Data Types" translate=no>​</a></h3>
 <ul>
-<li class="">Integer<!-- -->
+<li class="">
+<p>Integer</p>
 <ul>
 <li class="">By default is <em>long</em>, 64 bit</li>
 </ul>
 </li>
-<li class="">Float<!-- -->
+<li class="">
+<p>Float</p>
 <ul>
 <li class="">8-byte value conforming to IEEE floating point specification</li>
 <li class="">All arithmetic operations are as expected, except division which is <code>%</code></li>
 <li class="">Division always results in float</li>
 </ul>
 </li>
-<li class="">Boolean<!-- -->
+<li class="">
+<p>Boolean</p>
 <ul>
 <li class="">Stored in a singel byte and denoted as binary values</li>
 <li class="">Suffix with <code>b</code></li>
 </ul>
 </li>
-<li class="">Symbols<!-- -->
+<li class="">
+<p>Symbols</p>
 <ul>
 <li class="">Starts with a backtick `</li>
 </ul>
 </li>
+<li class="">
+<p>Temporal</p>
+<ul>
 <li class="">Date<!-- -->
 <ul>
 <li class=""><code>2000.01.01</code> (this is 0)</li>
 <li class="">A date is an integer - the number of days since the millenium, positive for post and negative for pre</li>
+<li class="">It only has year, month and day precision</li>
 </ul>
 </li>
-<li class="">Time span<!-- -->
+<li class="">Timespan<!-- -->
 <ul>
 <li class="">A (long) integer count of the number of nanoseconds since midnight</li>
 <li class=""><code>12:00:00.000000000</code> (noon)</li>
+<li class=""><code>HH:MM:SS.nanoseconds</code></li>
 <li class="">Date and timespan values can participate in arithmetic, e.g. addition, test for equality</li>
 </ul>
 </li>
-<li class="">Lists<!-- -->
+<li class="">Timestamp<!-- -->
+<ul>
+<li class="">Literal syntax: <code>dateDtimespan</code> e.g. <code>2000.01.01D00:00:00.000000000</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">
+<p>Lists</p>
 <ul>
 <li class="">Enclose a list with <code>()</code> and separate items using semicolons <code>;</code></li>
 <li class=""><code>(1; 2; 3.4)</code></li>
@@ -70,14 +87,84 @@
 </ul>
 <div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)1 2 3, 4 5</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1 2 3 4 5</span><br/></div></code></pre></div></div>
 <ul>
+<li class=""><code>,</code> can also extend lists</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">list,:10</span><br/></div></code></pre></div></div>
+<ul>
 <li class="">Extract items using Take <code>#</code>. Positive means from the front, negative means fom the back.</li>
 </ul>
 <div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)2#til 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)-2#til 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">8 9</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)5#1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1 2 3 1 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)5#42</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">42 42 42 42 42</span><br/></div></code></pre></div></div>
 <ul>
 <li class="">Index items using <code>[]</code> (0 based)</li>
 </ul>
-<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)L:1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[0]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[-1] / just prints 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[4]  / just prints 0</span><br/></div></code></pre></div></div>
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)L:1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[0]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[-1] / just prints 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[4]  / just prints 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)L[0 1 2] / prints 1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)(5?1+til 10)[1 3 5]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10 8 0N</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)(5?1+til 10)[1 3 4]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10 2 9</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)fares[10+til 10] / extract 11th to 20th element</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sortedFares[`long$(count sortedFares) % 2] / Extract middle element</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Simple lists (list with all elements of the same data type) have a type as a positive integer less than 20</li>
+<li class="">General lists (with mixed data types) always have a <code>type</code> 0</li>
+<li class="">A list can be empty e.g. if we queried a value that doens't exist in a column</li>
+<li class="">In a simple list, if the index used is too high, a null value of that type is returned</li>
+<li class="">Check for nulls<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)null list </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">001010101....</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)any null list</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1b</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)where null list</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 2 4 6</span><br/></div></code></pre></div></div>
 </li>
+<li class="">Amendment <code>@</code>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)@[sampleFares;(2*til 5);:;99f]  // apply assignment operator : to the indices, assigning them 99f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)@[sampleFares;(2*til 5);+;99f] / add 99f to the indices </span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)test:@[fares;(2*til 4);:;0Nf]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)@[`fares;(2*til 4);:;0Nf]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)@[`fares;where null fares; :; avg fares] / amending null values to the average value</span><br/></div></code></pre></div></div>
+<ul>
+<li class=""><code>@</code> makes a copy of the list. To persist changes, assign the result to a variable, or pass the list in by its symbol name with a backtick</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">
+<p>Data types have an integer representing them and are used for casts. E.g. general list has data type 0, int has data type 6, table is 98</p>
+</li>
+<li class="">
+<p>Cast <code>$</code></p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">`float$1 2 //using it's symbol name </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">"f"$1 2  //using it's character letter</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">9h$1 2   //using it's short value</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">You can create untyped empty lists or typed empty lists</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">() //general list </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">`long$() //list of type long</span><br/></div></code></pre></div></div>
+</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=basic-data-types---atoms>Basic Data Types - Atoms<a href=#basic-data-types---atoms class=hash-link aria-label="Direct link to Basic Data Types - Atoms" title="Direct link to Basic Data Types - Atoms" translate=no>​</a></h3>
+<ul>
+<li class="">Integer (short, int, long)</li>
+<li class="">Float (float, real, floating point display)</li>
+<li class="">Binary (boolean, byte, GUID)</li>
+<li class="">Text (char, symbol)</li>
+<li class="">Temporal (date, time, datetime)</li>
+<li class="">Infinities and null</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=lists>Lists<a href=#lists class=hash-link aria-label="Direct link to Lists" title="Direct link to Lists" translate=no>​</a></h3>
+<ul>
+<li class="">List definition and count</li>
+<li class="">Simple lists</li>
+<li class="">Empty and singleton lists</li>
+<li class="">Indexing</li>
+<li class="">Combining lists</li>
+<li class="">Lists as maps</li>
+<li class="">Nesting and depth</li>
+<li class="">Indexing at depth</li>
+<li class="">Iterated Indexing</li>
+<li class="">Indexing with lists</li>
+<li class="">Elided Indices</li>
+<li class="">Rectangular and matrix-like lists</li>
+<li class="">Useful operations - til, distinct, where, group</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=operators>Operators<a href=#operators class=hash-link aria-label="Direct link to Operators" title="Direct link to Operators" translate=no>​</a></h3>
+<ul>
+<li class="">Notation</li>
+<li class="">Operator Precedence</li>
+<li class="">Match <code>~</code></li>
+<li class="">Equality and Relational Operators</li>
+<li class="">Basic Arithmetic: +, -, *, %</li>
+<li class="">Greater | and Lesser &</li>
+<li class="">Amend :</li>
+<li class="">Exponential and Log</li>
+<li class="">Other primitives</li>
+<li class="">Operations on Temporal values</li>
+<li class="">Operations on infinity</li>
+<li class="">Alias</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=functions>Functions<a href=#functions class=hash-link aria-label="Direct link to Functions" title="Direct link to Functions" translate=no>​</a></h3>
 <ul>
@@ -95,7 +182,7 @@
 </li>
 <li class="">To <em>apply</em> a function to arguments, follow it (or its name, if it has been assigned to a variable) by a list of values enclosed in square brackets and separated by semicolons<!-- -->
 <ul>
-<li class="">E.g. <code>{[x] x*x}[2]</code></li>
+<li class="">E.g. <code>{[x] x*x}[2]</code>, <code>{[a,b] a+b}[1; 2]</code></li>
 <li class="">The argument expression is evaluated first, followed by expressions in the body of the function</li>
 <li class="">Substitution occurs before the function starts. The arguments bind to the parameters first before the function body is executed</li>
 <li class="">Variables created in the function are <em>local</em></li>
@@ -112,21 +199,27 @@
 <ul>
 <li class="">Q passes values (immutable references to vectors under q's copy-on-write model)</li>
 <li class="">Modifying an argument inside a function creates a local variable</li>
+<li class="">The only place where code is not evaluated once up front is within control flow constructs like <code>$[cond; then_expr; else_expr]</code></li>
 </ul>
-</li>
-<li class="">To mutate a global variable or table in-place (without duplicating memory), you pass the symbol name of the variable<!-- -->
-<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)updateGlobal:{[varName] varName set (get varName) + 10}</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)myVar: 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)updateGlobal `myVar</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)myVar</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">20</span><br/></div></code></pre></div></div>
-</li>
-<li class="">The only place where code is not evaluated once up front is within control flow constructs like <code>$[cond; then_expr; else_expr]</code>
 <div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)f:{[x] $[x > 0; 100 % x; 0]}</span><br/></div></code></pre></div></div>
 <ul>
 <li class="">In <code>$[cond; A; B]</code>, <code>cond</code> is evaluated first. If <code>cond</code> is true, only <code>A</code> is evaluated and <code>B</code> is never touched. Else, only <code>B</code> is evaluated.</li>
 </ul>
 </li>
+<li class="">To mutate a global variable or table in-place (without duplicating memory), you pass the symbol name of the variable<!-- -->
+<div class="language-q codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-q codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)updateGlobal:{[varName] varName set (get varName) + 10}</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)myVar: 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)updateGlobal `myVar</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)myVar</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">20</span><br/></div></code></pre></div></div>
+</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=functions-on-lists>Functions on Lists<a href=#functions-on-lists class=hash-link aria-label="Direct link to Functions on Lists" title="Direct link to Functions on Lists" translate=no>​</a></h3>
 <div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)42+100 200 300</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">142 242 342</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100 200 300+42</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">142 242 342</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100 200 300 + 1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">101 202 303</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100 200 + 1 2 3 / error, must be same length</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">'length</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">[0]  100 200 + 1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">           ^</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100=99 100 101</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">010b</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100 100 100=100 101 102</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">100b</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)100&lt;99 100 101</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">001b</span><br/></div></code></pre></div></div>
 <ul>
+<li class=""><code>enlist</code> makes a 1-item list<!-- -->
+<ul>
+<li class="">E.g. <code>enlist 12:00</code></li>
+<li class="">Useful for functions which expect lists, not atoms, so you have to create a one-item list</li>
+<li class="">The other way is <code>(),&lt;item></code></li>
+</ul>
+</li>
 <li class="">Accumulators / iterators<!-- -->
 <ul>
 <li class="">Apply a function / operator successively on a list based on an initial value (a fold in functional programming)</li>
@@ -170,17 +263,84 @@
 <li class="">FIFO Allocation<!-- -->
 <div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)buys:2 1 4 3 5 4f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sell:12f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sell&sums buys</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 12 12f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)deltas sell&sums buys / consecutive differences</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 1 4 3 2 0f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)buys:2 1 4 3 5 4f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sells:2 4 3 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 15 19f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)sums[sells]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 6 9 11</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ Cap cumulative buys with each cumulative sell</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)2&sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 2 2 2 2 2f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)6&sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 6 6 6 6f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)9&sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 9 9 9f</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)11&sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 11 11f</span><br/></div></code></pre></div></div>
 <ul>
-<li class="">Each Left (<code>|:</code>) applies a binary function and a right operand to each item of a list on the left.</li>
+<li class="">Each Left (<code>\:</code>) applies a binary function and a right operand to each item of a list on the left.</li>
 </ul>
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)sums[sells] &\: sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 2 2 2  2  2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 6 6  6  6</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 9  9  9</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 11 11</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ Unwind allocation in vertical direction</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)deltas sums[sells]&\:sums[buys] </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 2 2 2 2 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1 4 4 4 4</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 1 3 3 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 0 1 2 2</span><br/></div></code></pre></div></div>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)sums[sells] &\: sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 2 2 2  2  2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 6 6  6  6</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 9  9  9</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 7 10 11 11</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ Unwind allocation in vertical direction</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)deltas sums[sells]&\:sums[buys] </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 2 2 2 2 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1 4 4 4 4</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 1 3 3 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 0 1 2 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ Here deltas computes consecutive differences between lists, </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ which calculates pairwise differences (hence vertical direction)</span><br/></div></code></pre></div></div>
 </li>
 <li class=""><code>Each</code> iterator<!-- -->
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)count (1 2 3; 10 20)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)count each (1 2 3; 10 20)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">3 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)deltas each deltas sums[sells] &\: sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 0 0 0 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1 3 0 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 1 2 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 0 1 1 0</span><br/></div></code></pre></div></div>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)count (1 2 3; 10 20)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)count each (1 2 3; 10 20)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">3 2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)deltas each deltas sums[sells] &\: sums[buys]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 0 0 0 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 1 3 0 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 1 2 0 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 0 0 1 1 0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ Here deltas is applied on each of the lists individually (horizontally)</span><br/></div></code></pre></div></div>
+</li>
+<li class=""><code>sublist</code> selects a sub list of a list. The syntax is <code>x sublist y</code> or <code>sublist[x;y]</code> where <code>x</code> is an integer atom or pair and <code>y</code> is a list<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)p:2 3 5 7 11</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)3 sublist p                           / 3 from the front</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 5</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)10 sublist p                          / only available values</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">2 3 5 7 11</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)2 sublist `a`b`c!(1 2 3;"xyz";2 3 5)  / 2 keys from a dictionary</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">a| 1 2 3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">b| x y z</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)-3 sublist sp                         / last 3 rows of a table</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">s p qty</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">-------</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">3 1 200</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">3 3 300</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0 4 400</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)1 2 sublist p  / 2 items starting from position 1</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">3 5</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">If <code>x</code> is an integer atom, if it is positive it takes from the front of the list, else if it is negative it takes from the back</li>
+<li class="">If <code>x</code> is a pair, it returns <code>x[1]</code> items starting from <code>x[0]</code></li>
+<li class=""><code>sublist</code> caps the result by the number of available items. This is different from Take <code>#</code> which loops back to the start and takes exactly the number of items you specify</li>
+<li class=""><code>first &lt;list></code> does the same thing as <code>1 sublist &lt;list>, but </code>first<code>returns an atom, while</code>sublist` returns a one-item list</li>
+</ul>
+</li>
+<li class="">Sort lists using <code>asc</code>
+<ul>
+<li class="">E.g. <code>sortedList: asc list</code></li>
+</ul>
 </li>
 </ul>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id=qsql>qSQL<a href=#qsql class=hash-link aria-label="Direct link to qSQL" title="Direct link to qSQL" translate=no>​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=generating-random-data>Generating random data<a href=#generating-random-data class=hash-link aria-label="Direct link to Generating random data" title="Direct link to Generating random data" translate=no>​</a></h3>
 <ul>
-<li class="">Data Exploration<!-- -->
+<li class="">The <code>x ? y</code> operator generates pseudo-random data (<code>x</code> copies of values between 0 up to but not including <code>y</code>)</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)10?20</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">4 13 9 2 7 0 17 14 9 18</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)10?100.0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">39.27524 51.70911 51.59796 40.66642 17.80839 30.17723 78.5033 53.47096 71.11716 41.1597</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)10?`aapl`ibm                   / 10 random selections from a list</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">`aapl`ibm`ibm`aapl`aapl`ibm`aapl`ibm`aapl`aapl</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)dts:2015.01.01+1000000?31      / 1,000,000 random dates in Jan 2015</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)tms:1000000?24:00:00.000000000 / 1,000,000 random timespans</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)syms:1000000?`aapl`goog`ibm    / 1,000,000 random tickers</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)vols:10*1+1000000?1000         / 1,000,000 random volumes with a lot size of 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)pxs:90.0+(1000000?2001)%100    / 1,000,000 prices in cents uniformly distributed within 10% of 100.0</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)trades:([] dt:dts; tm:tms; sym:syms; vol:vols; px:pxs) </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">/ collect into a table of trades</span><br/></div></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=dictionaries-tables>Dictionaries, Tables<a href=#dictionaries-tables class=hash-link aria-label="Direct link to Dictionaries, Tables" title="Direct link to Dictionaries, Tables" translate=no>​</a></h3>
+<ul>
+<li class="">Dictionary is a key-value pair store. The keys are presumably unique (though unenforced). Dictionary is a first class value and can be assigned to variables.</li>
+<li class="">Syntax: <code>&lt;key list>!&lt;value list></code>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)d:`a`b`c!10 20 30</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">a| 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">b| 20</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c| 30</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)d[`a] / Retrieves value</span><br/></div></code></pre></div></div>
+</li>
+<li class="">Column dictionary has keys which are symbols, and values which are lists themselves of uniform length<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)d:`c1`c2!(10 20 30; 1.1 2.2 3.3)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c1| 10 20 30</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c2| 1.1 2.2 3.3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)d[`c1] / Retrieves a column</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10 20 30</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)d[`c1][0] / The column is a list which itself can be indexed</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)d[`c1; 0] / Indexing at depth syntax</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)d[`c1;] / Index is elided, yields a column</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10 20 30</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)d[; 0] / Returns a section dictionary</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c1| 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c2| 1.1</span><br/></div></code></pre></div></div>
+</li>
+<li class="">The <code>flip</code> operator ("transpose") reverses the order of indexing. Columns are accessed in the second slot, and section dictionaries are retrieved from the first slot.<!-- -->
+<ul>
+<li class="">The data is still stored as a column dictionary, only the indexing slots are affected</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)t:flip `c1`c2!(10 20 30; 1.1 2.2 3.3)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)t[0; `c1]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)t[0; `c1]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)t[1; `c1]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">20</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)t[2; `c1]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">30</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)t[0; `c2]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1.1</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)t[; `c1]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10 20 30</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)t[0;]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c1| 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c2| 1.1</span><br/></div></code></pre></div></div>
+</li>
+<li class="">A flipped column dictionary is a <em>table</em>. A table is a first-class entity.<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)flip `c1`c2!(10 20 30; 1.1 2.2 3.3)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c1 c2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">------</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10 1.1</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">20 2.2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">30 3.3</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)t[0]</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c1| 10</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c2| 1.1</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)([] c1:10 20 30; c2:1.1 2.2 3.3)</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">c1 c2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">------</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">10 1.1</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">20 2.2</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">30 3.3</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">The section dictionaries are <em>records</em> of the table. They correspond to the rows.</li>
+<li class="">A table can also be thought of as a list of record dictionaries.</li>
+<li class="">The notation for tables is <code>([] key1:list; key2:list...)</code>
+<ul>
+<li class="">The square brackets are necessary to differentiate a table from a list</li>
+<li class=""><code>:</code> is not an assignment, it is a syntactic marker that separates the name from column values</li>
+<li class="">The column names in table definition are not symbols, though they are converted to symbols under the covers</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">Columns of a table can be indexed using the column name<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">t`colName</span><br/></div></code></pre></div></div>
+</li>
+<li class="">Adding dictionaries</li>
+<li class="">Catenation (join)</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=keywords>Keywords<a href=#keywords class=hash-link aria-label="Direct link to Keywords" title="Direct link to Keywords" translate=no>​</a></h3>
+<ul>
+<li class=""><code>wavg</code>: Weighted average</li>
+<li class=""><code>xbar</code></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=operators-1>Operators<a href=#operators-1 class=hash-link aria-label="Direct link to Operators" title="Direct link to Operators" translate=no>​</a></h3>
+<p>rewrite</p>
+<ul>
+<li class="">lists</li>
+<li class="">operators</li>
+<li class="">dictionaries and tables</li>
+<li class="">functions</li>
+<li class="">i/o, files, parsing, ipc with server</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id=qsql>qSQL<a href=#qsql class=hash-link aria-label="Direct link to qSQL" title="Direct link to qSQL" translate=no>​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=data-exploration>Data Exploration<a href=#data-exploration class=hash-link aria-label="Direct link to Data Exploration" title="Direct link to Data Exploration" translate=no>​</a></h3>
 <ul>
 <li class="">View all tables: <code>tables[]</code></li>
 <li class="">Inspect a table:<code>&lt;table></code> / <code>&lt;table>[]</code> / <code>show &lt;table>;</code>
@@ -208,48 +368,29 @@
 <li class=""><code>.Q.ts[func; args]</code> (programmatically)</li>
 </ul>
 </li>
-</ul>
-</li>
 <li class=""><code>min/max/sum/avg/count</code> : Aggregation on a column<!-- -->
 <ul>
 <li class="">E.g. <code>select date from trips where date = min date</code></li>
+<li class=""><code>select a, b, c: a + b from &lt;table></code> (calculated column)</li>
 </ul>
 </li>
-<li class=""><code>select a, b, c: a + b from &lt;table></code> (calculated column)</li>
 <li class="">Virtual column: <code>select count i from &lt;table> where ...</code>
 <ul>
 <li class=""><code>i</code> maps to record index in the table</li>
 </ul>
 </li>
-<li class="">Grouping using <code>by</code>
-<ul>
-<li class=""><code>select &lt;col> by &lt;col> from &lt;table></code></li>
-<li class="">Examples: <code>select maxTip: max tip, avgTip: avg tip by vendor from jan09</code>, <code>select sum fare, sum tip by vendor from jan 09</code>, <code>select count i by date from jan09</code></li>
 </ul>
-</li>
-<li class="">Avoiding nested queries with <code>fby</code> (filter-by)<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=update-and-delete>Update and delete<a href=#update-and-delete class=hash-link aria-label="Direct link to Update and delete" title="Direct link to Update and delete" translate=no>​</a></h3>
 <ul>
-<li class="">Syntax: <code>fby (aggregation;data) fby group</code></li>
-<li class="">E.g instead of<!-- -->
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">resBy: select avgDuration:avg duration by vendor from jan09</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select from jan09 lj resBy where duration &lt; avgDuration</span><br/></div></code></pre></div></div>
-</li>
-<li class="">Use : <code>select max fare from jan09 where duration &lt; (avg;duration) fby vendor</code></li>
-<li class="">E.g. Find the payment type produces the highest average tip when only trips with a fare larger than the average for each vendor is considered<!-- -->
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">res3:select avg tip by payment_type from jan09 where fare > (avg;fare) fby vendor</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select payment_type from res3 where tip = max tip</span><br/></div></code></pre></div></div>
-</li>
-<li class="">E.g. Find which vendor has the largest number of trips when only considering trips shorter than the average duration for each vendor<!-- -->
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">res4:select trips: count i by vendor from jan09 where duration &lt; (avg;duration) fby vendor</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select vendor from res4 where trips = max trips</span><br/></div></code></pre></div></div>
-</li>
-</ul>
-</li>
-<li class="">Update / delete table values and records (e.g. to fix bad data)<!-- -->
+<li class="">For when you need to fix bad date. Examples:<!-- -->
 <ul>
 <li class=""><code>jan09: update passengers: 5 from jan09 where passengers > 5</code> (Save changes by reassigning back to jan09)</li>
 <li class=""><code>jan09:update wAvgfare:passengers wavg fare from jan09</code> (<code>wavg</code> takes two lists as input)</li>
 <li class=""><code>jan09:delete from jan09 where duration=00:00:00.000</code></li>
 </ul>
 </li>
-<li class="">Temporal arithmetic<!-- -->
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=temporal-arithmetic>Temporal arithmetic<a href=#temporal-arithmetic class=hash-link aria-label="Direct link to Temporal arithmetic" title="Direct link to Temporal arithmetic" translate=no>​</a></h3>
 <ul>
 <li class="">Values with the data type <code>timestamp</code> can be converted into <code>minute</code>, <code>second</code> data types etc.</li>
 <li class=""><code>select pickup_time, pickup_time.second, pickup_time.minute, pickup_time.hh from jan09</code></li>
@@ -271,10 +412,39 @@
 <li class="">Note the literal syntax for month is <code>YYYY.MMm</code> (append literal <code>m</code>)</li>
 </ul>
 </li>
-<li class=""><code>select max tip by (15 xbar pickup_time.minute), vendor from jan09 where month = 2009.01m</code> (Further split by vendor)<!-- -->
-<ul>
-<li class="">Note the <code>by</code> syntax is <code>select [aggregates] by column1, column2 from table</code></li>
+<li class=""><code>select max tip by (15 xbar pickup_time.minute), vendor from jan09 where month = 2009.01m</code> (Further split by vendor)</li>
 </ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=grouping>Grouping<a href=#grouping class=hash-link aria-label="Direct link to Grouping" title="Direct link to Grouping" translate=no>​</a></h3>
+<ul>
+<li class="">Grouping using <code>by</code>
+<ul>
+<li class=""><code>select [aggregates] by [columns] from &lt;table></code></li>
+<li class="">Examples:<!-- -->
+<ul>
+<li class=""><code>select maxTip: max tip, avgTip: avg tip by vendor from jan09</code></li>
+<li class=""><code>select sum fare, sum tip by vendor from jan 09</code></li>
+<li class=""><code>select count i by date from jan09</code></li>
+</ul>
+</li>
+<li class=""><code>by</code> transforms individual column atoms into grouped lists (vecors), which <em>changes scalar types into vector types</em> (e.g. <code>p</code> into <code>P</code>)<!-- -->
+<ul>
+<li class="">To keep it a scalar, you have to apply an aggregating function to the column in the <code>select</code> clause</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">Avoiding nested queries with <code>fby</code> (filter-by)<!-- -->
+<ul>
+<li class="">Syntax: <code>fby (aggregation;data) fby group</code></li>
+<li class="">E.g instead of<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">resBy: select avgDuration:avg duration by vendor from jan09</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select from jan09 lj resBy where duration &lt; avgDuration</span><br/></div></code></pre></div></div>
+</li>
+<li class="">Use : <code>select max fare from jan09 where duration &lt; (avg;duration) fby vendor</code></li>
+<li class="">E.g. Find the payment type produces the highest average tip when only trips with a fare larger than the average for each vendor is considered<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">res3:select avg tip by payment_type from jan09 where fare > (avg;fare) fby vendor</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select payment_type from res3 where tip = max tip</span><br/></div></code></pre></div></div>
+</li>
+<li class="">E.g. Find which vendor has the largest number of trips when only considering trips shorter than the average duration for each vendor<!-- -->
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">res4:select trips: count i by vendor from jan09 where duration &lt; (avg;duration) fby vendor</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">select vendor from res4 where trips = max trips</span><br/></div></code></pre></div></div>
 </li>
 </ul>
 </li>
@@ -286,9 +456,98 @@
 <li class="">This is because q dates are stored internally as integer counts of days relative to the epoch date <code>2000.01.01</code>, which happens to be a Saturday.</li>
 </ul>
 </li>
-<li class=""><code>xbar</code> calculates <code>x * floor(y / x)</code></li>
+<li class=""><code>xbar</code> calculates <code>x * floor(y / x)</code> for <em>each</em> item in the list</li>
 <li class="">To align it to start on Monday, you can do <code>monBar: {-2 + 7 xbar x + 2}</code> (offset by -2, group, then undo the shift)</li>
 <li class="">E.g. <code>select count i by week: -2 + 7 xbar date + 2 from table</code></li>
+</ul>
+</li>
+<li class="">Grouping by computed column<!-- -->
+<ul>
+<li class=""><code>select count c by s:a&lt;=40 from t</code></li>
+</ul>
+</li>
+<li class="">Sorting table by column names<!-- -->
+<ul>
+<li class=""><code>x xasc y / xasc[x;y]</code></li>
+<li class="">Sorts <code>y</code> in ascending order by <code>x</code></li>
+<li class="">E.g. <code>sym</code>date xasc t`</li>
+</ul>
+</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id=joins>Joins<a href=#joins class=hash-link aria-label="Direct link to Joins" title="Direct link to Joins" translate=no>​</a></h3>
+<ul>
+<li class="">There are two types of joins, Left Join and As-of Join</li>
+<li class="">Left Join<!-- -->
+<ul>
+<li class="">Create keyed tables (required for joins) using <code>xkey</code> or <code>!</code> (bang)</li>
+<li class="">Keyed tables have an extra vertical bar <code>|</code> between the keyed columns and unkeyed columns</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">`date xkey weather / keying on date</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">1!weather          / keying on first column</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">3!weather          / key on N number of columns </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">0!weather          / unkey a keyed table</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Note: <code>!</code> only excepts integers. The syntax is <code>i!t</code> / <code>![i;t]</code> where <code>i</code> is a positive integer and <code>t</code> is a simple table</li>
+<li class="">To unkey using <code>xkey</code> pass in an empty list <code>() xkey t</code></li>
+<li class="">Keying creates a new table in memory so you have to assign the result to a variable. If you want to update the table globally, pass the table symbol name to <code>xkey</code>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">`sym xkey `t</span><br/></div></code></pre></div></div>
+</li>
+<li class="">The <code>lj</code> operator requires that at least the right hand table is keyed<!-- -->
+<ul>
+<li class="">The left hand table can be keyed or unkeyed</li>
+<li class="">The format of the left hand table will dictate the format of the result table</li>
+</ul>
+</li>
+<li class="">You can also use the <code>by</code> clause to key the table</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">jan09W:jan09C lj `date xkey select date, precip from weather </span><br/></div><div class=token-line style=color:#393A34><span class="token plain">jan09W</span><br/></div><div class=token-line style=color:#393A34><span class="token plain" style=display:inline-block></span><br/></div><div class=token-line style=color:#393A34><span class="token plain">jan09W:jan09C lj select avg precip by date from weather / using the by clause to key</span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Left join <code>t1 lj t2</code> uses the primary keys of the right hand table to perform a hash lookup against the left hand table<!-- -->
+<ul>
+<li class="">For each row in <code>t1</code>, it is hashed and looked up in the <code>t2</code>'s key hash table, then the non-key columns are appended</li>
+<li class="">If a row in <code>t1</code> has a key that doesn't exist in the hash table, the appended columns are filled with standard null values</li>
+<li class="">If <code>t2</code> is not keyed, q throws a <code>type</code> error</li>
+<li class=""><code>t2</code> guarantees unique keys, so <code>lj</code> will never duplicate rows in <code>t1</code>. Every row in <code>t1</code> matches <em>at most one row</em> in <code>t2</code></li>
+<li class="">If both tables contain a column with the same name that is not part of <code>t2</code>'s key, the values from <code>t2</code> overwrites <code>t1</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">As-of Join<!-- -->
+<ul>
+<li class="">As-of joins are time series joins<!-- -->
+<ul>
+<li class="">We can ask things like what is the latest pick up time for each vendor, as of a particular time</li>
+</ul>
+</li>
+<li class="">Syntax: <code>aj[c; t1; t2]</code>
+<ul>
+<li class=""><code>t2</code> must be sorted by time within keys</li>
+<li class=""><code>t2</code> must be a simple table</li>
+<li class=""><code>c</code> is a symbol vector of <span class=katex><span class=katex-mathml><math xmlns=http://www.w3.org/1998/Math/MathML><semantics><mrow><mi>n</mi></mrow><annotation encoding=application/x-tex>n</annotation></semantics></math></span><span class=katex-html aria-hidden=true><span class=base><span class=strut style=height:0.4306em></span><span class="mord mathnormal">n</span></span></span></span> column names, common to <code>t1</code> and <code>t2</code>, and of matching type<!-- -->
+<ul>
+<li class="">The types <em>must</em> match; if one column is of type <code>p</code> (timestamp vector) and the other is of type <code>P</code> (nested list of timestamp vectors) <code>aj</code> will give an error</li>
+</ul>
+</li>
+<li class=""><code>cn</code> (the last common column) must be of a sortable type (typically time)</li>
+</ul>
+</li>
+<li class="">Example:</li>
+</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style=--prism-color:#393A34;--prism-background-color:#f6f8fa><div class=codeBlockContent_QJqH><pre tabindex=0 class="prism-code language-text codeBlock_bY9V thin-scrollbar" style=color:#393A34;background-color:#f6f8fa><code class=codeBlockLines_e6Vv><div class=token-line style=color:#393A34><span class="token plain">q)t:select passengers, event_time:pickup_time, vendor, pickup_time from jan09</span><br/></div><div class=token-line style=color:#393A34><span class="token plain">q)aj[`passengers`event_time; timetab; t] </span><br/></div></code></pre></div></div>
+<ul>
+<li class="">Notes<!-- -->
+<ul>
+<li class=""><code>aj</code> join always selects the last record before the specified time.</li>
+<li class=""><code>t1</code> provides the target lookup timestamps, <code>t2</code> provides the historical timeline</li>
+<li class=""><code>aj</code> uses <code>t2</code> to find the most recent row where <code>t2.time &lt;= t1.time</code></li>
+<li class=""><code>aj</code> returns a left-join of <code>t1</code> and <code>t2</code></li>
+<li class="">There is no requirement for any of the join columns to be keys, but the join is faster on keys.</li>
+<li class=""><code>aj</code> is a multithreaded primitive.</li>
+</ul>
+</li>
+<li class="">Alternatives<!-- -->
+<ul>
+<li class=""><code>ajf</code> (as-of join forward) provides forward-looking join for the first record in <code>t2</code> where <code>t2.time >= t1.time</code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -299,4 +558,4 @@
 <p><a href=https://code.kx.com/q4m3/ target=_blank rel="noopener noreferrer" class="">https://code.kx.com/q4m3/</a> <a href=#user-content-fnref-1 data-footnote-backref="" aria-label="Back to reference 1" class=data-footnote-backref>↩</a></p>
 </li>
 </ol>
-</section></div></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href=/snippets/kdbq/kdb><div class=pagination-nav__sublabel>Previous</div><div class=pagination-nav__label>KDB</div></a><a class="pagination-nav__link pagination-nav__link--next" href=/snippets/category/operating-systems><div class=pagination-nav__sublabel>Next</div><div class=pagination-nav__label>Operating Systems</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href=#q-for-mortals class="table-of-contents__link toc-highlight">Q for Mortals</a><ul><li><a href=#basics class="table-of-contents__link toc-highlight">Basics</a><li><a href=#data-types class="table-of-contents__link toc-highlight">Data Types</a><li><a href=#functions class="table-of-contents__link toc-highlight">Functions</a><li><a href=#functions-on-lists class="table-of-contents__link toc-highlight">Functions on Lists</a></ul><li><a href=#qsql class="table-of-contents__link toc-highlight">qSQL</a></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class=footer__title>Docs</div><ul class="footer__items clean-list"><li class=footer__item><a class=footer__link-item href=/snippets/>Home</a></ul></div><div class="theme-layout-footer-column col footer__col"><div class=footer__title>Socials</div><ul class="footer__items clean-list"><li class=footer__item><a href=https://www.linkedin.com/in/michael-y-68b670204/ target=_blank rel="noopener noreferrer" class=footer__link-item>LinkedIn<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://github.com/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>GitHub<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div><div class="theme-layout-footer-column col footer__col"><div class=footer__title>My Profiles</div><ul class="footer__items clean-list"><li class=footer__item><a href=https://codeforces.com/profile/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>Codeforces <svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://open.kattis.com/users/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>Kattis<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://leetcode.com/u/michaelyql/ target=_blank rel="noopener noreferrer" class=footer__link-item>Leetcode<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div></div><div class="footer__bottom text--center"><div class=footer__copyright>Built with Docusaurus</div></div></div></footer></div></body>
+</section></div></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href=/snippets/kdbq/kdb><div class=pagination-nav__sublabel>Previous</div><div class=pagination-nav__label>KDB</div></a><a class="pagination-nav__link pagination-nav__link--next" href=/snippets/category/operating-systems><div class=pagination-nav__sublabel>Next</div><div class=pagination-nav__label>Operating Systems</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href=#q-for-mortals class="table-of-contents__link toc-highlight">Q for Mortals</a><ul><li><a href=#basics class="table-of-contents__link toc-highlight">Basics</a><li><a href=#data-types class="table-of-contents__link toc-highlight">Data Types</a><li><a href=#basic-data-types---atoms class="table-of-contents__link toc-highlight">Basic Data Types - Atoms</a><li><a href=#lists class="table-of-contents__link toc-highlight">Lists</a><li><a href=#operators class="table-of-contents__link toc-highlight">Operators</a><li><a href=#functions class="table-of-contents__link toc-highlight">Functions</a><li><a href=#functions-on-lists class="table-of-contents__link toc-highlight">Functions on Lists</a><li><a href=#generating-random-data class="table-of-contents__link toc-highlight">Generating random data</a><li><a href=#dictionaries-tables class="table-of-contents__link toc-highlight">Dictionaries, Tables</a><li><a href=#keywords class="table-of-contents__link toc-highlight">Keywords</a><li><a href=#operators-1 class="table-of-contents__link toc-highlight">Operators</a></ul><li><a href=#qsql class="table-of-contents__link toc-highlight">qSQL</a><ul><li><a href=#data-exploration class="table-of-contents__link toc-highlight">Data Exploration</a><li><a href=#update-and-delete class="table-of-contents__link toc-highlight">Update and delete</a><li><a href=#temporal-arithmetic class="table-of-contents__link toc-highlight">Temporal arithmetic</a><li><a href=#grouping class="table-of-contents__link toc-highlight">Grouping</a><li><a href=#joins class="table-of-contents__link toc-highlight">Joins</a></ul></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class=footer__title>Docs</div><ul class="footer__items clean-list"><li class=footer__item><a class=footer__link-item href=/snippets/>Home</a></ul></div><div class="theme-layout-footer-column col footer__col"><div class=footer__title>Socials</div><ul class="footer__items clean-list"><li class=footer__item><a href=https://www.linkedin.com/in/michael-y-68b670204/ target=_blank rel="noopener noreferrer" class=footer__link-item>LinkedIn<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://github.com/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>GitHub<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div><div class="theme-layout-footer-column col footer__col"><div class=footer__title>My Profiles</div><ul class="footer__items clean-list"><li class=footer__item><a href=https://codeforces.com/profile/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>Codeforces <svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://open.kattis.com/users/michaelyql target=_blank rel="noopener noreferrer" class=footer__link-item>Kattis<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a><li class=footer__item><a href=https://leetcode.com/u/michaelyql/ target=_blank rel="noopener noreferrer" class=footer__link-item>Leetcode<svg width=13.5 height=13.5 aria-label="(opens in new tab)" class=iconExternalLink_nPIU><use href=#theme-svg-external-link /></svg></a></ul></div></div><div class="footer__bottom text--center"><div class=footer__copyright>Built with Docusaurus</div></div></div></footer></div></body>
