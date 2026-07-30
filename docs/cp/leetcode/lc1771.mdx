@@ -1,0 +1,88 @@
+---
+description: ""
+tags: [dp]
+---
+
+# LC1771 - Maximize Palindrome Length From Subsequences
+
+## Summary
+
+- Given two strings $s$ and $t$, choose a non-empty subsequence of $s$ and concatenate it with a non-empty subsequence of $t$. Find the longest palindrome that can be constructed, or 0 if impossible. Both strings must contribute at least one character.
+- Constraints: 
+    - $1\leq |s|, |t|\leq 1000$
+
+[Link to Problem Statement](https://leetcode.com/problems/maximize-palindrome-length-from-subsequences/description/)
+
+## Solution
+- Since $n=|s|$ and $m=|t|$ are small, we can use 2D DP. First compute $lps[i][j]$ for both $s$ and $t$ representing the longest palindromic subsequence in the substring $s[i..j]$ and $t[i..j]$ in $O(n^2)$. 
+- Let $dp[i][j][k]$ = longest palindromic string that can be constructed using the substrings $s[i..n-1]$ and $t[0..j]$. $k$ is an extra parameter taking values 0/1, representing whether or not both strings have contributed at least one character.
+- In each state, we have a few choices:
+    - If either string runs out, if $k=1$ (both strings contributed at least once), then we can return the LPS of the remaining string. Otherwise if $k=0$, no valid string can be constructed and we return 0.
+    - Otherwise, both strings are non-empty. If $s[i]==t[j]$, we add 2 to the length and query $dp[i+1][j-1][1]$. 
+    - We take this value against the max of $dp[i+1][j][k]$ and $dp[i][j-1][k]$
+    - Finally, we can consider ending the match between the prefix of $s$ and the suffix of $t$ here, and take the longer LPS of either two remaining strings, but only if $k=1$, meaning that both strings have already contributed and it's valid to take the remaining characters from only one of the two strings.
+
+## Code
+
+```cpp
+int n, m;
+int16_t lps1[1001][1001], lps2[1001][1001];
+int16_t dp[2][1001][1001];
+string_view s, t;
+
+int16_t f(int i, int j, int k) {
+    if (j < 0) {
+        if (i < n) return k ? lps1[i][n - 1] : 0;
+        else return 0;
+    }
+    if (i == n) {
+        if (j < 0) return 0;
+        else return k ? lps2[0][j] : 0;
+    }
+    if (dp[k][i][j] != -1) return dp[k][i][j];
+
+    int16_t ans = s[i] == t[j] ? 2 + f(i + 1, j - 1, 1) : 0;
+
+    if (k) ans = max(ans, max(lps1[i][n - 1], lps2[0][j]));
+    ans = max(ans, f(i + 1, j, k));
+    ans = max(ans, f(i, j - 1, k));
+    return dp[k][i][j] = ans;
+}
+
+int _longestPalindrome(std::string& word1, std::string& word2) {
+    // Return the length of the longest palindrome that can be formed by
+    // concatenating a non-empty subsequence of word1 with a non-empty
+    // subsequence of word2, or 0 if no such palindrome exists.
+
+    n = (int) word1.size(), m = (int) word2.size();
+    s = word1, t = word2;
+    
+    memset(lps1, -1, sizeof(lps1));
+    memset(lps2, -1, sizeof(lps2));
+    memset(dp, -1, sizeof(dp));
+
+    for (int i = n - 1; i >= 0; i--) {
+        lps1[i][i] = 1;
+        for (int j = i + 1; j < n; j++) {
+            if (s[i] == s[j])
+                lps1[i][j] = 2 + (i + 1 <= j - 1 ? lps1[i + 1][j - 1] : 0);
+            else
+                lps1[i][j] = max(lps1[i + 1][j], lps1[i][j - 1]);
+        }
+    }
+
+    for (int i = m - 1; i >= 0; i--) {
+        lps2[i][i] = 1;
+        for (int j = i + 1; j < m; j++) {
+            if (t[i] == t[j])
+                lps2[i][j] = 2 + (i + 1 <= j - 1 ? lps2[i + 1][j - 1] : 0);
+            else
+                lps2[i][j] = max(lps2[i + 1][j], lps2[i][j - 1]);
+        }
+    }
+
+    int ans = f(0, m - 1, 0);
+    if (ans == 1) return 0;
+    return ans;
+}
+```
