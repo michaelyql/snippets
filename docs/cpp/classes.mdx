@@ -115,14 +115,26 @@ class SemiEmpty {
 };
 // sizeof(SemiEmpty) == 8 (on a 64-bit architecture due to the vptr)
 ```
+
+### `[[no_unique_address]]`
 - For C++20 and later, if you want EBO-like behavior for **data members** rather than base classes, you can use the `[[no_unique_address]]` attribute. 
     - This signals to the compiler that an empty member can share an address with other fields.
 
 ```cpp
+struct Empty { };
+
 class Derived {
     [[no_unique_address]] Empty e; // Takes 0 bytes if Empty is truly empty!
     int x; 
 };
+
+struct Z
+{
+    char c;
+    [[no_unique_address]] Empty e1, e2;
+}; // sizeof(Z) at least 2
+// e1 and c share address
+// e2 cannot have same address as e1, so it uses another byte
 ```
 
 ## Virtual Functions

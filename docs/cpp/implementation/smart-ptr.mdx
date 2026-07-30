@@ -1,1 +1,23 @@
 # Smart Pointers
+
+## Unique Pointer
+
+```cpp showLineNumbers title="unique_ptr.cpp"
+template<typename T>
+class unique_ptr {
+private:
+
+public:
+    unique_ptr() = de
+    T* raw_ptr;
+    T& operator*() {
+        return *raw_ptr;
+    }
+    T& operator->() {
+        return *raw_ptr;
+    }
+}
+
+```
+
+## Shared Pointer

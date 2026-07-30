@@ -1,0 +1,202 @@
+
+# C++ Object Model
+
+## Introduction
+
+In C, data abstractions, and the operations performed on it, are declared separately. For example, 
+```c
+struct A {
+    int x, y;
+};
+void foo(struct A a) {
+    A.x = 1;
+    A.y = 2;
+}
+```
+
+This followed a procedural approach focused on task-oriented functions that operated on shared data. It provided leanness and simplicity. 
+
+In C++, with the object model, functions can be bundled together with the data abstractions that they operate on. 
+
+```cpp
+struct A {
+public:
+    int x, y;
+    void foo() {
+        x = 1;
+        y = 2;
+    }
+}
+```
+
+This takes an object-oriented approach, emphasizing principles such as encapsulation and abstraction. 
+
+There is _no additional layout cost_ for supporting member functions. The member functions, although included in the class definition, are _not_ reflected in the object layout. Only one copy of each non-inline member function is generated. Each inline function either has zero or one definition of itself generated. 
+
+The primary layout and access-time overheads within C++ are associated with _virtuals_, i.e. the virtual function mechanism supporting _run-time binding_, and _virtual inheritance_, wherein a virtual base class supports a single, shared instance of a base class occurring multiple times in an inheritance hierarchy (multiple inheritance/diamond problem).
+
+## Object Models 
+
+There are a few object models that the C++ object model builds on. 
+
+The first is the simple object model. In this model, each object only holds pointers. All static and non-static data members and functions are pointed to. Each pointer has its own index/slot. 
+
+The second is a table-driven model. Member-specific information are kept in a member data table that holds the actual data, while a function member table holds pointers to the addresses of the actual functions. An object simply has two pointers, one to the member data table, and one to the function member table. 
+
+The C++ object model is derived from these models. 
+- Non-static data members are allocated directly within each object.
+- Static data members are stored outside the individual class object. 
+- Static and non-static function members are also hoisted out of the class object. 
+- Virtual functions are supported in two steps: 
+    - A table of pointers to virtual functions is generated for each class (called a _virtual table_ / _vtable_)
+    - A pointer to the table (_virtual pointer_ / _vptr_) is inserted within each class object 
+- The data members within a single access section (`public/private/protected`) are guaranteed within C++ to be laid out in the order of their declaration.
+- The layout of data members of the base and derived classes is left undefined.
+
+To support inheritance, 
+- Data members of base class subobjects are stored directly within the derived class subobject. 
+        - The drawback is that any change in the base class members will require that all code using objects of the base class or classes derived from it to be recompiled 
+
+`struct` and `class` can be used interchangeably to provide a tag name. 
+
+```cpp
+class Node; // forward declaration
+struct Node {
+    // definition
+}; // ok
+```
+
+The actual characteristics of the class are determined by the body of the declaration. Enforcing a consistent usage is simply a question of style.
+
+This is not the same as having two contradicting declarations of an object:
+
+```cpp
+static int foo;
+extern int foo; // error, declarations make contrary storage claims
+```
+
+The C++ object model directly supports the three following programming paradigms:
+- the _procedural model_, as in C 
+- the _abstract data type_ model, where users are provided with a public interface while the implementation remains hidden
+- the _object-oriented_ model, where a collection of related types is encapsulated through an abstract base class providing a common interface. 
+
+Programs written purely in idioms of any one of these paradigms tend to be well behaved. Mixed paradigm programming may lead to unexpected results. The most common inadvertent mixing of idioms is when a concrete instance of a base class is used to program some aspect of polymorphism:
+
+```cpp
+class Base {
+public:
+    virtual void foo() { cout << "Base::foo\n"; }
+    void bar() { cout << "Base::bar\n"; }
+}; 
+class Derived : public Base { 
+public:
+    void foo() override { cout << "Derived::foo\n"; }
+    void bar() { cout << "Derived::bar\n"; }
+};
+
+int main() {
+    Base base;
+    Derived derived;
+    base = derived;      // object slicing, base remains a base object 
+    base.foo();          // prints Base::foo
+
+    Base* bptr = nullptr;
+    bptr = &derived;
+    bptr->foo();         // prints Derived::foo (virtual dispatch)
+    bptr->Base::foo();   // prints Base::foo (bypass virtual dispatch)
+
+    Base& bref = derived;
+    bref.foo();          // prints Derived::foo (virtual dispatch)
+    bref.Base::foo();    // prints Base::foo (bypass virtual dispatch)
+    
+    base.bar();          // prints Base::bar
+    derived.bar();       // prints Derived::bar 
+
+    derived.Base::bar(); // prints Base::bar
+    bptr->bar();         // prints Base::bar (bar is not virtual)
+    bref.bar();          // prints Base::bar (bar is not virtual)
+}
+```
+
+Polymorphic manipulation of an object requires that the object be accessed either through a pointer or a reference.
+
+C++ supports polymorphism in the following ways:
+- Through implicit conversions: `Base* bptr = new Derived();`
+- Through the virtual function mechanism: `bptr->foo()`
+- Through `dynamic_cast` and `typeid` operators: `if (Derived* dptr = dynamic_cast<Derived*>(bptr)) {...}`
+
+Polymorphism allows extensibility and frees the user from having to recode behaviour or common actions of types in a hierarchy. 
+
+The memory requirements to represent a class object in general are the following:
+- The accumulated size of its nonstatic data members
+- Plus any padding (between members or on the aggregate boundary itself) due to alignment constraints (or simple efficiency)
+- Plus any internally generated overhead to support the virtuals
+
+The memory requirement to represent a pointer is a fixed size based on the hardware architecture, regardless of the type it addresses.
+
+When a base class object is directly initialized or assigned with a derived class object, the derived object is sliced to fit into the available memory resources of the base type. There is nothing of the derived type remaining. Polymorphism is not present, and an observant compiler can resolve an invocation of a virtual function through the object at compile time, thus by-passing the virtual mechanism. This can be a significant performance win if the virtual function is defined as inline.
+
+## Constructor Semantics 
+
+Global objects are guaranteed to have their associated memory "zeroed out" at program start-up. Local objects allocated on the program stack and heap objects allocated on the free-store do not have their associated memory zeroed out; rather, the memory retains the arbitrary bit pattern of its previous use.
+
+Non-trivial default constructors 
+
+## Data Member Semantics 
+
+## Member Function Semantics 
+
+## Construction, Destruction and Copy 
+
+## Runtime Semantics 
+
+## tl;dr 
+
+Object Layout in Memory 
+- An object only contains non-static data members
+    - Data members have their own alignment requirements and padding is inserted as necessary 
+    - The order in which data members are declared is the order in which they are layed out in the object memory
+    - Access modifiers (public/protected/private) are purely compile-time restrictions, they do not affect the layout 
+    - In single inheritance, the base class is placed at the start of the object's memory. This allows a pointer of the base class to point to an object of derived class
+    - With multiple inheritance, the base objects are layed out in the order they are declared in the inheritance clause. The compiler has to adjust the pointer for the second base class subobject onwards since it does not start at the start of the object's memory (it is offset by the first base class subobject)
+    - With virtual inheritance, a vptr is inserted typically at the start of the object's memory, before the data members
+    - With multiple inheritance, each polymorphic base class subobject begins with its own vptr. 
+    - With single inheritance, a vptr is still inserted at the start of the base class subobject, but it points to the vtable of the derived class. If the derived class does not override the virtual function, the vptr points to the vtable of the base class
+    - There is only one vtable per polymorphic class
+    - Vtables are typically stored in the .rodata segment
+    - The runtime type information (RTTI) is also stored in the vtable. The compiler places a pointer to a `std::type_info` struct at a negative offset inside the vtable. When you use `std::dynamic_cast`, the program uses the vptr to read the type descriptor and safely check the inheritance hierarchy at runtime
+        - You can disable RTTI with `-fno-rtti` flag. This will disable the generation of RTTI in the binary. The compiler will throw errors if you try to use `dynamic_cast` or `typeid` which relies on it. But virtual dispatch will still work
+    - Even if a derived class does not override a virtual function, it still has a vptr pointing to the vtable for its own class. The vtable entry simply points to the function in the base class.
+    - For shared base objects due to virtual inheritance, they are typically placed after the non-virtual part of the most-derived object.
+        - The compiler does not know in advance the offset of the shared base object, so it puts it at the back. Though this is not required and compilers are free to implement it however they want.
+- Static data members are stored in .data or .bss segment 
+- Member functions, constructors, destructors are stored in the .text section of memory. Each of them have their own distinct addresses. 
+
+Other notes
+- For non-virtual functions, the function called depends entirely on the static type of the pointer/reference. There is no vtable lookup or runtime indirection 
+- When a derived class defines a non-virtual function of the same name as a base class, it hides the base class's function, not override
+- Virtual dispatch is bypassed using qualified name lookup using the namespace `::` operator. The function call is bound at compile time.
+
+What the compiler roughly translates code into:
+```cpp 
+class A {
+    int x;
+    void foo() {
+        x = 5;
+    }
+};
+
+A a;
+a.foo();
+---
+A::foo(&a); 
+// foo is equivalent to void foo(A* this);
+// x = 5 becomes this->x = 5
+
+Base* p = new Derived;
+p->foo();
+---
+(*(p->vptr[0]))(p); // virtual dispatch roughly something like this
+```
+- Every non-static member function has an implicit `this` parameter 
+

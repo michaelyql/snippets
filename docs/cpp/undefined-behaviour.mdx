@@ -1,0 +1,14 @@
+
+# Undefined Behaviour
+
+UB renders the entire program meaningless if certain language rules are violated. E.g. data race, array access out of bounds, signed integer overflow, null pointer dereference, more than one modification to a scalar in an expression that is unsequenced, access to an object through a pointer of different type etc. 
+
+_Ill-formed_ means the program has syntax/semantic errors and does not compile.
+
+_Ill-formed, no diagnostic required_ (IFNDR) means the program has semantic errors, but which may not be diagnosable or may be too computationally expensive or complex to catch at compile time. Hence, the compiler is not required to throw a warning or error. For example, violations of the One Definition Rule (ODR) such as two inline functions in separate files having the same name but with different definitions, can only be caught during the link stage. If the program is compiled and executed, the behaviour is undefined.
+
+Ill-formed is a compile-time property, while UB is a runtime property.
+
+_Implementation-defined behaviour_ is behaviour that varies between different implementations, and which behaviour must be documented. 
+
+_Unspecified behaviour_ is when the bebaviour of a program differs between implementations, but is not required to be documented. For example, the order of evaluation, whether or not identical string literals are distinct, and the overhead of array allocation.

@@ -90,6 +90,12 @@ new int * 1; // error, parsed as (new int*) (1)
 
 ## Smart Pointers
 
+### `std::enable_shared_from_this<T>`
+
+- Inherit from this class i.e. `class A : public enable_shared_from_this<A>` to enable returning a shared pointer to the current object using a member method using `shared_from_this()`
+    - The naive method to return `std::make_shared<A>(this)` returns a _new_ shared pointer with a separate control block pointing to the same object. This can lead to double-free and use-after-free.
+    - Under the hood, `enable_shared_from_this` has a `weak_ptr` data member pointing to itself. This prevents creating strong reference cycles 
+
 ## `std::allocator` 
 
 ## Custom Memory Allocator

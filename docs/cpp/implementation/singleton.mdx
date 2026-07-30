@@ -1,1 +1,32 @@
 # Singleton
+
+```cpp showLineNumbers title="singleton.cpp"
+class A {
+private:
+    A() = default;
+
+public:
+    A(const A&) = delete;
+    A(A&&) = delete;
+    A& operator=(const A&) = delete;
+    A& operator=(A&&) = delete;
+
+    static A& Instance() {
+        static A a_;
+        return a_;
+    }
+};
+
+int main() {
+    A& a = A::Instance();
+    // A a = A::Instance(); // not allowed
+}
+```
+- Notes:
+    - The move and copy constructor/assignment operator are marked as deleted so that only a reference to the singleton can be obtained 
+    - If the move and copy constructor/assignment operator were not deleted, someone could write code like this: 
+        ```cpp
+        A a = A::Instance(); 
+        ```
+        which would invoke the copy constructor.
+

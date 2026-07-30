@@ -1,0 +1,12 @@
+
+# String 
+
+
+## Small String Optimization (SSO)
+
+## Memory Footprint
+
+- `sizeof(std::string)` returns the fixed footprint size for the control block allocated on the stack, evaluated at compile time. This is usually 32 bytes (or 24, depending on the compiler), regardless of how many characters are in the current string. 
+    - The control block typically contains: a pointer to the heap memory location storing the characters (8 bytes), a `size_t` integer for the current length (8 bytes), a `size_t` integer for the capacity (8 bytes), and a SSO buffer (15 to 22 bytes), which most modern compilers reuse the existing internal storage to double as the buffer.
+- `str.size()` on the other hand is evaluated at runtime and returns the length of the current string. 
+- `sizeof("abcde")` on the other hand, returns the number of characters in the null-terminated C-string. Note that it also includes the null-terminator `\0` at the end. In this case, the size is 6.

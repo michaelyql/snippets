@@ -1,0 +1,50 @@
+
+# Exceptions
+
+## Exception Handling 
+
+Exception handling provides a way of transferring control and information from a point in the execution of a thread to an exception handler associated with a point previously passed by the execution. 
+
+A handler will be invoked only by throwing an exception in code executed in the handler's try block or in functions called from the handler's try block.
+
+### Throwing Exceptions 
+
+- An exception can be thrown from one of the following contexts 
+    - _throw-expressions_
+    - allocation functions 
+    - `dynamic_cast`
+    - `typeid`
+    - _new-expressions_ i.e. using `new`
+    - standard library functions
+- Throwing an exception transfers control to a handler. 
+    - Control is transferred to the _nearest_ handler with a matching type. "nearest" meaning the compound statement or ctor-initializer following the `try` keyword that was most recently entered and not yet exited
+    - Throwing an exception initializes an object with **dynamic storage duration**, called the _exception object_. 
+        - If the type of object thrown is an incomplete type, an abstract class type, or a pointer to an incomplete type (other than cv `void`), the program is ill-formed.
+    - If the handler exits by rethrowing the exception object, control is passed to another handler for the same exception object
+    - The potential points for destruction for the exception object are 
+        - when an active handler for the exception exits by any means other than rethrowing, immediately after the destruction of the object (if any) declared in the _exception-declaration_ (i.e. the `catch (...)` clause) in the handler
+        - when an object of type `std​::​exception_ptr` that refers to the exception object is destroyed, before the destructor of `std​::​exception_ptr` returns
+- The implementation may then deallocate memory for the exception object. Any such deallocation is done in an unspecified way.
+- An exception is considered _uncaught_ after completing the initialization of the exception object until completing the activation of a handler for the exception. 
+    - As a consequence, an exception is considered uncaught during any stack unwinding resulting from it being thrown.
+- If an exception object is rethrown, it is considered uncaught from the point of rethrow until the rethrown exception is caught.
+- An exception is considered caught when a handler for that exception becomes _active_.
+- If the exception handling mechanism handling an uncaught exception directly invokes a function that exits via an exception, the function `std​::​terminate` is invoked.
+    - If a destructor directly invoked by stack unwinding exits via an exception, `std​::​terminate` is invoked
+
+### Stack Unwinding 
+
+
+## Exception Safety 
+
+After an exception is thrown, there are four different levels of guarantees regarding the state of the program. They are strict supersets of each other. 
+
+1. _Nothrow (or nofail) exception guarantee_ (strongest): the function never throws exceptions
+    - Nothrow is expected of destructors and other functions that may be called during _stack unwinding_
+    - Destructors are noexcept by default (since C++11)
+    - Nofail (i.e. the function always succeeds) is expected of swaps, move constructors, and other functions that provide _strong exception guarantee_
+2. _Strong exception guarantee_: If the function throws an exception, the state of the program is rolled back to the state just before the function call (e.g. `std::vector::push_back`)
+3. _Basic exception guarantee_: If the function throws an exception, the program is in a valid state. No resources are leaked, and all objects' invariants are intact 
+4. _No exception guarantee_: If the function throws an exception, the program may not be in a valid state: resource leaks, memory corruption, or other invariant-destroying errors may have occurred
+
+## Exception Objects 

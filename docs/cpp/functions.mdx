@@ -3,3 +3,49 @@ description: Functions, default arguments, variadic arguments, lambdas
 ---
 
 # Functions
+
+## Function Overloading 
+
+To compile function calls, the compiler first performs name lookup. If the name refers to more than one entity, the function is said to be _overloaded_ and the compiler must determine which overload to call. For function templates, this may be followed by template argument deduction.
+
+The overload whose parameters match the arguments most closely is the one that is selected. 
+
+Overload resolution proceeds through the following steps:
+1. Building the set of candidate functions
+2. Trimming the set to only viable functions
+3. Analyzing the set to determine the single best viable function, which may involve ranking of _implicit conversion sequences_
+
+### Building the candidate set
+
+There are different rules for building the candidate set based on the context in which overload resolution takes place. 
+
+The cases are:
+- Call to a named function
+- Call to a class object
+- Call to an overloaded operator 
+- Initialization by constructor 
+- Copy-initialization by conversion 
+- Non-class initialization by conversion 
+- Reference initialization by conversion 
+- List initialization 
+
+
+Additional rules for function template candidates 
+
+
+
+Additional rules for constructor candidates 
+
+Additional rules for member function candidates 
+
+### Viable functions
+
+### Best viable function
+
+### Ranking of implicit conversion sequences 
+
+## Name Mangling
+
+## Relevant Articles 
+
+- [Name Mangling - IBM Documentation](https://www.ibm.com/docs/en/i/7.2.0?topic=linkage-name-mangling-c-only)

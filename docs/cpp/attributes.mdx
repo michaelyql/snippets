@@ -1,0 +1,21 @@
+
+# Attributes 
+
+Attributes provide a unified syntax for implementation-defined language extensions. An attribute list is enclosed in double square brackets `[[ ]]`. For example, `[[nodiscard]]`, `[[unlikely]]`, `[[maybe_unused]]`.
+
+## Funny gotcha 
+
+```cpp
+struct S {
+    template <typename Callback>
+    void operator[](Callback foo) {
+        foo();
+    }
+};
+
+int main() {
+    auto caller = S{};
+    caller[ [] { std::cout << "getcracked"; } ];
+}
+```
+- The program does not compile. Two consecutive square brackets are parsed as attributes 

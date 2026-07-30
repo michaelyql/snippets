@@ -263,6 +263,36 @@ Copy elision is one of two allowed forms of optimization, alongside **allocation
 
 In a `return` or `throw` expression, if the compiler cannot perform copy elision but the conditions for copy elision are met, or would be met except that the source is a function parameter, the compiler will attempt to use the move constructor even if the source operand is an lvalue (until C++23) / the source operand will be treated as an rvalue (since C++23).
 
+### Disabling NRVO 
+
+Copy elision can be disabled using the flag `-fno-elide-constructors`. This flag forces the compiler to call copy and move constructors in places where they would normally be optimized away.  This may be useful for debugging lifecycles and tracking the exact creation, copying, and destruction of objects. 
+
+With C++17, this flag does not disable all elision. URVO is guaranteed by the compiler so it cannot be disabled. This means returning an unnamed temporary, initializing an object from a temporary etc. will still only result in a single constructor call. The flag can only disable NRVO where you return a named variable.
+
+```cpp
+class A {
+public:
+    A() { std::cout << "1"; }
+    A(const A& copy) { std::cout << "2"; }
+    ~A() { std::cout << "3"; }
+};
+
+A createA() {
+    A temp {};
+    return temp;
+}
+
+int main() {
+    A a { createA() }; // prints 123233
+
+    // temp is created, calls default constructor - 1
+    // temp is copied into the call site createA(), calling copy constructor - 2
+    // temp is destroyed, calling dtor - 3
+    // copy constructor is invoked to initialize a - 2
+    // the copy is destroyed - 3
+    // lastly, a is destroyed - 3
+}
+```
 
 ## Relevant Articles
 
