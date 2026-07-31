@@ -3,21 +3,241 @@
 ## Unique Pointer
 
 ```cpp showLineNumbers title="unique_ptr.cpp"
-template<typename T>
-class unique_ptr {
-private:
+template <typename T>
+struct custom_deleter
+{
+    void operator()(T* pointer) const
+    {
+        delete pointer;
+    }
+};
 
+template <typename T, typename Deleter = custom_deleter<T>>
+class unique_ptr
+{
 public:
-    unique_ptr() = de
-    T* raw_ptr;
-    T& operator*() {
-        return *raw_ptr;
+    unique_ptr() 
+    { 
+        ptr_ = nullptr;
     }
-    T& operator->() {
-        return *raw_ptr;
+    unique_ptr(T* pointer)
+    {
+        ptr_ = pointer;
     }
-}
 
+    unique_ptr(const unique_ptr&) { 
+        throw std::exception{};
+    };
+    unique_ptr& operator=(const unique_ptr&) {
+        throw std::exception{};
+    };
+
+    unique_ptr(unique_ptr&& other) noexcept
+    {
+        ptr_ = other.ptr_;
+        other.ptr_ = nullptr;
+    }
+
+    unique_ptr& operator=(unique_ptr&& other) noexcept
+    {
+        if (this == &other) return *this;
+        release_();
+        std::swap(ptr_, other.ptr_);
+        return *this;
+    }
+
+    ~unique_ptr()
+    {
+        release_();
+    }
+
+    T* release()
+    {
+        T* p = ptr_;
+        ptr_ = nullptr;
+        return p;
+    }
+
+    void reset(T* pointer)
+    {
+        release_();
+        ptr_ = pointer;
+    }
+
+    bool is_owning() const { 
+        return ptr_ != nullptr;
+    }
+
+    T& operator*() const { 
+        return *ptr_;
+    }
+    T* operator->() const { 
+        return ptr_;
+    }
+    explicit operator bool() const {
+        return ptr_ != nullptr;
+    }
+
+private:
+    T* ptr_;
+
+    void release_() {
+        if (ptr_) {
+            Deleter{}(ptr_);
+        }
+        ptr_ = nullptr;
+    }
+};
 ```
+- Notes:
+    - copy ctor/assignment operator is usually marked `= delete` instead of throwing runtime exceptions
 
 ## Shared Pointer
+
+The following uses mutexes instead of atomics for reference counting:
+```cpp showLineNumbers title="shared_ptr.cpp" 
+template <typename T, typename Deleter = std::default_delete<T>>
+class SharedPointer {
+private:
+    struct ControlBlock {
+        explicit ControlBlock(std::size_t count, Deleter deleter)
+            : count_{count}, deleter_{std::move(deleter)} {}
+
+        std::size_t count_{0};
+        Deleter deleter_;
+        mutable std::mutex mutex_;
+    };
+
+public:
+    SharedPointer() noexcept : SharedPointer(nullptr) {}
+
+    explicit SharedPointer(T* pointer) {
+        if (pointer) {
+            Initialize(pointer, Deleter{});
+        }
+    }
+
+    SharedPointer(T* pointer, Deleter deleter) {
+        if (pointer) {
+            Initialize(pointer, std::move(deleter));
+        }
+    }
+
+    SharedPointer(const SharedPointer& other) noexcept {
+        CopyFrom(other);
+    }
+
+    SharedPointer& operator=(const SharedPointer& other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        TryRelease();
+        CopyFrom(other);
+        return *this;
+    }
+
+    SharedPointer(SharedPointer&& other) noexcept {
+        StealFrom(std::move(other));
+    }
+
+    SharedPointer& operator=(SharedPointer&& other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        TryRelease();
+        StealFrom(std::move(other));
+        return *this;
+    }
+
+    ~SharedPointer() {
+        TryRelease();
+    }
+
+    void reset() noexcept {
+        TryRelease();
+    }
+
+    void reset(T* pointer) {
+        reset();
+        if (!pointer) {
+            return;
+        }
+        Initialize(pointer, Deleter{});
+    }
+
+    void reset(T* pointer, Deleter deleter) {
+        reset();
+        if (!pointer) {
+            return;
+        }
+        Initialize(pointer, std::move(deleter));
+    }
+
+    std::size_t get_count() const {
+        if (!block_) {
+            return 0;
+        }
+        std::scoped_lock lock{block_->mutex_};
+        return block_->count_;
+    }
+
+    T* get() const noexcept { return pointer_; }
+    T* operator->() const noexcept { return pointer_; }
+    T& operator*() const noexcept { return *pointer_; }
+
+    explicit operator bool() const noexcept { return pointer_ != nullptr; }
+
+private:
+    void CopyFrom(const SharedPointer& other) noexcept {
+        pointer_ = other.pointer_;
+        block_ = other.block_;
+
+        if (!block_) {
+            return;
+        }
+
+        std::scoped_lock lock{block_->mutex_};
+        ++block_->count_;
+    }
+
+    void StealFrom(SharedPointer&& other) noexcept {
+        pointer_ = std::exchange(other.pointer_, nullptr);
+        block_ = std::exchange(other.block_, nullptr);
+    }
+
+    void Initialize(T* pointer, Deleter deleter) {
+        pointer_ = pointer;
+        block_ = new ControlBlock{1, std::move(deleter)};
+    }
+
+    void TryRelease() noexcept {
+        if (!block_) {
+            return;
+        }
+
+        ControlBlock* localBlock = block_;
+        T* localPtr = pointer_;
+
+        bool shouldDelete = false;
+        {
+            std::scoped_lock lock{localBlock->mutex_};
+            shouldDelete = (--localBlock->count_ == 0);
+        }
+
+        pointer_ = nullptr;
+        block_ = nullptr;
+
+        if (!shouldDelete) {
+            return;
+        }
+
+        // Stateful deleter stored in the control block
+        localBlock->deleter_(localPtr);
+        delete localBlock;
+    }
+
+private:
+    T* pointer_{nullptr};
+    ControlBlock* block_{nullptr};
+};
+```

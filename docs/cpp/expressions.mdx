@@ -116,11 +116,153 @@ A sequence point is a specific point in execution where all previous side effect
 
 ## Operators \& Precedence
 
+### Operator Overload
+
+
+
 ## Conversions
 
 ### Implicit Conversion
 
+Implicit conversion occurs when passing a type `T1` into a context that does not accept that type but accepts another type `T2`. The program is well-formed (compiles) only if there exists _one unambiguous implicit conversion sequence_ from `T1` to `T2`.
+
+If there are multiple overloads of the function or operator being called, after the implicit conversion sequence is built from `T1` to each available `T2`, _overload resolution rules_ decide which overload is compiled.
+
+In arithmetic expressions, the destination type for the implicit conversions on the operands to binary operators is determined by a separate set of rules: _usual arithmetic conversions_.
+
+### Integral/Float Promotion
+- prvalues of small integral types (such as `char`) and unscoped enumeration types may be converted to prvalues of larger integral types (such as `int`)
+- In particular, arithmetic operators do not accept types smaller than `int` as arguments, and integral promotions are automatically applied after lvalue-to-rvalue conversion, if applicable. This conversion always preserves the value.
+- Overload resolution chooses `char` -> `int` (promotion) over `char` -> `short` (conversion).
+- A prvalue of type `float` can be converted to a prvalue of type `double`. The value does not change.
+
+### Numeric Conversions
+Unlike promotions, numeric conversions may change the values, with potential loss of precision.
+
+### Usual Arithmetic Conversions 
+Many binary operators that expect operands of arithmetic or enumeration type cause conversions and yield result types in a similar way. The purpose is to yield a common type, which is also the type of the result. This pattern is called the _usual arithmetic conversions_.
+
+Usual arithmetic conversion progresses in five stages. lvalue-to-rvalue conversion of both operands, checking of enum types, checking of _floating point conversion rank and subrank_, then checking of _integer conversion rank_
+
+
 ### Explicit Conversion
 
 ### User-defined Conversion
+
+Enables _implicit conversion_ or _explicit conversion_ from a class type to another type.
+
+The conversion function is declared like a non-static member function, or member function template with no parameters, no explicit return type, and with the name of the form:
+- `operator conversion-type-id`
+    - Prticipates in all implicit and explicit conversions
+- `explicit operator conversion-type-id`
+    - Participates in direct initialization and explicit conversions only
+- `explicit ( expression ) operator conversion-type-id`
+    - Conditionally explicit 
+
+Note: `conversion-type-id` cannot represent an array or a function type. Pointers to arrays/function types are still valid, but only through a typedef (`[]` and `()` are not allowed in the declarator for `conversion-type-id`)
+
+```cpp
+struct X {
+    operator int() const { return 7; } // implicit conversion
+    
+    explicit operator int*() const { return nullptr; } // explicit conversion
+
+    // operator int(*)[3]() const { return nullptr; } 
+    // Error: array operator not allowed in conversion-type-id
+    
+    using arr_t = int[3];
+    operator arr_t*() const { return nullptr; } // OK if done through typedef
+//  operator arr_t () const; // Error: conversion to array not allowed in any case
+};
+
+int main() {
+    X x;
+
+    int n = static_cast<int>(x);   // OK: sets n to 7
+    int m = x;                     // OK: sets m to 7
+
+    int* p = static_cast<int*>(x); // OK: sets p to null
+//  int* q = x; // Error: no implicit conversion
+
+    int (*pa)[3] = x;  // OK
+}
+```
+
+`explicit operator bool()` is a user-defined conversion function that allows an object to be safely evaluated as a boolean context (like an `if` statement) while preventing accidental or unsafe implicit conversions to arithmetic types.
+
+Before C++11, developers used `operator bool()` without the `explicit` keyword. This caused a major safety issue, where the compiler would secretly convert the object into an integer in unexpected places:
+```cpp
+struct Unsafe {
+    operator bool() const { return true; }
+};
+
+Unsafe obj;
+int x = obj + 5; // obj implicitly becomes 1
+// Adding explicit solves this. It allows the object to convert to bool 
+// only where a boolean is explicitly expected
+```
+
+### Casting 
+- `std::static_cast<T>`
+- `std::dynamic_cast<T>`
+- `std::const_cast<T>` 
+- `std::reinterpret_cast<T>`
+
+### Tricky questions
+
+1.
+```cpp
+void foo(float&&) { std::cout << "f"; }
+void foo(int&&) { std::cout << "i"; }
+
+template <typename... T>
+void bar(T&&... v)
+{
+    (foo(v), ...);
+}
+
+int main()
+{
+    bar(1.0f, 2); // prints "if", not "fi"
+}
+```
+- Although `1.0f` and `2` were passed in as prvalues, inside `bar` they become lvalues associated with the named variables `v1` and `v2` (after pack expansion)
+- `int&` cannot bind to `int&&` and likewise `float&` cannot bind to `float&&`
+- `float&` is converted into a prvalue `int`, so it calls `foo(int&&)` 
+- `int&` is converted into a prvalue `float`, so it calls `foo(float&&)`
+- If we used `foo(std::forward(v), ...)` instead, it would print `"fi"`
+
+<br/>
+
+2. 
+```cpp
+struct C {
+    C() { std::cout << "c"; }
+    C(const C&) { std::cout << "C"; }
+
+    void foo() { std::cout << "1"; }
+};
+
+struct D {
+    D() { std::cout << "d"; }
+    D(const C&) { std::cout << "D"; }
+
+    void foo() { std::cout << "2"; }
+};
+
+
+auto bar(bool flag) {
+    return flag ? C{} : D{};
+}
+
+int main() {
+    bar(true).foo();
+    bar(false).foo();
+    // prints cD2d2
+}
+```
+- `auto` tries to deduce the type of the return value in the two branches of `?`
+- If they are different types, an attempt is made to form an implicit conversion sequence from one type to the other
+- C can be converted to D via D's conversion constructor while D cannot be converted to C. Hence `auto` is inferred as D
+- When `flag` is true, a temporary object of type C is first created. Then an object of type D is created via D's conversion constructor, `D(const C&)`
 

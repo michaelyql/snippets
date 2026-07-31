@@ -5,3 +5,21 @@
 ### Branch Selection 
 
 Nested if statements 
+
+## Return
+
+- Only functions with cv `void` return type, constructors and destructors may have a `return` statement with no operand (i.e. just `return;`)
+- Constructors and destructors do not have a return type
+- `return void;` is only allowed for functions that have cv `void` return type 
+- The return statement initializes the returned reference/prvalue by _copy-initialization_ from the operand 
+
+According to the standard, 
+> Reaching the end of a constructor, destructor, or a non-coroutine function with a void return type is treated the same as executing a return statement with no operand. In all other cases, if control reaches the end of a function that is neither main (§[basic.start.main]) nor a coroutine (§[dcl.fct.def.coroutine]), the behavior is undefined.
+
+```cpp
+int main() {
+    auto foo = [] -> int { };
+    foo();
+}
+```
+- The above example exhibits undefined behaviour. This would be a compilation error if your compiler treated warnings as error (via a compilation flag)

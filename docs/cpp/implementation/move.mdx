@@ -1,1 +1,30 @@
 # Move
+
+`std::move` casts an lvalue expression into an rvalue reference, signaling that an object's resources can be moved from. 
+
+`std::move` does not actually move any data; it simply tells the compiler that the object is a temporary candidate for resources transfer. It enables _move semantics_, which optimizes performance by transferring ownership of internal resources, instead of making deep expensive copies.
+
+Implementation:
+
+```cpp showLineNumbers title="move.cpp"
+template<typename T>
+constexpr decltype(auto) move(T&& t) {
+    return std::static_cast<std::remove_reference<T>::type&&>(t);
+}
+```
+`std::remove_reference<T>` (from C++11) strips lvalue or rvalue reference modifiers from a type. Defined in `<type_traits>` header. It exposes the underlying type through the nested `::type` alias, or via the helper template `std::remove_reference_t<T>` (C++14).
+
+Alternatives 
+- `std::remove_cvref_t<T>` (C++20): removes both references and cv qualifiers at the same time 
+- `std::decay_t<T>` (C++11): strips references and cv qualifiers, while also converting arrays and functions to pointers
+
+Possible implementation of `std::remove_reference`:
+```cpp
+template<class T> struct remove_reference { typedef T type; };
+template<class T> struct remove_reference<T&> { typedef T type; };
+template<class T> struct remove_reference<T&&> { typedef T type; };
+```
+
+Other notes 
+- `std::remove_cvref_t` is essentially `std::remove_cv_t<std::remove_reference_t<T>>`
+- Other functions like `remove_volatile`, `remove_cv`, `remove_const`, `add_cv`, `add_const`, `remove_pointer` etc. are found in the `<type_traits>` header

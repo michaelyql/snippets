@@ -34,6 +34,37 @@ A handler will be invoked only by throwing an exception in code executed in the 
 
 ### Stack Unwinding 
 
+As control passes from the point where an exception is thrown to a handler, objects are destroyed by _stack unwinding_.
+
+Each object with _automatic storage duration_ is destroyed if it has been constructed, but not yet destroyed, since the `try` block was entered. 
+
+If an exception is thrown during the destruction of temporaries or local variables for a return statement, the destructor for the returned object (if any) is also invoked. The objects are destroyed in the _reverse order_ of the completion of their construction.
+
+```cpp
+struct A {
+    A(char c) : c_(c) {}
+    ~A() { std::cout << c_; }
+    char c_;
+};
+
+struct Y { ~Y() noexcept(false) { throw 0; } };
+
+A f() {
+  try {
+    A a('a');
+    Y y;
+    A b('b');
+    return { 'c' };      // #1
+  } catch (...) {
+  }
+  return { 'd' };        // #2
+}
+
+int main() {
+    f(); // prints bcad
+}
+```
+
 
 ## Exception Safety 
 

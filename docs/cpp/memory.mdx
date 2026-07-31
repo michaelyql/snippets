@@ -4,12 +4,18 @@
 ## Low-Level Basic Memory Management
 
 ### `malloc`
+
 - Syntax: `void* malloc(std::size_t size)` 
 - If allocation succeeds, returns a pointer to the lowest (first) byte in the allocated memory block that is suitably aligned for any scalar type 
+- On  failure, returns a `nullptr`
 - If `size` is zero, the behaviour is implementation defined (null pointer may be returned, or some non-null pointer that may not be used to access storage but has to be passed to `std::free`)
+
 ### `new`
+
 - Allocates storage and attempts to construct and initialize either a single unnamed object, or an unnamed array of objects in the allocated storage
 - Returns a prvalue pointer to the constructed object, or if an array of objects was constructed, a pointer to the initial element of the array
+    - On failure, throws `std::bad_alloc`
+    - Using `new (std::nothrow) ...`, it returns a `nullptr` on failure instead
 - Syntax: 
     - (1) `new (type) initializer` 
     - (2) `new type initializer` 
@@ -81,6 +87,8 @@ new int * 1; // error, parsed as (new int*) (1)
     ```
     - The extra placement argument is only used during allocation, and potentially during cleanup if construction fails. 
 
+
+
 ## `malloc/free` vs `new/delete`
 - `malloc` only allocates memory; it does not initialize or construct the objects. You have to manually construct and initialize the objects 
     - You can use `memset` or `calloc` to zero initialize the allocated memory
@@ -98,4 +106,15 @@ new int * 1; // error, parsed as (new int*) (1)
 
 ## `std::allocator` 
 
-## Custom Memory Allocator
+### Custom Allocator
+
+## Deleter 
+
+### `std::default_delete`
+
+`std::default_delete<T>` is the default destruction policy used by `std::unique_ptr` when no deleter is specified.
+
+It has a single member function `void operator()(T* ptr) const` which calls `delete` on `ptr`.
+
+It also has an array specialization to delete arrays.
+

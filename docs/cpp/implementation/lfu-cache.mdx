@@ -1,0 +1,78 @@
+# Least Frequently Used Cache 
+
+In this implementation, the LFU cache evicts entries based on their usage count (lowest used count gets evicted first), breaking ties by their last usage time (oldest entry evicted first).
+
+The cache has a capacity, and each entry has an associated size. Entries are evicted until there is enough space to accomodate the new entry. If the size exceeds the capacity, the update is skipped.
+
+```cpp showLineNumbers title="lfu-cache.cpp"
+class LFUCache {
+public:
+    LFUCache(int capacity): capacity_(capacity) {}
+
+    void put(int key, int value, int size) {
+        if (size > capacity_) return;
+        auto it = entries_.find(key);
+        int count = 1;
+        if (it != entries_.end()) {
+            const auto& e = it->second;
+            cache_.erase(e);
+            current_capacity_ -= e.size_;
+            count = e.count_ + 1;
+            entries_.erase(e.key_);
+        }
+        while (size + current_capacity_ > capacity_ && !cache_.empty()) {
+            auto it = cache_.begin();
+            entries_.erase(it->key_);
+            current_capacity_ -= it->size_;
+            cache_.erase(it);
+        }
+        entries_.try_emplace(key, key, value, size, count, timer);
+        cache_.emplace(key, value, size, count, timer);
+        current_capacity_ += size;
+        timer++;
+    }
+
+    int get(int key) {
+        auto it = entries_.find(key);
+        if (it == entries_.end()) return -1;
+        cache_.erase(it->second);
+        
+        it->second.count_++;
+        it->second.last_use_ = timer++;
+
+        cache_.emplace(entries_[key]);
+        return it->second.value_;
+    }
+
+    int peek(int key) {
+        auto it = entries_.find(key);
+        if (it == entries_.end()) return -1;
+        timer++;
+        return it->second.value_;
+    }
+private:
+    const int capacity_;
+    int current_capacity_ { 0 };
+    unsigned long long timer { 0 };
+    struct entry {
+        int key_, value_, size_, count_;
+        unsigned long long last_use_;
+        bool operator<(const entry& other) const {
+            if (count_ != other.count_) return count_ < other.count_;
+            if (last_use_ != other.last_use_) return last_use_ < other.last_use_;
+            return key_ < other.key_;
+        }
+        entry() = default;
+        entry(int key, int value, int size, int count, unsigned long long last_use)
+            : key_(key), value_(value), size_(size), count_(count), last_use_(last_use) {} 
+        entry(const entry&) = default;
+        entry(entry&&) = default;
+        entry& operator=(const entry&) = default;
+        entry& operator=(entry&&) = default;
+    };
+    std::unordered_map<int, entry> entries_ {};
+    std::set<entry> cache_ {};
+};
+```
+
+Problem Reference: [LFU Cache](https://getcracked.io/problem/216/least-frequently-used-cache?language=Cpp)

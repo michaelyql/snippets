@@ -8,3 +8,25 @@
 
 ## `std::exit`
 
+`std::exit` is not responsible for destroying values with automatic storage duration (local). It only does so for static (global) storage duration. 
+
+From the C++ standard, 
+
+> First, objects with thread storage duration and associated with the current thread are destroyed. Next, objects with static storage duration are destroyed and functions registered by calling at exit are called. See §[basic.start.term] for the order of destructions and calls. (Objects with automatic storage duration are not destroyed as a result of calling exit().)
+
+```cpp
+struct X {
+    char x;
+    X(char x): x{ x } {}
+    ~X() { std::cout << x; }
+};
+
+X a('a');
+
+int main() {
+    X b('b');
+    std::exit(0);
+}
+// prints 'a' only
+```
+- When `std::exit(0)` is called, the destructor of `b` is not called, only that of `a` is called.

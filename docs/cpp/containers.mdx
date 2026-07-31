@@ -49,6 +49,47 @@
 - Expansion of deque is typically cheaper than vector as it does not involve copying all elements to the new memory location
     - But a deque has larger minimal memory cost e.g. holding one element requires allocating the entire fixed-size array
 
+
+## `std::unordered_map`
+
+- Iterator Invalidation
+    - `insert`, `emplace`, `operator[]` causes iterators to be invalidated only they cause a rehash
+    - `erase` causes iterators to be invalidated only to the element being erased 
+    - `clear`, `rehash`, `reserve`, `operator=` always cause iterators to be invalidated 
+    - Read only operations, `std::swap` never cause iterators to be invalidated
+- Loop over map entries 
+    - Almost always prefer to use `auto` and additionally with structured bindings `const auto& [k, v]` to infer the type of the map entry to avoid issues of specifying the wrong type and instead creating copies 
+        ```cpp
+        for (pair<int, int>& p : mp) {...}
+        for (pair<const int, int>& p : mp) {...}
+        ```
+    - The key is always `const` to prevent it from being modified directly. The first example creates a copy of the pair entries, as there is no implicit conversion from `pair<const int, int>` to `pair<int, int>`
+- Inserting without creating copies
+    - You can use `try_emplace(key, val)` (C++17) to construct the entry in-place 
+    - Otherwise, you can use `emplace(std::make_pair(key, value))`
+        - You may need to specify the type parameter explicitly 
+            ```cpp
+            map.emplace(1, A{2, 3});
+            map.emplace(1, std::pair<const int, A>{1, {2, 3}});
+            ```
+    - If the map's value type requires multiple arguments for its constructor, you must use `std::piecewise_construct` along with `std::forward_as_tuple` to separate the key's arguments from the value's arguments
+        ```cpp
+        struct A {
+            int x, y;
+        };
+
+        unordered_map<int, A> map;
+        map.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(1),
+            std::forward_as_tuple(2, 3)
+        );
+        ```
+    - `operator[]` is inefficient if `A` is expensive to construct or doesn't have a cheap default state 
+        - If the key doesn't exist in the map, a value is default constructed 
+        - `map[k] = v` will call the default ctor, followed by assignment operator if the key does not exist
+    - `emplace` and `try_emplace` are preferred because it constructs the object directly in place, avoiding any defualt constructorion or subsequent assignment
+
 ## Iterator Invalidation
 
 Read only methods never invalidate iterators or references. Insertion/erasure may invalidate certain iterators/references, so you have to check and make sure they are still valid to use. 

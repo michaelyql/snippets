@@ -4,6 +4,120 @@ description: Functions, default arguments, variadic arguments, lambdas
 
 # Functions
 
+## Function Declaration 
+
+### Triailing Return Type
+
+Syntax: `auto func(T a, T b) -> decltype(a + b)` places the return type after the parameter list.
+
+This lets the compiler see parameters (`a` and `b`) before working out the type of expression `a + b`. This is essential for templates where the return type changes depending on input types. 
+
+### `decltype(auto)`
+
+`decltype(auto)` is a _type specifier_ introduced in C++14 that deduces the _exact type_ of an expression, preserving its references (`&`, `&&`) and cv-qualifiers (`const`, `volatile`). 
+
+It essentially tells the compiler to use auto as a placeholder, but apply the strict type deduction rules of decltype instead of standard auto rules.
+
+Standard `auto` strips away references and top-level `const` qualifiers. If an expression returns a reference to a constant value, `auto` will copy it into a plain, non-const value.
+
+```cpp
+const int global_val = 42;
+const int& get_ref() { return global_val; }
+
+int main() {
+    auto a = get_ref();           // Type is 'int' (creates a copy!)
+    decltype(auto) b = get_ref(); // Type is 'const int&' (exact match!)
+}
+```
+
+`decltype(auto)` is heavily used by developers writing template libraries. It allows a wrapper function to "perfectly forward" the exact return type of the function it is wrapping without manual intervention.
+
+```cpp
+template <typename F, typename... Args>
+decltype(auto) proxy_wrapper(F f, Args&&... args) {
+    // Log something or manage a mutex
+    return f(std::forward<Args>(args)...); // Perfect returns whatever f returns
+}
+```
+
+One thing to take note of is how `decltype(auto)` behaves with parenthesis. Without parenthesis, it deduces the declared type of the variable. With parenthesis, it evaluates the expression as an lvalue reference (`T&`)
+
+```cpp
+decltype(auto) get_x() {
+    int x = 10;
+    return x;   // Deduces 'int'
+}
+decltype(auto) get_x_ref() {
+    int x = 10;
+    return (x); // Deduces 'int&' 
+    // dangerous, as it returns a reference to a dying local variable
+}
+```
+
+This is consistent with how the `decltype` specifier behaves. If the name of an object is parenthesized, it is treated as an ordinary lvalue expression, thus `decltype(x)` and `decltype((x))` are often different types. 
+
+`decltype` is useful when declaring types that are difficult or impossible to declare using standard notation, like lambda-related types or types that depend on template parameters.
+
+Note:
+- `const decltype(auto)& f();` is an error. `decltype(auto)` must be used on its own.
+
+
+
+### Return Type Deduction 
+
+If the function uses `auto`, trailing return type may be omitted, and will be deduced by the compiler from the type of the operand used in the `return` statement. 
+
+If the return type does not use `decltype(auto)`, the deduction follows the rules of **template argument deduction**. 
+
+```cpp
+int x = 1;
+auto f() { return x; }        // return type is int
+const auto& f() { return x; } // return type is const int&
+```
+
+If there are multiple return statements, they must all deduce to the same type.
+
+```cpp
+auto f(bool val)
+{
+    if (val) return 123; // deduces return type int
+    else return 3.14f;   // Error: deduces return type float
+}
+```
+
+If there is no return statement, or if the operand of the return statement is a void expression, the declared return type must be either `decltype(auto)` (in which the deduced return type is `void`), or (possibly cv-qualified) `auto` in which case the return type is (identically cv-qualified) `void`.
+
+```cpp
+auto f() {}              // returns void
+auto g() { return f(); } // returns void
+auto* x() {}             // Error: cannot deduce auto* from void
+```
+
+Once a return statement has been seen in a function, the return type deduced from that statement can be used in the rest of the function, including in other return statements:
+
+```cpp
+auto sum(int i)
+{
+    if (i == 1)
+        return i;              // sum’s return type is int
+    else
+        return sum(i - 1) + i; // OK: sum’s return type is already known
+}
+```
+
+If the return statement uses a brace-enclosed initializer list, deduction is not allowed:
+```cpp
+auto func() { return {1, 2, 3}; } // Error
+```
+
+Virtual functions and coroutines cannot use return type deduction. 
+
+```cpp
+struct F {
+    virtual auto f() { return 2; } // Error
+};
+```
+
 ## Function Overloading 
 
 To compile function calls, the compiler first performs name lookup. If the name refers to more than one entity, the function is said to be _overloaded_ and the compiler must determine which overload to call. For function templates, this may be followed by template argument deduction.
@@ -43,6 +157,10 @@ Additional rules for member function candidates
 ### Best viable function
 
 ### Ranking of implicit conversion sequences 
+
+## Lambdas 
+
+## Operator Overloading
 
 ## Name Mangling
 
