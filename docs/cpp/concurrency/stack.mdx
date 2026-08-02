@@ -2,7 +2,7 @@
 description: Stack that doesn't use locking mechanisms
 ---
 
-# Lock Free Stack
+# Stack
 
 ## Lock-free stack that leaks nodes
 
@@ -272,10 +272,11 @@ int main(){
 ## Hazard Pointers
 
 - The idea is to share an array of pointers between all threads
-- When a thread wants to delete a node, they check all other thread's hazard pointers to make sure that it's not pointing to the node that they want to delete before deleting it
+- When a thread attempts to reclaim a node, they check all other thread's hazard pointers to make sure that it's not pointing to the node that they want to reclaim before deleting it
 - This requires checking through the entire array each time
-- An optimized version would only try to reclaim nodes when there are more than `max_hazard_pointers` nodes on the reclamation list, instead of trying to reclaim nodes on every single `pop`
-    - This requires an atomic count for the number of nodes in the reclamation list
+- An optimized version would only try to reclaim nodes when there are more than `2 * K` nodes on the reclamation list, instead of trying to reclaim nodes on every single `pop`, where `K` is the max number of hazard pointers a single thread can hold
+- Each thread has its own private retirement list. The thread scans its own private list against the global hazard pointer array.
+- Each thread has its own thread local `retired_count`. Once the count exceeds the threshold, it scans the global hazard pointer array once and reclaim all nodes in its private list that are not protected. 
 
 ```cpp showLineNumbers
 unsigned const max_hazard_pointers=100;
@@ -414,3 +415,32 @@ std::shared_ptr<T> pop()
 ```
 
 ## Reference Counting
+
+## Using atomic shared pointer 
+
+Atomic shared pointers are not lock free in actuality
+
+```cpp
+template <typename T>
+struct Stack {
+    struct Node { T t; shared_ptr<Node> next; };
+    atomic<shared_pointer<Node>> head;
+    void push_front(T t) {
+        auto p = make_shared<Node>(std::move(t), head.load());
+        while (!head.compare_exchange_strong(p.next, p));
+    }
+    optional<T> pop_front() {
+        auto p = head.load();
+        while (p != nullptr && !head.compare_exchange_strong(p, p.next));
+        if (p != nullptr) return std::move(p->t);
+        else return {};
+    }
+};
+```
+
+- Existing strategies
+    - Use lowest order bits of the control block as a lock (spinlock and try to set, with exponential backoff if you spin too long)
+
+## Relevant Articles
+
+- [Lock free atomic shared pointers without split reference count - Daniel Anderson](https://www.youtube.com/watch?v=lNPZV9Iqo3U&t=644s)

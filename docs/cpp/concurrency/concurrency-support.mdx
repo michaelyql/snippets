@@ -6,31 +6,157 @@ description: Threads, Atomics, Semaphores, Mutexes, Futures
 
 ## `thread`
 
-### Creating a new thread
-
 ```cpp
-void f(int a, double b) {}
+#include <thread>
 
-std::thread t1(f, 1, 2.0);
+void f(int a, double b) {}
+std::thread t1(f, 1, 2.0); // std::thread(f, arg1, arg2, ...)
 
 struct X {
     int g(string s) {};
 }
-
 X x;
-std::thread t2(&X::g, &x, "a");
+std::thread t2(&X::g, &x, "a"); // pass implicit "this" pointer
+
+unsigned int HARDWARE_THREADS = std::thread::hardware_concurrency();
+
+if (t.joinable()) t.join();
+
+std::thread::id tid = t.get_id();
+
+swap(t1, t2);
+
+// std::this_thread namespace
+std::thread::id tid = std::this_thread.get_id();
+
+std::this_thread::yield(); 
+
+std::this_thread::sleep_for(2000ms); 
+
+std::this_thread::sleep_until(std::chrono::steady_clock::now() + 2000ms);
+```
+- Notes
+    - `std::thread` is not copyable, only moveable 
+    - Thread must either be `.join()`ed or `.detach()`ed. If `joinable() == true` when it's destructor is called, `std::terminate()` is called
+    - `std::jthread` (C++20) can be used in basically the same way. It automatically joins the thread when it exits scope and it can be cancelled in certain situations
+    - If a thread object has no associated thread, `get_id()` returns the default constructed `std::thread::id`
+    - After calling `detach()`, the thread object no longer owns any thread. Any allocated resource will be freed when the thread exits.
+    - C++14 time literals in are in `using namespace std::literals::chrono_literals;`
+    
+
+## `atomic<T>`
+
+```cpp
+#include <atomic> 
+
+// ======= Primary template =======
+atomic<int> x = 0;
+x.store(5, std::memory_order_release);
+int y = x.load(std::memory_order_acquire);
+int z = x.exchange(4, std::memory_order_relaxed); // RMW
+x.fetch_add(1, std::memory_order_acq_rel); // RMW
+
+int expected = x.load();
+while (x.compare_exchange_strong(expected, expected + 1)); 
+
+bool lock_free = x.is_lock_free();
+
+int old_val = 1;
+x.wait(old_val, std::memory_order_acquire); // C++20, wait until x is not old_val or notified
+
+
+// ======== Flag type =============
+std::atomic_flag v = ATOMIC_FLAG_INIT; // implementation defined, until C++20
+std::atomic_flag v;                    // default set to clear (false) from C++20
+
+v.clear(std::memory_order_release);        // set to false;
+v.test_and_set(std::memory_order_acq_rel); // set to true and return value beforehand (RMW)
+v.test(std::memory_order_acquire);         // read value
+v.wait(false, std::memory_order_acquire);  // wait until v is no longer false or is woken up by a notify
+v.notify();
+v.notify_all();
+while (v.test_and_set(std::memory_order_release)) { // spinlock
+    v.wait(true, std::memory_order_acquire); 
+}
 ```
 
-### `jthread`
+- Notes 
+    - For RMW operations, the failure/read ordering cannot be stronger (i.e. must be equal or more relaxed than) than the success/write ordering
+        - If the write ordering was weaker than the read ordering, the write would lack the synchronization guarantee to back up the read 
+        - `compare_exchange_weak` may fail _spuriously_, i.e. act as if `*this != expected` even if they are equal (read success but store failure). `compare_exchange_strong` does not fail spuriously.
+    - Specializations
+        - Integral type specializations have additional functions 
+            - `fetch_add, fetch_sub, fetch_and, fetch_or, fetch_xor, fetch_max, fetch_min, operator &=, operator |=, operator ^=, operator +=, operator -=, operator++, operator--`
+        - Pointer type `atomic<int*>` have `fetch_add, fetch_sub, fetch_max, fetch_min, operator+=, operator-=, operator++, operator--`
+        - `std::atomic_flag` is the only specialization that is guaranteed to be lock-free. Unlike `std::atomic<boolean>`, it does not provide load or store operations.
+        - There are aliases for all integral types, e.g. `atomic_bool` for `atomic<bool>`
 
-## `atomic`
+## `mutex`
 
-## Mutexes
+## `conditional_variable`
 
-### 
+```cpp
+#include <conditional_variable> 
 
-## `packaged_task`
+std::conditional_variable cv;
+std::mutex mtx;
 
-## `future`
+{
+    std::unique_lock<std::mutex> lk(mtx);
+    mtx.wait(lk, [](){ ... });
+    // lock acquired and condition passed
+    
+    // Other methods
+    mtx.wait_for(lk, 1000ms, [](){ ... });
+    mtx.wait_until(lk, now() + 1000ms);
 
-## `promise`
+    cv.notify_one();
+    cv.notify_all();
+}
+
+void thread_func() {
+    std::unique_lock<std::mutex> lk(mtx);
+
+    // ...
+
+    std::notify_all_at_thread_exit(cv, lk); 
+    // unlocks mtx and notifies other threads waiting on the cv at thread exit
+}
+```
+
+## `future`, `packaged_task`, `promise`
+
+```cpp
+int f(int x, int y) { return x + y; }
+
+std::packaged_task<int(int, int)> task([](int a, int b) {
+    return f(a, b);
+});
+std::future<int> fut = task.get_future();
+task(5, 10);
+fut.get(); // 15
+
+template<typename F, typename... Args>
+std::future<typename std::invoke_result_t<F, Args...>> post(F&& f, Args&&... args) {
+    using ReturnType = std::invoke_result_t<F, Args...>;
+    auto task = std::packaged_task<ReturnType()>(
+        [f = std::forward<F>(f), ...args = std::forward<Args>(args)]() mutable {
+        return f(std::move(args)...); 
+        // or std::invoke(f, std::move(args)...);
+    });
+    auto fut = task.get_future();
+    std::thread t([task = std::move(task)]() mutable {
+        task();
+    });
+    t.detach();
+    return fut;
+}
+auto fut = post(f, 5, 10); 
+fut.get(); // 15
+```
+- Notes
+    - Without `mutable`, `operator()` and `std::move()` cannot be invoked on a const object, which is why the lambdas need to be marked `mutable` in the example above
+    - Lambda pack-init capture is only available from C++20 and onwards
+    - `std::invoke_result_t` (`<type_traits>`) is only available from C++17 and onwards
+    - `packaged_task` is not copyable, only moveable
+    - You can specify a custom allocator for `packaged_task`.

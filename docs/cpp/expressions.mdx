@@ -124,40 +124,103 @@ A sequence point is a specific point in execution where all previous side effect
 
 ### Implicit Conversion
 
-Implicit conversion occurs when passing a type `T1` into a context that does not accept that type but accepts another type `T2`. The program is well-formed (compiles) only if there exists _one unambiguous implicit conversion sequence_ from `T1` to `T2`.
+Implicit conversion occurs when passing a type `T1` into a context that does not accept that type but accepts another type `T2`. 
+- This can be passing arguments to a function call, returning values of a different type than the declared return type, copy initialization, throw expressions, condition statements etc. Essentially, anywhere one type is expected and another is provided.
+- The program is well-formed (compiles) only if there exists one unambiguous _implicit conversion sequence_ from `T1` to `T2`.
 
-If there are multiple overloads of the function or operator being called, after the implicit conversion sequence is built from `T1` to each available `T2`, _overload resolution rules_ decide which overload is compiled.
-
-In arithmetic expressions, the destination type for the implicit conversions on the operands to binary operators is determined by a separate set of rules: _usual arithmetic conversions_.
-
-### Integral/Float Promotion
-- prvalues of small integral types (such as `char`) and unscoped enumeration types may be converted to prvalues of larger integral types (such as `int`)
-- In particular, arithmetic operators do not accept types smaller than `int` as arguments, and integral promotions are automatically applied after lvalue-to-rvalue conversion, if applicable. This conversion always preserves the value.
-- Overload resolution chooses `char` -> `int` (promotion) over `char` -> `short` (conversion).
-- A prvalue of type `float` can be converted to a prvalue of type `double`. The value does not change.
-
-### Numeric Conversions
-Unlike promotions, numeric conversions may change the values, with potential loss of precision.
-
-### Usual Arithmetic Conversions 
-Many binary operators that expect operands of arithmetic or enumeration type cause conversions and yield result types in a similar way. The purpose is to yield a common type, which is also the type of the result. This pattern is called the _usual arithmetic conversions_.
-
-Usual arithmetic conversion progresses in five stages. lvalue-to-rvalue conversion of both operands, checking of enum types, checking of _floating point conversion rank and subrank_, then checking of _integer conversion rank_
+The general form of an implicit conversion sequence is: 
+- zero or one _standard conversion sequence_
+- zero or one _user-defined conversion sequence_
+- zero or one _standard conversion sequence_, only if a user-defined conversion sequence was used
 
 
-### Explicit Conversion
+A _standard conversion sequence_ is composed of the following stages:
+- zero or one conversions of:
+    - lvalue-to-rvalue conversion 
+    - array to pointer conversion 
+    - function to pointer conversion 
+    - Since C++17, there is also prvalue-to-xvalue conversion (i.e. _temporary materialization_):
+        ```cpp
+        struct S { int m; };
+        const S& r = S{}; 
+        int i = S().m; // prvalue converted to xvalue
+        ```
+- zero or one _numeric  promotion_ or _numeric conversion_ 
+- zero or one _function pointer conversion_ (since C++17)
+- zero or one _qualification conversion_
+    - These can only _add_ cv qualifiers e.g. `int* -> const int* -> volatile const int*`, can't remove
+
+A _user-defined conversion_ consists of zero or one _non-explicit,  single argument converting constructor_ or _non-explicit conversion function_.
+- Converting constructors are constructors with only one argument (though it can have default arguments)
+- Conversion functions follow the syntax `operator <type-id>() {...}`. They do not have return values and are usually marked `const` to prevent mutating state.
+
+A converting constructor and conversion function look like this:
+```cpp
+class A {
+    // converting constructor
+    A(int x) {...}
+    A(int x, int y = 1, int z = 2) { ... } // default arguments ok
+    // as long as the ctor can be called with one argument
+    
+    // conversion function
+    operator int() const { ... }; // usually marked const - shouldn't mutate state
+}
+A a = 5;   // ok, converting ctor called
+int x = a; // ok, conversion function called
+```
+
+An expression `e` is said to be _implicitly convertible_ to `T2` iff `T2` can be _copy-initialized_ from `e`, i.e. `T2 t = e;` is well-formed. This is different from _direct initialization_ `T2 t(e);` where explicit constructors and conversion functions would additionally be considered.
+
+Examples:
+```cpp
+struct A {
+    operator int();
+    A(double);
+};
+A a;
+double d = a;
+// A -> int (conversion function) -> double (promotion)
+
+int x = 3;
+A a = x;
+// int -> double (promotion) -> A (converting ctor)
+```
+
+The implicit conversion sequence of one type to another is used to rank candidate functions during _function overload resolution_. Conversion sequences are roughly ranked as: exact match > promotion > conversion > user-defined > ellipsis. If the compiler cannot decide on which overload is ranked the highest, it throws a compile error.
+
+```cpp
+void f(int);
+void f(long);
+char c;
+f(c); // f(int) is chosen (promotion) as compared to f(long) (conversion)
+
+
+void g(double);
+void g(long);
+int x;
+g(x); // Ambiguous, both use conversion
+```
+(Note: There is a thing called as _floating point conversion rank_ and _integral conversion rank_, but they don't apply here; conversion ranks only apply within their own family, there is no cross-family hierarchy)
+
+### Numeric Promotion / Conversion
+
+_Numeric promotion_ preserves values since the type is being "promoted" to a larger datatype that can hold a larger range of values. For example, `int -> long`, `char -> int`, `short -> int`, `float -> double`
+
+On the other hand, _numeric conversion_ may lose information e.g. `int -> short`, `long -> int`, `double -> float` (precision loss), and even `float -> int`, `pretty much any type -> bool` (hence why overload resolution ranks numeric promotion over numeric conversion)
+
+Side note: enums can be promoted to integral values as well.
 
 ### User-defined Conversion
 
-Enables _implicit conversion_ or _explicit conversion_ from a class type to another type.
+User-defined conversion enables _implicit conversion_ or _explicit conversion_ from a class type to another type. They are the converting constructors and conversion functions in class/structs. 
 
-The conversion function is declared like a non-static member function, or member function template with no parameters, no explicit return type, and with the name of the form:
+If they are not marked `explicit`, they can participate in _both_ implicit and explicit conversion. However, if they are marked `explicit`, they can only participate in explicit conversions:
 - `operator conversion-type-id`
-    - Prticipates in all implicit and explicit conversions
+    - Participates in all implicit and explicit conversions
 - `explicit operator conversion-type-id`
-    - Participates in direct initialization and explicit conversions only
+    - Participates in direct initialization `T2 t(e);` and explicit conversions only
 - `explicit ( expression ) operator conversion-type-id`
-    - Conditionally explicit 
+    - (Conditionally explicit)
 
 Note: `conversion-type-id` cannot represent an array or a function type. Pointers to arrays/function types are still valid, but only through a typedef (`[]` and `()` are not allowed in the declarator for `conversion-type-id`)
 
@@ -190,23 +253,55 @@ int main() {
 
 `explicit operator bool()` is a user-defined conversion function that allows an object to be safely evaluated as a boolean context (like an `if` statement) while preventing accidental or unsafe implicit conversions to arithmetic types.
 
-Before C++11, developers used `operator bool()` without the `explicit` keyword. This caused a major safety issue, where the compiler would secretly convert the object into an integer in unexpected places:
+Before C++11, developers used `operator bool()` without the `explicit` keyword. This caused a major safety issue, where the compiler would secretly convert the object into an integer in unexpected places. So the `explicit` keyword as part of the _safe bool idiom_.
 ```cpp
-struct Unsafe {
+struct A {
     operator bool() const { return true; }
 };
 
-Unsafe obj;
-int x = obj + 5; // obj implicitly becomes 1
+A obj;
+int x = obj; // obj implicitly becomes 1
+// A -> bool -> int
+
 // Adding explicit solves this. It allows the object to convert to bool 
 // only where a boolean is explicitly expected
+// int x = obj; // no longer allowed
 ```
 
-### Casting 
+### Contextual Conversion 
+
+These are cases where `bool` is expected, e.g. inside an `if` or `while` condition. 
+
+In these cases, implicit conversion is performed if the declaration `bool t(e);` is well-formed (i.e. an `explicit operator bool() const` is considered). Such an expression `e` is said to be _contextually converted_ to `bool`.
+
+The cases are:
+- control expressions of `if`, `while`, and `for`
+- the operands of built-in logical operators `!`, `&&`, `||`
+- the first operand of the conditional operator `?:`
+- the predicate in a `static_assert` declaration 
+- the expression in a `noexcept` specifier 
+
+### Explicit Casting
+
+Explicit casting can be split into C-style casting (the old `(int) x` style) and functional style casting e.g. `int(x)`.
+
+When the C-style cast is encountered, the compiler attempts to interpret it as the following cast expressions, in this order:
+- `const_cast`
+- `static_cast`
+- `static_cast` followed by `const_cast`
+- `reinterpret_cast`
+- `reinterpret_cast` followed by `const_cast` 
+
+
 - `std::static_cast<T>`
 - `std::dynamic_cast<T>`
 - `std::const_cast<T>` 
 - `std::reinterpret_cast<T>`
+
+### Usual Arithmetic Conversions 
+Many binary operators that expect operands of arithmetic or enumeration type cause conversions and yield result types in a similar way. The purpose is to yield a common type, which is also the type of the result. This pattern is called the _usual arithmetic conversions_.
+
+Usual arithmetic conversion progresses in five stages. lvalue-to-rvalue conversion of both operands, checking of enum types, checking of _floating point conversion rank and subrank_, then checking of _integer conversion rank_
 
 ### Tricky questions
 

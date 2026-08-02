@@ -1,1 +1,36 @@
 # True Sharing
+
+Having two threads operate on **separate** pieces of data that exist on the same cache line can cause **significant performance degredation**. 
+
+When this happens, two cores compete for exclusive write-access to the cache line. The one that cannot obtain access is _left waiting_ to gain control. Additionally, that core's copy of the cache line is invalidated and mut be evicted to make room for the 'up-to-date' version written by the other core. 
+
+This has side effects such as increasing traffic on the memory bus. This can get messy quickly with different cache write policies. 
+
+```cpp
+template<typename T, typename U>
+requires std::is_integral_v<T> && std::is_integral_v<U>
+struct Data {
+    static constexpr size_t cache_line_size = std::hardware_destructive_interference_size; 
+    alignas(cache_line_size) T x;
+    alignas(cache_line_size) U y;
+};
+```
+- `std::hardware_destructive_interference_size` is the minimum offset between two objects to avoid false sharing.
+- The `alignas` specifier is a keyword used to set a custom, stricter memory alignment requirement for a variable, class, struct, or union. It accepts either an integer constant expression (which must be a power of two) or a type name.
+    - If multiple `alignas` specifies are used on a single declaration, the compiler applies the largest (strictest) value 
+    - You cannot use `alignas` to reduce a type's natural alignment below its default requirement. It only allows _over-alignment_
+
+Alternative implementation:
+
+```cpp
+template <std::integral X, std::integral Y>
+struct Data {
+    alignas(std::hardware_destructive_interference_size)
+    X x;
+    alignas(std::hardware_destructive_interference_size)
+    Y y;
+};
+```
+
+Other notes:
+- `std::hardware_constructive_interference_size` is the maximum size of contiguous memory to promote true sharing

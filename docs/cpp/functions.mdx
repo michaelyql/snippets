@@ -120,14 +120,14 @@ struct F {
 
 ## Function Overloading 
 
-To compile function calls, the compiler first performs name lookup. If the name refers to more than one entity, the function is said to be _overloaded_ and the compiler must determine which overload to call. For function templates, this may be followed by template argument deduction.
+To compile function calls, the compiler first performs _name lookup_. If the name refers to more than one entity, the function is said to be _overloaded_ and the compiler must determine which overload to call. For function templates, this may be followed by template argument deduction.
 
 The overload whose parameters match the arguments most closely is the one that is selected. 
 
 Overload resolution proceeds through the following steps:
 1. Building the set of candidate functions
 2. Trimming the set to only viable functions
-3. Analyzing the set to determine the single best viable function, which may involve ranking of _implicit conversion sequences_
+3. Analyzing the set to determine the single best viable function, which may involve ranking of [_implicit conversion sequences_](./expressions/#implicit-conversion)
 
 ### Building the candidate set
 
@@ -143,10 +143,9 @@ The cases are:
 - Reference initialization by conversion 
 - List initialization 
 
+Loosely speaking, the candidate set is built using all matching function names in the current scope. 
 
 Additional rules for function template candidates 
-
-
 
 Additional rules for constructor candidates 
 
@@ -154,11 +153,44 @@ Additional rules for member function candidates
 
 ### Viable functions
 
+The candidate set is trimmed down into only those which are _viable_. A candidate is viable if (1) the number of arguments match (default and variadic arguments count as well), (2) template argument deduction succeeds, and (3) every argument can be converted into the corresponding parameter's type.
+
 ### Best viable function
 
-### Ranking of implicit conversion sequences 
+For every viable function, its implicit conversion sequence is then computed and ranked. The compare chooses the function with the highest implicit conversion sequence rank, comparing candidates parameter-by-parameter. 
+
+The ranking generally follows the order: exact match > promotion > conversion > ellipsis. Non-templated functions are preferred over template functions. More specialized template functions are preferred over less specialized template functions (template partial ordering).
+
+If there is no best candidate, the function call is ambiguous and the compiler throws an error. 
 
 ## Lambdas 
+
+### Capture type
+
+### Mutable lambdas
+
+Variables captured by value `=` are captured at the moment the lambda is created. It creates a local copy so it is unaffected by future writes to the variable. By default, value captures are treated as `const` inside `operator()`, so if you want to modify the lambda's copy, you have to declare the lambda as `mutable`. This allows the lambda to modify its _own copy_, not the original variable.
+
+```cpp
+int x = 10;
+
+auto f = [x]() {
+    std::cout << x << '\n';
+};
+
+x = 20;
+
+f();   // prints 10
+
+// generates something like this:
+struct Lambda {
+    int x;              // copy of x
+    void operator()() const {
+        std::cout << x << '\n';
+    }
+};
+// declaring mutable allows you to modify the copied variables
+```
 
 ## Operator Overloading
 

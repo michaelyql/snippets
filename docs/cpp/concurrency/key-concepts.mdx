@@ -68,3 +68,9 @@ Having more threads than there are hardware threads leads to excessive context s
 
 ## Strategies
 Write a single-threaded version of the program first to ensure correctness, then gradually introduce concurrency
+
+## Sempahores vs Locks 
+
+Semaphores can either be binary (0/1) or general counting semaphore, in which case it can allow multiple threads to pass through. Sempahores can be acquired and released by different threads. 
+
+Locks generally only allow one thread to acquire and release the lock at a time. Though some locks can be acquired multiple times by the same thread without causing a deadlock (recursive mutex) and need to be released the same number of times. There are also shared locks which allow multiple readers and single writers. 

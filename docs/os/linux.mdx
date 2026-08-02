@@ -22,3 +22,76 @@
 
 ## Interrupt Service Routine (ISR)
 
+## Syscall
+
+## Sysadmin Tools
+
+- `find` 
+    - Syntax: `find [starting directory] [expression] [action]`
+    - E.g. 
+        ```
+        === By name ===
+        find . -name "file.txt" (exact name)
+        find /home -iname "photo.jpg" (case insensitive)
+        find . -name "*.pdf" (wildcard)
+
+        === By type === 
+        find /var -type d  (directory)
+        find /etc - type f  (file)
+        find . -type l  (symlink)
+
+        === By size === 
+        find . -size 100M (exactly 100mb)
+        find . -size +1G (more than 1gb)
+        find . -size -10k (less than 10kb)
+        
+        === By date/time
+        find . -mtime -1 (last 24 hrs) 
+        find . -atime +30 (more than 30 days ago)
+        find . -cmin -10 (last 10 mins)
+
+        === Actions === 
+        find . -name "*.tmp* -delete 
+        find . -type d -exec chmod 755 {} +
+        ```
+    - Good practices
+        - Chosose an explicit search root, predicates such as name, type, owner, size, or modification time, and safe handling of matched paths
+        - Preview matches before any action and avoiding broad or unquoted destructive commands
+- `ps`
+    - ps = Process Status. Provides snapshot of active processes, their process IDs (PIDs), CPU and memory usage, and the command that started them
+    - `ps -ef`: List every process with full details
+    - `ps aux`: List all process for all users 
+    - Key flags:
+        - `-e` or `-A`: selects all processes 
+        - `-f`: Full formati listing
+        - `a`: shows processes for all users when accompanied by `x` flag 
+        - `u`: Displays user-oriented format (including CPU and memory usage percentages)
+        - `x`: Includes processes without a controlling TTY (like background daemons)
+        - Find a process by name: `ps aux | grep nginx`
+        - Sort process by highest memory usage: `ps aux --sort=-%mem`
+        - Sort process by highest CPU usage: `ps aux --sort=-%cpu`
+        - View a user's process: `ps -u username`
+        - See hierarchical tree view of processes: `ps -ef --forest` (only on Linux/BSD)
+- `top`
+    - Good practices
+        - Use `ps` for a point-in-time process snapshot and `top` for an updating view of CPU, memory, state, and load
+        - Confirm the exact PID, owner, command, parent, start time, and relevant resource signal rather than matching a name alone
+- `kill`
+    - `kill` sends a signal, normally `SIGTERM` , rather than directly guaranteeing termination
+    - Prefer a graceful, narrowly targeted stop, verifying the result, and reserving `SIGKILL` for justified escalation
+- Parsing `ps | grep` 
+    - `ps | grep` performs string-based pattern matching on a messy, unstructured human-readable line, whereas explicit field selection (`-o`) and `pgrep` are structured, deterministic data queries.
+
+### Monitoring and Debugging 
+
+### Backup and Recovery 
+
+### Network and Security
+- nmap, netcat (nc), tcpdump
+
+### Automation and Task Scheduling
+
+### File and Disk Management 
+
+### Performance Tuning
+- `htop / top`, `sar`, `ncdu`

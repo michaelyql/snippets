@@ -164,11 +164,14 @@ Object Layout in Memory
     - With single inheritance, a vptr is still inserted at the start of the base class subobject, but it points to the vtable of the derived class. If the derived class does not override the virtual function, the vptr points to the vtable of the base class
     - There is only one vtable per polymorphic class
     - Vtables are typically stored in the .rodata segment
-    - The runtime type information (RTTI) is also stored in the vtable. The compiler places a pointer to a `std::type_info` struct at a negative offset inside the vtable. When you use `std::dynamic_cast`, the program uses the vptr to read the type descriptor and safely check the inheritance hierarchy at runtime
+    - The runtime type information (RTTI) is also stored in the vtable. 
+        - The compiler places a pointer to a `std::type_info` struct at a negative offset inside the vtable (implementation-defined but generally adopted by gcc/clang). When you use `std::dynamic_cast`, the program uses the vptr to read the type descriptor and safely check the inheritance hierarchy at runtime
         - You can disable RTTI with `-fno-rtti` flag. This will disable the generation of RTTI in the binary. The compiler will throw errors if you try to use `dynamic_cast` or `typeid` which relies on it. But virtual dispatch will still work
     - Even if a derived class does not override a virtual function, it still has a vptr pointing to the vtable for its own class. The vtable entry simply points to the function in the base class.
     - For shared base objects due to virtual inheritance, they are typically placed after the non-virtual part of the most-derived object.
         - The compiler does not know in advance the offset of the shared base object, so it puts it at the back. Though this is not required and compilers are free to implement it however they want.
+    - In general, using `memset` on a polymorphic object is undefined behaviour, since you may overwrite the vptr 
+        - The subtle exception is that you can memset _individual data members_ as long as you don't touch the vptr of non-trivial subobjects
 - Static data members are stored in .data or .bss segment 
 - Member functions, constructors, destructors are stored in the .text section of memory. Each of them have their own distinct addresses. 
 

@@ -1,1 +1,24 @@
 # Mutex
+
+Possible implementation: 
+
+```cpp
+#include <atomic>
+
+class Mutex {
+    std::atomic_flag m_{};
+public:
+    void lock() noexcept {
+        while (m_.test_and_set(std::memory_order_acq_rel)) {
+            m_.wait(true, std::memory_order_acquire);
+        }
+    }
+    bool try_lock() noexcept {
+        return !m_.test_and_set(std::memory_order_acquire);
+    }
+    void unlock() noexcept {
+        m_.clear(std::memory_order_release);
+        m_.notify_one();
+    }
+};
+```

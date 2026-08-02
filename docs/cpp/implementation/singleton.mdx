@@ -1,5 +1,7 @@
 # Singleton
 
+A Singleton is a design pattern that restricts users from creating more than one instance of said object. This means it cannot be copied or moved from. For example, loggers, setting managers, database connections are often implemented as singletons. 
+
 ```cpp showLineNumbers title="singleton.cpp"
 class A {
 private:
@@ -11,9 +13,9 @@ public:
     A& operator=(const A&) = delete;
     A& operator=(A&&) = delete;
 
-    static A& Instance() {
+    static *A Instance() {
         static A a_;
-        return a_;
+        return &a_;
     }
 };
 
@@ -24,9 +26,37 @@ int main() {
 ```
 - Notes:
     - The move and copy constructor/assignment operator are marked as deleted so that only a reference to the singleton can be obtained 
+        - The return types can actually be `void`, as the function signature uniquely identifies the method, and the return type is not part of the function signature
     - If the move and copy constructor/assignment operator were not deleted, someone could write code like this: 
         ```cpp
         A a = A::Instance(); 
         ```
         which would invoke the copy constructor.
+    - Initialization of method-scoped static variables is threadsafe since C++11. This is referred to as "Magic Statics"
+        - You can use `std::call_once` with `std::once_flag` (from `<mutex>`), which guarantees that a method is called once
+            ```cpp
+            #include <iostream>
+            #include <mutex>
 
+            class Singleton {
+            public:
+                // Static member function to be executed once
+                static void init() {
+                    std::cout << "Initialization logic running once..." << std::endl;
+                }
+
+                static void execute() {
+                    // static flag ensures one-time execution across threads
+                    static std::once_flag init_flag;
+                    std::call_once(init_flag, &Singleton::init);
+                }
+            };
+
+            int main() {
+                // Both calls share the same static flag, but init() only runs once
+                Singleton::execute();
+                Singleton::execute(); 
+                return 0;
+            }
+            ```
+        - Magic statics are the preferred method since C++11 unless there is some complex requirement for `call_once`

@@ -98,6 +98,17 @@ new int * 1; // error, parsed as (new int*) (1)
 
 ## Smart Pointers
 
+## `std::unique_ptr`
+
+- `std::make_unique` (C++14) is preferred over manually allocating memory using `new` and passing the pointer into a `unique_ptr` constructor 
+    - It removes the need to explicitly write `new`, and prevents memory leaks if an exception occurs during the evaluation of function arguments 
+    ```cpp
+    auto a = std::make_unique<A>(x, y); 
+    auto arr = std::make_unique<int[]>(5);
+    ```
+    - The limitation is that you cannot specify a custom deleter (like closing a file handling). You have to construct the `std::unique_ptr` directly 
+
+
 ### `std::enable_shared_from_this<T>`
 
 - Inherit from this class i.e. `class A : public enable_shared_from_this<A>` to enable returning a shared pointer to the current object using a member method using `shared_from_this()`

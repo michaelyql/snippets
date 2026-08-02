@@ -181,8 +181,10 @@ int main() {
     dr.Base::f(); // prints "base"
 }
 ```
+- Note that for non-virtual functions, the derived class _hides_ the base class's function
+    - When you call a non-virtual function from a derived object, the compiler searches and stops at the first function that it finds in the inheritance hierarchy with the matching function name, even if there is a better (or even exact) match above in the inheritance hierarchy. 
 
-- The function in the base class **does not have to be accessible or visible** to be overridden
+The function in the base class **does not have to be accessible or visible** to be overridden
 
 ```cpp
 class B {
@@ -524,6 +526,9 @@ int main() {
     - Virtual functions can **prevent the compiler from optimizing** via **inlining**, as the exact target function cannot be completely verified until runtime
 
 ![vtable and vptr](./virtual.jpg)
+
+Other notes:
+- Using `memset` directly on polymorphic objects is dangerous. See [C++ Object Model](./object-model#tldr)
 
 ## Abstract Base Class (ABC)
 
@@ -884,7 +889,7 @@ int main() {
 
 ### `noexcept` specifier
 
-A `noexcept` constructor in C++ guarantees that the object initialization process will not throw any exceptions. noexcept, the runtime immediately calls `std::terminate`, aborting the program.
+A `noexcept` constructor in C++ guarantees that the object initialization process will not throw any exceptions. 
 
 It ensures memory safety, preventing resource leaks or partially constructed objects from entering undefined states.
 
@@ -900,7 +905,7 @@ public:
 };
 ```
 - Do not use `noexcept` if a constructor allocates memory via `new` (unless using `std::nothrow`), as it can throw `std::bad_alloc`.
-- Always pair a `noexcept` move constructor with a `noexcecpt` move assignment operator 
+- Always pair a `noexcept` move constructor with a `noexcept` move assignment operator 
 - Destructors are implicitly `noexcept` by default (since C++11)
 
 ### Virtual destructor
