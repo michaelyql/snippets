@@ -1,0 +1,40 @@
+# MoldUDP64
+
+MoldUDP64 is a lightweight, UDP-based transport protocol designed by Nasdaq. Its primary purpose is the efficient and reliable delivery of real-time market data, like order and trade information, to a large number of subscribers simultaneously. It solves the problem of sending data to many clients without the overhead of a one-to-one connection for each, while still providing mechanisms to detect and recover from data loss.
+
+## Core Concepts
+
+- The main data stream is sent over UDP multicast. This means a transmitter sends a single packet, and the network delivers it to all subscribed listeners. This scales efficiently to many clients because the transmitter only sends one copy of the data, regardless of how many listeners there are.
+- The messages are sequenced for gap detection. Every message in a session is assigned a strictly increasing 64-bit sequence number. Receivers use this to check for gaps in the data stream. If a receiver expects sequence number 5 but receives number 7, it knows it has missed packet(s) 5 and 6.
+- Messages are retransmitted for reliability. When a receiver detects a gap, it can send a Request Packet over UDP unicast to a dedicated "re-request server", specifying the session and the starting sequence number of the missing messages. The server then retransmits the requested messages, also via UDP unicast, to the client that requested them.
+
+## Packet Structure
+MoldUDP64 defines two main packet types: Downstream and Request. The data is transmitted in network byte order (big-endian).
+- Downstream Packet (Transmitter -> Listener)
+    - This packet carries the actual data stream and has a fixed 20-byte header followed by message blocks.
+
+| Field Name | Offset (bytes) | Length (bytes) | Description |
+| :--- | :---: | :---: | :--- |
+| **Session** | 0 | 10 | A 10-byte ASCII string identifying the data session. The sequence number space is scoped to this session. |
+| **Sequence Number** | 10 | 8 | The 64-bit sequence number of the *first* message in this packet. Subsequent messages are numbered implicitly. |
+| **Message Count** | 18 | 2 | The number of messages in the packet. A value of `0` means a **Heartbeat**, and `0xFFFF` (65535) signals the **End of Session**. |
+
+- Request Packet (Listener -> Re-request Server)
+    - This packet is used to ask for missing messages. It's also 20 bytes long
+
+| Field Name | Offset (bytes) | Length (bytes) | Description |
+| :--- | :---: | :---: | :--- |
+| **Session** | 0 | 10 | The session from which messages are requested. |
+| **Sequence Number** | 10 | 8 | The 64-bit sequence number of the *first* missing message requested. |
+| **Requested Message Count** | 18 | 2 | The number of messages requested for retransmission. |
+
+## Heartbeats, End of Session
+To keep clients informed of the connection's health, the transmitter sends special downstream packets even when there is no data.
+- A heartbeat is a packet with a Message Count of `0`. 
+    - It's typically sent at regular intervals (e.g., once a second) and contains the next expected sequence number. 
+    - This lets receivers know the feed is still alive and helps them quickly detect gaps when the sequence number jumps.
+- An End of Session (EOS) packet has a Message Count of `0xFFFF`. 
+    - It signals that the current session is ending. - During this period, clients can still make retransmission requests as a "last chance" to recover any missed data before the session is closed.
+
+## Summary
+MoldUDP64 is a key part of the market data infrastructure for many exchanges. It is the transport layer beneath well-known data feeds like Nasdaq's ITCH and is used by other entities such as FINRA for its data dissemination services. It is often presented as an alternative to TCP-based protocols like SoupBinTCP, offering high throughput with a lower overhead at the cost of requiring the client to handle retransmission logic

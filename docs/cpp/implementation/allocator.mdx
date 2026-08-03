@@ -1,1 +1,132 @@
 # Allocator
+
+## Basic Custom Allocator 
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+
+template <typename T>
+class SimpleAllocator {
+public:
+    // Define the type of elements this allocator handles
+    using value_type = T;
+
+    // Default constructor
+    SimpleAllocator() noexcept = default;
+
+    // Copy constructor for converting between different types (e.g., T to Node<T>)
+    template <typename U>
+    SimpleAllocator(const SimpleAllocator<U>&) noexcept {}
+
+    // Allocate memory for 'n' objects of type T
+    T* allocate(std::size_t n) {
+        if (n == 0) return nullptr;
+        
+        // Example: Logging the allocation for tracking
+        std::cout << "Allocating " << n * sizeof(T) << " bytes.\n";
+        
+        auto ptr = static_cast<T*>(std::malloc(n * sizeof(T)));
+        if (!ptr) throw std::bad_alloc();
+        return ptr;
+    }
+
+    // Deallocate memory
+    void deallocate(T* p, std::size_t n) noexcept {
+        std::cout << "Deallocating " << n * sizeof(T) << " bytes.\n";
+        std::free(p);
+    }
+};
+
+// Equality operators (Mandatory)
+template <typename T, typename U>
+bool operator==(const SimpleAllocator<T>&, const SimpleAllocator<U>&) noexcept { return true; }
+
+template <typename T, typename U>
+bool operator!=(const SimpleAllocator<T>&, const SimpleAllocator<U>&) noexcept { return false; }
+
+int main() {
+    // Pass the custom allocator as a template argument to the container
+    std::vector<int, SimpleAllocator<int>> vec;
+    
+    vec.push_back(10); // Triggers allocation
+    vec.push_back(20); // Triggers reallocation
+    
+    return 0;
+}
+```
+
+## Bump Allocator 
+
+```cpp
+struct ChunkHeader {
+    const static inline size_t HeaderMagicId = std::numeric_limits::max();
+    size_t Size{HeaderMagicId};
+    size_t Magic{HeaderMagicId};
+};
+
+struct Chunk {
+    ChunkHeader Header;
+    std::byte* Memory{nullptr};
+};
+
+class Allocator {
+   public:
+    explicit Allocator(size_t capacity)
+        : capacity_{capacity}, chunks_{std::make_unique<std::byte[]>(capacity)} {}
+    Allocator(size_t capacity, std::byte* allocated)
+        : capacity_{capacity}, chunks_{allocated} {}
+
+    Allocator(const Allocator&) = delete;
+    void operator=(const Allocator&) = delete;
+    Allocator(Allocator&&) = delete;
+    void operator=(Allocator&&) = delete;
+
+    std::byte* Allocate(size_t capacity) {
+        if (capacity > (capacity_ - used_)) {
+            throw std::bad_alloc();
+        }
+        auto* allocation = AllocateFirstFit(capacity);
+        const auto used = capacity + sizeof(ChunkHeader);
+        if (allocation) {
+            used_ += used;
+            capacity_ -= used;
+        }
+        return allocation;
+    }
+
+    void Deallocate(std::byte* bytes) {
+        if (!bytes) {
+            return;
+        }
+        ChunkHeader* header = reinterpret_cast<ChunkHeader*>(bytes - sizeof(ChunkHeader));
+        if (header->Magic != ChunkHeader::HeaderMagicId) {
+            throw std::bad_alloc();
+        }
+        used_ -= header->Size + sizeof(ChunkHeader);
+        header->Size = header->Magic = 0;
+    }
+
+   private:
+    std::byte* AllocateFirstFit(size_t capacity) {
+        if (!chunks_) {
+            return nullptr;
+        }
+        const auto location = FindNextEmptyLocation();
+        if (location == capacity_) {
+            return nullptr;
+        }
+        const Chunk* chunk = new (chunks_.get() + location)
+            Chunk{ChunkHeader{capacity},
+                  chunks_.get() + location + sizeof(ChunkHeader)};
+        return chunk->Memory;
+    }
+
+    size_t FindNextEmptyLocation() const { return used_; }
+
+    size_t capacity_;
+    size_t used_{0};
+    std::unique_ptr<std::byte[]> chunks_{nullptr};
+};
+```

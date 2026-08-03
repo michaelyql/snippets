@@ -1,0 +1,20 @@
+# Compile Time Accumulate
+
+```cpp
+template <int... T>
+struct Numbers { };
+
+template <typename Container>
+struct Accumulate;
+
+// Exit condition
+template <>
+struct Accumulate<Numbers<>> {
+    constexpr static int result = 0;
+};
+
+template <int Front, int... Rest>
+struct Accumulate<Numbers<Front, Rest...>> {
+    constexpr static int result = Front + Accumulate<Numbers<Rest...>>::result;
+};
+```

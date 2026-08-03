@@ -1,4 +1,51 @@
 
 # Read Write Lock
 
-## Implementation
+```cpp
+class ReaderWriterLock {
+public:
+    unsigned ReaderLock() {
+        std::unique_lock lock{ mutex_ };
+        readers_ready_.wait(lock, [this] {
+            return !writers_ && !pending_writers_;
+        });
+        return readers_++;
+    }
+
+    unsigned ReaderUnlock() {
+        std::unique_lock lock{ mutex_ };
+        if (!--readers_ && pending_writers_) {
+            writers_ready_.notify_one();
+        }
+        return readers_;
+    }
+
+    void WriterLock() {
+        std::unique_lock lock{ mutex_ };
+        ++pending_writers_;
+        writers_ready_.wait(lock, [this] {
+            return !readers_ && !writers_;
+        });
+        --pending_writers_;
+        ++writers_;
+    }
+
+    void WriterUnlock() {
+        std::unique_lock lock{ mutex_ };
+        --writers_;
+        if (pending_writers_ > 0) {
+            writers_ready_.notify_one();
+        } else {
+            readers_ready_.notify_all();
+        }
+    }
+
+private:
+    std::mutex mutex_;
+    std::condition_variable readers_ready_;
+    std::condition_variable writers_ready_;
+    unsigned readers_{ 0 };
+    unsigned writers_{ 0 };
+    unsigned pending_writers_{ 0 };
+};
+```

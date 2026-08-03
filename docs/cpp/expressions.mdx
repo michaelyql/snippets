@@ -292,9 +292,11 @@ When the C-style cast is encountered, the compiler attempts to interpret it as t
 - `reinterpret_cast`
 - `reinterpret_cast` followed by `const_cast` 
 
-
 - `std::static_cast<T>`
-- `std::dynamic_cast<T>`
+- `std::dynamic_cast<T>(expr)`
+    - `expr` must be a pointer or reference to a _polymorphic class type_ (or `void*` in the special case of casting to `void*`) that has at least one _virtual function_, and the types being casted must be related by inheritance
+    - Otherwise, if the cast is between unrelated types, the cast is ill-formed (compile error)
+    - `dynamic_cast` can also cast _sideways_ between siblings of a parent base class 
 - `std::const_cast<T>` 
 - `std::reinterpret_cast<T>`
 

@@ -95,3 +95,64 @@
 
 ### Performance Tuning
 - `htop / top`, `sar`, `ncdu`
+
+## Syscalls
+
+- invokes the kernel, passes control over to kernel to perform some predefined work
+- kernel controls hardware and provides interface / abstraction to perform memory management, process management, file operations, disk I/O, device I/O, networking
+- userspace library is a wrapper around the actual syscall which fills the registers with the correct values
+
+popular syscalls
+- file
+	- open, read, write, close, stat/fstat/lstat, lseek, poll, select, dup, fcntl, fsync, flock, truncate
+- memory
+	- mmap, munmap, brk, sbrk,
+- ipc 
+	- shmget, shmat, shmctl, shmdt, pipe, semget, semop, semctl,
+- process
+	- getpid, fork, execv (and variants), exit, kill, ptrace, times, mlock, munlock, sched_setaffinity, sched_getaffinity
+- system
+	- uname, getcwd, mkdir, rmdir, creat, link, unlink, symlink, chmod, chown, umask, gettimeofday, sysinfo, utime, ustat, chroot, time
+- network
+	- socket, bind, listen, accept, connect, send, recv, sendmsg, recvmsg, shutdown, getsockname, getpeername, setsockopt, getsockopt
+- kernel dev 
+	- create_module, init_module, delete_module, query_module, get_kernel_syms
+- i/o
+	- io_setup, io_destroy, io_getevents, io_submit, io_cancel, epoll_create, epoll_ctl, epoll_wait, io_uring_setup, io_uring_register 
+
+https://www.chromium.org/chromium-os/developer-library/reference/linux-constants/syscalls/
+
+core concepts
+- file descriptors: everything is a file - regular files, directories, devices, process info, pipes and sockets
+	- after considering file permissions, read/write syscalls, you can interact with 80% of the OS
+	- you can use tools to redirect input as well
+- processes and fork-exec 
+	- fork clones the process (almost identical), exec replaces the current process with a new one (replaces env variables)
+- filesystem
+	- root is at /, /home is user data, /etc/ is system wide configs, /var/ is variable data (e.g. logs, caches), /tmp/ is temporary files, /usr/bin/ is user-installed binaries 
+- file permissions
+	- every file has Owner, Group, Others with Read(r) Write (w) Execute (w) permissions
+	- uid 0 (root) superuser can bypass all permissions
+	- sudo runs a command with root privileges 
+- shell and exit codes
+	- shell is main way to the kernel
+	- every command has exit code, 0=success, everything else=failure
+	- pipes allow to chain stdout of one process to stdin of another
+- signals (software interrupt)
+	- signals are sent to processes e.g. sigterm (15, "polite shutdown"), sigkill (9, forceful kill), sigint (2, ctrl+c) etc.
+- standard streams (stdin, stdout, stderr)
+	- every program has three data streams, 0 stdin, 1 stdout, 2 stderr
+	- stdout is buffered (waits for newlines), stderr is unbuffered (prints immediately)
+	- redirect using >
+- kernel vs user space
+	- code runs in user space. when user needs hardware, it makes a syscall, pass control to kernel to run in kernel space
+	- strace lets you see every syscall the program makes
+
+tools
+- ps auxf
+	- show all running processes and their tree hierarchy
+- lsof -i :8080
+	- list all open files, show which process is using port 8080
+- htop
+	- shows CPU, memory, load average (no. of processes waiting for CPU or disk I/O)
+
