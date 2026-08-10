@@ -1,0 +1,21 @@
+# FFT / NTT
+
+## Fast Fourier Transform 
+
+## Number Theoretic Transform
+
+### Examples 
+
+The diameter of a tree is the length of the longest path in the tree. Given a tree of odd diameter, consider any two diameters (you can choose the same diameter twice). Let the number of intersecting edges of the two chosen diameters be $k$. Find all possible values of $k$. ($2\leq n\leq 10^6$). [(Problem Link)](https://codeforces.com/problemset/problem/2253/E)
+- A tree of odd diameter has a "central" edge which intersects all diameters 
+- Let this edge be $(a,b)$. Find the edge and root two subtrees at $a$ and $b$ respectively 
+- Choosing a diameter is equivalent to choosing one maximum depth leaf in the subtree of $a$ and another in the subtree of $b$, combining their paths to their roots, then adding the common edge 
+- The number of intersecting edges between two diameters can be solved independently in $a$ and $b$'s subtrees, then combined together by summing the result
+- In the subtree of $a$ (and likewise $b$), the possible values of the number intersections between two maximum depth leaves is given by the depth of internal nodes which have two or more maximum depth leaves 
+    - In other words, for two maximum depth leaves, consider their lowest common ancestor (LCA). The prefix chain from the root to the LCA is the "mandatory" or "unavoidable" intersection between the two leaves
+    - Thus the set of possible values of $k$ in that subtree is the depth of those internal nodes which is the LCA of at least two maximum depth leaves 
+- Once we have the set of possible values of $k$ for $a$ and $b$'s subtree respectively, we want to find the set of sums of their values 
+    - A naive $O(n^2)$ approach adds each value from the left subtree to each value from the right subtree
+    - We can represent the set of possible sums in each subtree as a polynomial $1+x+x^3+\dots$ etc.
+    - Then the set of possible values of $k$ can be found by multiplying their polynomials
+    - This can be sped up using NTT

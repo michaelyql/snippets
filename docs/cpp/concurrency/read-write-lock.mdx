@@ -2,50 +2,54 @@
 # Read Write Lock
 
 ```cpp
-class ReaderWriterLock {
+class ReaderWriterLock
+{
 public:
-    unsigned ReaderLock() {
-        std::unique_lock lock{ mutex_ };
-        readers_ready_.wait(lock, [this] {
-            return !writers_ && !pending_writers_;
+    unsigned ReaderLock()
+    {
+        std::unique_lock<std::mutex> lk(mtx);
+        readers_ready.wait(lk, [this]{
+            return !pendingWriters && !writers;
         });
-        return readers_++;
+        return readers++;
     }
 
-    unsigned ReaderUnlock() {
-        std::unique_lock lock{ mutex_ };
-        if (!--readers_ && pending_writers_) {
-            writers_ready_.notify_one();
-        }
-        return readers_;
+    unsigned ReaderUnlock() 
+    { 
+        std::unique_lock<std::mutex> lk(mtx);
+        if (!--readers && pendingWriters) {
+            writers_ready.notify_one();  
+        } 
+        return readers;
     }
 
-    void WriterLock() {
-        std::unique_lock lock{ mutex_ };
-        ++pending_writers_;
-        writers_ready_.wait(lock, [this] {
-            return !readers_ && !writers_;
+    void WriterLock() 
+    { 
+        std::unique_lock<std::mutex> lk(mtx);
+        ++pendingWriters;
+        writers_ready.wait(lk, [this]{
+            return !readers && !writers;
         });
-        --pending_writers_;
-        ++writers_;
+        --pendingWriters; 
+        writers++;
     }
 
-    void WriterUnlock() {
-        std::unique_lock lock{ mutex_ };
-        --writers_;
-        if (pending_writers_ > 0) {
-            writers_ready_.notify_one();
-        } else {
-            readers_ready_.notify_all();
-        }
+    void WriterUnlock()
+    { 
+        std::unique_lock<std::mutex> lk(mtx);
+        writers--;
+        if (pendingWriters) writers_ready.notify_one();
+        else readers_ready.notify_one();
     }
 
 private:
-    std::mutex mutex_;
-    std::condition_variable readers_ready_;
-    std::condition_variable writers_ready_;
-    unsigned readers_{ 0 };
-    unsigned writers_{ 0 };
-    unsigned pending_writers_{ 0 };
+    std::mutex mtx;
+    std::condition_variable readers_ready, writers_ready;
+    size_t readers {0}, writers {0}, pendingWriters {0};
 };
 ```
+
+- Think of the mutex as a "block"
+    - Successfully acquiring the lock on the mutex means that operation succeeded (be it reader lock/unlock, writer lock/unlock)
+    - Unlock the mutex so that other threads can enter other functions and acquire the lock
+- `pendingWriters` is an optimization to favour writes  

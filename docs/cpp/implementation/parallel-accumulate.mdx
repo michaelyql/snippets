@@ -1,0 +1,19 @@
+# Parallel Accumulate
+
+```cpp showLineNumbers title="parallel_accumulate.cpp"
+#include <numeric>
+#include <execution>
+
+template <typename Iter, typename Value>
+Value DoParallelCalc(const Iter startIter, const Iter endIter, Value initialValue = {}) {
+    return std::reduce(std::execution::par, startIter, endIter, initialValue, 
+        [](const Value& v1, const Value& v2) -> Value {
+            return v1 + v2;
+    });
+}
+```
+
+- Execution policy (since C++17) objects and classes are in `<execution>` under the namespace `execution`
+- `std::reduce` takes in a _BinaryOp_ that must be associative and commutative
+- `std::reduce` and other functions such as `iota`, `transform_reduce`, `accumulate` are part of `<numeric>` library
+- `accumulate` is a left-fold i.e. `f(f(f(f(init, x1), x2), ...), xn)`, purely sequential only. Parallel accumulate can only be done using `reduce` or `transform_reduce`

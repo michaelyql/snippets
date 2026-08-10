@@ -22,3 +22,20 @@ public:
     }
 };
 ```
+
+Alternative implementation
+```cpp
+class Mutex {
+    std::atomic<int> m_{0};
+public:
+    void lock() noexcept {
+        while (m_.load(std::memory_order_relaxed) || m_.exchange(1, std::memory_order_acquire)) {}
+    }
+    bool try_lock() noexcept {
+        return !m_.exchange(1, std::memory_order_acquire);
+    }
+    void unlock() noexcept {
+        m_.store(0, std::memory_order_release);
+    }
+};
+```

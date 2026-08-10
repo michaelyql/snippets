@@ -1,0 +1,39 @@
+# Variant 
+
+## Overview
+
+`std::variant` was introduced in C++17 to allow type-safe access of fixed-size unions
+- It holds exactly one value from a specified list of types at any time
+- It prevents the undefined behaviour of traditional C-style unions by tracking the active type and throwing exceptions if you access the wrong one. 
+- It is sized to fit its largest _alternative type_. 
+- It cannot store `void`, reference types e.g. `int&` or C-style arrays
+- By default, it uses the first type in the template list. If the first type lacks a default constructor, you must use `std::monostate` as a placeholder
+
+Example:
+```cpp
+std::variant<int, double, std::string> v;
+v = 10;
+v =  3.14;
+v = "abc"; 
+
+if (auto pVal = std::get_if<std::string>(&v)) {
+    cout << *pVal << '\n;
+}
+
+std::visit([](const auto& arg) {
+    cout << arg << '\n';
+}, v);
+
+std::get<int>(v); 
+```
+- `std::get<T>(v)` throws `std::bad_variant_access` if the type is incorrect
+- `std::get_if<T>(&v)` returns a pointer to the value if `v` holds `T`, otherwise returns nullptr
+- `v.index()` returns the zero-based index of the currently held alternative
+- `std::holds_alternative<T>(v)` returns `true` if `v` currently holds type `T`
+- `std::visit(visitor, v)` applies a callable object to the currently held value. It is ideal for compile-time or runtime type dispatching
+
+## Implementation
+
+```cpp
+
+```

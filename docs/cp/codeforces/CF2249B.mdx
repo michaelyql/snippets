@@ -1,0 +1,135 @@
+---
+description: ""
+tags: [flows, graph matchings]
+---
+
+# CF2249B - Permutation Cuts
+
+## Summary
+
+- Given an array $v$ of length $n-1$ where $v[i]=\min\big\{\max_{j=1}^i p[j], \max_{j=i+1}^n p[j]\big\}$, count the number of permutations $1..n$ mod 998244353 that satisfy the array $v$.
+- Constraints: 
+    - $1\leq n\leq 1\cdot 10^6$
+
+[Link to Problem Statement](https://codeforces.com/problemset/problem/2249/B)
+
+## Solution
+
+- Array should have at most one 'peak', it should be non-decreasing up till a point then non-increasing
+- The points of interest are when the prefix or suffix max changes 
+- When transitioning from $i$ to $i+1$, if the prefix max increases, then $p[i]$ is forced to be $v[i]$ 
+- Consider a contiguous run of equal values of $v[i]$. The valid values to insert into the permutation at those positions must all be less than $v[i]$. For a run of length $k$, there must be $k-1$ "free" elements available that are $< v[i]$
+- $n-1$ should always appear at least once in $v$ and is a special case
+    - Consider the case where $n-1$ appears to the left of $n$ in the permutation, and vice versa on the right
+    - Notice $n$ and $n-1$ can be swapped and still give the same $v$
+    - In the first case (when $n-1$ is on the left of $n$), when $n-1$ is first seen in the permutation, $v[i]$ will continue to be $n-1$ until the first time $n$ appears in the permutation 
+    - Likewise, if $n-1$ is on the right of $n$, the first time $n$ appears, the value of $v[i]$ will be $n-1$ until $i$ goes past $n-1$ 
+    - Thus $n-1$ and $n$ can be swapped, so the final answer should be multiplied by 2
+- We can then break down $v$ into blocks of consecutive runs of equal values
+    - Furthermore, we sort the blocks and process them starting from the smallest block value
+    - The same block value should not appear twice (e.g. 2 can't appear in $v[i]$ on both sides of the 'peak'), so we use a set to keep track of this
+    - For a block of run length $k$, if it is not equal to $n-1$, then there are $k-1$ positions that need to be filled. 
+    - Let there be $f$ "free" elements $<x$. Then the number of ways to fill that block is $P(f,k-1)$
+    - If $x==n-1$, the number of ways is $P(f, k-2)$ since the block consists of both $n-1$ and $n$
+    - We process blocks from the smallest value since the "free" elements available to $x$ is a subset of the "free" elements to a block with value $y>x$ 
+    - GNU PBDS is used to easily query how many elements are $<x$ using `order_of_key`
+
+## Code
+
+```cpp
+const int mod = 998244353;
+const int maxn = 1e6;
+int fact[maxn+1];
+int ifact[maxn+1];
+inline int modpow(int a, int b) {
+    int ret = 1;
+    while (b) {
+        if (b&1) ret = (ll) ret * a % mod;
+        b >>= 1;
+        a = (ll) a * a % mod;
+    }
+    return ret;
+}
+inline int mul(int a, int b) {
+    return ((ll) a % mod) * b % mod;
+}
+inline int C(int n, int r) {
+    if (r < 0 || r > n) return 0;
+    return (ll) fact[n] * ifact[r] % mod * ifact[n-r] % mod;
+}
+inline int P(int n, int r) {
+    return mul(C(n, r), fact[r]);
+}
+
+void solve() {
+    int n;
+    cin >> n;
+    vi a(n-1);
+    rep(i,0,n-1)cin>>a[i];
+    // array should have at most one peak
+    int l=0, r=n-2;
+    while (l < r) {
+        if (a[l] <= a[l+1]) l++;
+        else break;
+    }
+    while (r > l) {
+        if (a[r] <= a[r-1]) r--;
+        else break;
+    }
+    if (l != r || a[l] == n) { // impossible
+        cout << 0 << '\n';
+        return;
+    } 
+    
+    // compress to equal value blocks
+    vector<pii> blocks;
+    for(int i=0; i<n-1; ){
+        int j=i+1;
+        while(j<n-1 &&a[j]==a[i]) j++;
+        int run = j-i;
+        blocks.push_back({a[i], run});
+        i=j;
+    }
+    sort(all(blocks));
+    int ans=1;
+    unordered_set<int> seen; // should have at most one block for each unique x
+    ordered_set avail;
+    for(int i=1;i<=n;i++)avail.insert(i);
+    for(int i=0;i<n-1;i++)avail.erase(a[i]);
+    for(auto& [x, run] : blocks) {
+        if (seen.find(x) !=seen.end()) {
+            ans=0; 
+            break;
+        }
+        seen.insert(x);
+        int need = x < n-1 ? run-1 : run-2;
+        if (need <= 0) continue;
+        // find number of 'free' elements < x
+        int f = avail.order_of_key(x);
+        if (f < need) {
+            ans = 0; 
+            break;
+        }
+        ans = mul(ans, P(f,need));
+        while (need--) {
+            avail.erase(*avail.begin());
+        }
+    }
+    ans=mul(ans, 2);
+    cout<<ans<<"\n";
+}
+
+int main() {
+    fact[0]=1;
+    for(int i=1;i<=maxn;i++){
+        fact[i]= (ll)fact[i-1] * i % mod;
+    }
+    ifact[maxn] = modpow(fact[maxn], mod - 2);
+    for(int i=maxn-1; i>=0; i--){
+        ifact[i] = (ll) ifact[i+1] * (i+1) % mod;
+    }
+    // handle test cases 
+    // ...
+}
+```
+

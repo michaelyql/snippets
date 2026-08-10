@@ -90,6 +90,10 @@ void handle(T val) requires std::is_pointer_v<T> {
 
 Substitution Failure Is Not An Error
 
+- when template parameter substitution fails, the function is removed from the candidate set 
+- sfinae only applies in the _immediate context_ of the function, i.e. return type, template parameters
+    - sfinae does not apply when there is a subtitution failure in the function body. those are treated as normal compile errors 
+
 ## Dependent Names
 
 - Names that depend on template parameters
@@ -321,6 +325,9 @@ auto add(int a, int b) {
 }
 ```
 
+## Curiously Recurring Template Pattern (CRTP)
+
+- compile time / static polymorphism
 
 ## Relevant Links \& Articles
 
