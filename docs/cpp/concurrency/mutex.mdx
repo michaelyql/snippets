@@ -6,11 +6,12 @@ Possible implementation:
 #include <atomic>
 
 class Mutex {
-    std::atomic_flag m_{};
+    std::atomic_flag m_ = ATOMIC_FLAG_INIT;
 public:
     void lock() noexcept {
         while (m_.test_and_set(std::memory_order_acq_rel)) {
             m_.wait(true, std::memory_order_acquire);
+            // yield / backoff to reduce contention
         }
     }
     bool try_lock() noexcept {
@@ -29,7 +30,8 @@ class Mutex {
     std::atomic<int> m_{0};
 public:
     void lock() noexcept {
-        while (m_.load(std::memory_order_relaxed) || m_.exchange(1, std::memory_order_acquire)) {}
+        while (m_.load(std::memory_order_relaxed) 
+            || m_.exchange(1, std::memory_order_acquire)) {}
     }
     bool try_lock() noexcept {
         return !m_.exchange(1, std::memory_order_acquire);

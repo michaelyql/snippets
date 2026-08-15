@@ -45,6 +45,14 @@ f(x(a), y(b), z(c));
 ```
 The compiler is free to order `x(a)`, `y(b)` and `z(c)` in any order it wants. 
 
+The only guarantee is that each expression is evaluated to completion before another expression is evaluated. E.g. 
+```cpp
+foo(a(b()), c())
+// if b() is evaluated, we are guaranteed a() is evaluated next
+// (since c++17)
+```
+
+
 Evaluations are split into two types: *value computations* (the "return value" of the expression), and _side effects_ (read/writes to an object). Value computations include determining the identity of an object (glvalue evaluation) and reading the value assigned to an object (prvalue evaluation).
 
 Two evaluations A and B can be related in three ways: _sequenced before_, _unsequenced_, or _indeterminately sequenced_. 
@@ -307,7 +315,6 @@ Usual arithmetic conversion progresses in five stages. lvalue-to-rvalue conversi
 
 ### Tricky questions
 
-1.
 ```cpp
 void foo(float&&) { std::cout << "f"; }
 void foo(int&&) { std::cout << "i"; }
@@ -324,14 +331,11 @@ int main()
 }
 ```
 - Although `1.0f` and `2` were passed in as prvalues, inside `bar` they become lvalues associated with the named variables `v1` and `v2` (after pack expansion)
-- `int&` cannot bind to `int&&` and likewise `float&` cannot bind to `float&&`
-- `float&` is converted into a prvalue `int`, so it calls `foo(int&&)` 
-- `int&` is converted into a prvalue `float`, so it calls `foo(float&&)`
-- If we used `foo(std::forward(v), ...)` instead, it would print `"fi"`
+    - `int&` cannot bind to `int&&` and likewise `float&` cannot bind to `float&&`
+    - `float&` is converted into a prvalue `int`, so it calls `foo(int&&)` 
+    - `int&` is converted into a prvalue `float`, so it calls `foo(float&&)`
+    - If we used `foo(std::forward(v), ...)` instead, it would print `"fi"`
 
-<br/>
-
-2. 
 ```cpp
 struct C {
     C() { std::cout << "c"; }
@@ -363,3 +367,80 @@ int main() {
 - C can be converted to D via D's conversion constructor while D cannot be converted to C. Hence `auto` is inferred as D
 - When `flag` is true, a temporary object of type C is first created. Then an object of type D is created via D's conversion constructor, `D(const C&)`
 
+```cpp
+struct X {
+    operator void() {
+        std::cout << "G";
+    }
+};
+
+int main() {
+    X x;
+    (void)x;
+    static_cast<void>(x);
+    x.operator void();
+} // prints "G"
+```
+- The object `x` is converted to void in three ways. 
+    - The first is a C-style cast, the second is a `static_cast`, and finally we call the `void` operator manually. 
+    - According to the C++ standard, conversion functions will **never** be used to convert an object to `void`. 
+    - Hence, the conversion is only called once, when we manually invoke it via `operator void()`.
+    - `static_cast<void>(x)` just discards the value, no actual result is produced and therefore no object of type `void` is created
+
+## Strict Aliasing
+
+- The strict alias rule states that objects can only be accessed through pointers of allowed types.
+    - E.g. you can’t access an `int` through a `float*`
+    - Compilers may optimize away such invalid memory accesses under the assumption that such accesses have no effect since the memory access is invalid. It may discard behaviour or generate unpredictable code (thus UB)
+    - Common violations of strict aliasing are _type punning_ (i.e. treating same memory as a different type)
+    - Common example: overlaying a struct onto a buffer or buffer onto struct 
+    - Ways to avoid it:
+        - `std::memcpy`: standard way to copy bits from one type to another. Optimizers may convert this into direct registers/instructions.
+        - `std::bit_cast`: C++20 zero-cost type reinterpretation
+    - Special cases 
+        -  You can cast to `char*`, `unsigned char*`, `signed char*` and `std::byte*` to bypass the strict aliasing rule, since the C++ standard allows any object to be accessed with these types
+        - Unions allow you to store different data in the same memory location (known as type punning). But the most recent write will overwrite any previous values.
+
+## `alignof` / `alignas`
+
+```cpp
+struct MyUnAlignedStruct {
+    char b;
+};
+
+struct alignas(8) MyAlignedStruct {
+    char b;
+};
+int main() {
+    cout << sizeof(MyUnAlignedStruct) << '\n'; // 1
+    cout << sizeof(MyAlignedStruct) << '\n';   // 8
+    
+    MyAlignedStruct s, t;
+    
+    cout << "Address of s: " << &s << '\n';     // e.g. 0x7ffd57868100
+
+    cout << "Alignment of MyAlignedStruct: " << alignof(MyAlignedStruct) << '\n'; // 8
+
+    cout << "Address modulo 8 (should be 0): " 
+         << (reinterpret_cast<uintptr_t>(&s) % 8) << '\n'; // 0
+
+    cout << "Distance between t and s: " 
+         << (reinterpret_cast<uintptr_t>(&t) - reinterpret_cast<uintptr_t>(&s)) <<'\n'; // 8
+}
+```
+
+
+## Alternative Tokens
+
+- C++ offers alternative tokens that can be used in place of certain punctuators
+```cpp
+int main() {
+    int a[] = <%1,2%>; // {1,2}
+    std::cout << a<:1:>;  // a[1]
+}
+```
+- https://en.cppreference.com/cpp/language/operator_alternative 
+- There are alternative spellings for several operators and other tokens that use non-ISO646 characters 
+- Each alternative token behaves exactly the same as its primary token, except for its spelling (the [stringification operator](https://en.cppreference.com/cpp/preprocessor/replace "cpp/preprocessor/replace") can make the spelling visible). 
+- The two-letter alternative tokens are sometimes called "digraphs". 
+- Despite being four-letters long, `%:%:` is also considered a digraph.

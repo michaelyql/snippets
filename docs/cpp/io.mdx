@@ -1,0 +1,17 @@
+# I/O
+
+`std::cout` vs `std::cerr`
+- Both are declared in `<ostream>` with external linkage and static duration
+- Both write to the console by default
+- `cout` is unbuffered while `cerr` is buffered by default, so that diagnostics would not be lost on crash
+
+`std::endl`
+- Adds a newline and flushes the buffer
+- At the end of `main()` the buffer is flushed again
+- Use `\n` for speed (does not flush buffer)
+
+`void perror(const char *s)`
+- Prints a textual description of the error code currently stored in the system variable `errno` to `stderr`, followed by a newline.
+- Useful when working with functions that set `errno` on failing 
+
+

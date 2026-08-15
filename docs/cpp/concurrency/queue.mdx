@@ -4,7 +4,89 @@ description: Concurrent ring buffers, SPSC/MPMC thread safe queues
 
 # Queue
 
-## Ring Buffer
+## Coarse-Grained Lock-based Queue
+
+```cpp showLineNumbers
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <memory>
+
+template<typename T>
+class threadsafe_queue
+{
+private:
+    mutable std::mutex mut;
+    std::queue<std::shared_ptr<T> > data_queue;
+    std::condition_variable data_cond;
+public:
+    threadsafe_queue()
+    {}
+
+    void wait_and_pop(T& value)
+    {
+        std::unique_lock<std::mutex> lk(mut);
+        data_cond.wait(lk,[this]{return !data_queue.empty();});
+        value=std::move(*data_queue.front());
+        data_queue.pop();
+    }
+
+    bool try_pop(T& value)
+    {
+        std::lock_guard<std::mutex> lk(mut);
+        if(data_queue.empty())
+            return false;
+        value=std::move(*data_queue.front());
+        data_queue.pop();
+    }
+
+    std::shared_ptr<T> wait_and_pop()
+    {
+        std::unique_lock<std::mutex> lk(mut);
+        data_cond.wait(lk,[this]{return !data_queue.empty();});
+        std::shared_ptr<T> res=data_queue.front();
+        data_queue.pop();
+        return res;
+    }
+
+    std::shared_ptr<T> try_pop()
+    {
+        std::lock_guard<std::mutex> lk(mut);
+        if(data_queue.empty())
+            return std::shared_ptr<T>();
+        std::shared_ptr<T> res=data_queue.front();
+        data_queue.pop();
+        return res;
+    }
+
+    bool empty() const
+    {
+        std::lock_guard<std::mutex> lk(mut);
+        return data_queue.empty();
+    }
+
+    void push(T new_value)
+    {
+        std::shared_ptr<T> data(
+            std::make_shared<T>(std::move(new_value)));
+        std::lock_guard<std::mutex> lk(mut);
+        data_queue.push(data);
+        data_cond.notify_one();
+    }
+
+};
+```
+- This is a coarse-grained lock-based queue with a single `std::mutex` to protect the underlying `std::queue`
+- Implementation detail:
+    - Here we construct the `shared_ptr` during `push(v)` instead of during `pop()`
+    - This is compared to if we constructed the `shared_ptr` only during `pop()` when returning the front of the queue to the user
+    - In that scenario, if a thread is woken up by `data_cond.notify_one()` but it throws during the construction of `shared_ptr`, no other thread is woken up
+    - A workaround is `data_cond.notify_all()` but at the expense that most awoken threads will go back to sleep
+    - Thus we create the `shared_ptr` during `push` so that `pop` does not throw 
+
+## Fine-grained Lock-based Queue
+
+## Lock-Free SPSC Ring Buffer
 
 Below is an implementation of a single producer-single consumer ring buffer:
 
@@ -341,7 +423,7 @@ private:
 - [Notes on Concurrent Ring Buffer Queue Mechanics](https://psy-lob-saw.blogspot.com/2014/04/notes-on-concurrent-ring-buffer-queue.html)
 - [Ringbuffer - sysprog21](https://github.com/sysprog21/concurrent-programs/blob/master/ringbuffer/ringbuffer.c)
 - [Michael-Scott Lock Free Queue](https://www.cs.rochester.edu/~scott/papers/1996_PODC_queues.pdf)
-- [SPSC Queue - Rigtop](https://github.com/rigtorp/SPSCQueue)
+- [SPSC Queue - Rigtorp](https://github.com/rigtorp/SPSCQueue)
 - [Lock Free Queue - cozis](https://github.com/cozis/lock_free_queue/blob/main/lock_free_queue.h)
 - [Optimizing a ring buffer for throughput - Rigtorp](https://rigtorp.se/ringbuffer/)
 - [A simple lock free ring buffer - kmdreko](https://kmdreko.github.io/posts/20191003/a-simple-lock-free-ring-buffer/)

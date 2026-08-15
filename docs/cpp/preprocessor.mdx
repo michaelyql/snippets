@@ -1,0 +1,43 @@
+# Preprocessor 
+
+## Header/include guards
+```cpp
+//  a.h
+int x = 5;  
+
+// b.h
+#include "a.h"
+
+// main.cpp
+#include "a.h"
+#include "b.h" 
+
+int main() 
+{
+    return x; // does not compile, multiple definitions
+}
+```
+- Use preprocessor `#pragma once` directives, or `#ifdef A_HEADER_H ... #endif` etc. (include guards)
+
+
+## Trigraphs 
+- Deprecated in C++11, removed in C++17
+- A sequence of three characters starting with `??` to allow programs to represent characters missing from non-ASCII keyboards
+- See https://en.cppreference.com/cpp/language/operator_alternative
+```cpp
+int main() {
+    std::vector<double> v??<false ? 16 : 1??("abc"??)??>;
+    // std::vector<double> v {false ? 16 : 1["abc"]};
+
+    std::cout << v.size(); // 1
+    // picks the initializer list constructor 
+    // initializer list constructor is prioritized during list-initialization
+    // i.e. when using {} with arguments
+    // If the empty brace {} init list is used, it calls the default constructor instead
+}
+```
+
+```cpp
+std::cout << "what??!";
+// prints "what|"
+```

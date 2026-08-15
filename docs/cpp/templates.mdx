@@ -78,13 +78,85 @@ void handle(T val) requires std::is_pointer_v<T> {
 }
 ```
 
+### Function Signature
+- Non-template function signature is defined by their function name, number and type of parameters (not return type)
+- Templated functions function signature includes return type as well
+```cpp
+template <typename T>
+void f();
+
+template <typename T>
+double f();
+
+// but with std::cout << f<>(); this doesn't compile
+```
 
 
 ## Full Specialization
 
 ## Template Argument Deduction
 
+```cpp
+template <typename T>
+void foo(T&& arg) {
+    T x;
+    std::cout << x;
+}
+
+int main() {
+    int i = 0;
+    foo(i); // compile error
+}
+// T is deduced as int& , reference must be initialized on declaration so this doesn't compile
+```
+
+```cpp
+template <typename T>
+requires std::is_integral_v<T>
+void foo(T& p) {
+    p = 1;
+}
+
+int main() {
+    const int i = 0;
+    foo(i); 
+    // does not compile
+} 
+// i is deduced as const int, so any assignment to it is not allowed
+```
+
+```cpp
+template <typename ...Ts>
+struct X {
+    X(Ts ...args) : Var(0, args...) { }
+    int Var;
+};
+
+int main() {
+    X<> x;
+    std::cout << x.Var; 
+    // prints 0
+}
+// after substitution, Var(0, args...) is checked for the actual specialization used
+// For X<>, that gives just Var(0), which is valid 
+```
+
+
+### `auto` type deduction
+```cpp
+int main()
+{
+    const auto t = std::make_tuple(1, 2., 3); // tuple<int,double,int>
+    std::cout << std::get<int>(t); // compile error
+}
+```
+- `std::get<T>(tuple)` can only be used on a tuple which has exactly one `T` in it.
+- `template< class T, class... Types > constexpr const T& get( const std::tuple<Types...>& t ) noexcept;` 
+	-  Fails to compile if the tuple has more than one element of that type.
+
 ### Class Template Argument Deduction (CTAD)
+
+- Lets the compiler deduce class template arguments from constructor arguments
 
 ## SFINAE
 
@@ -93,6 +165,25 @@ Substitution Failure Is Not An Error
 - when template parameter substitution fails, the function is removed from the candidate set 
 - sfinae only applies in the _immediate context_ of the function, i.e. return type, template parameters
     - sfinae does not apply when there is a subtitution failure in the function body. those are treated as normal compile errors 
+
+
+`std::enable_if`
+```cpp
+template <typename T>
+std::enable_if_t<(sizeof(T) == 4)>
+foo() {
+    std::cout << "1";
+}
+
+int main() {
+    foo<uint32_t>(); // prints 1
+}
+```
+- `std::enable_if<bool b, typename T = void>` 
+- `std::enable_if_t<b, T>` is a helper for `std::enable_if_t<b, T>::value` 
+ - If `T` is not specified, it defaults to `void`
+ - If the boolean condition evaluates to false, `::value` is not defined thus causing SFINAE (the template function is just ignored)
+
 
 ## Dependent Names
 
@@ -116,7 +207,7 @@ class A {
 };
 ```
 
-It can be used in function parameters.
+- It can be used in function parameters.
 
 ```cpp
 template<typename T>
@@ -124,6 +215,21 @@ void foo(typename T::iterator it) {
     // ...
 }
 ```
+
+- `.template` disambiguates a dependent name in a template.
+```cpp
+template <unsigned long N>
+void printBitset(const std::bitset<N>& bs) {
+    std::cout << bs.template to_string<char, std::char_traits<char>, std::allocator<char>>();
+}
+```
+- It tells the compiler that `to_string` is a template function, not a regular member function or type. 
+- `bs` is a dependent type (depends on the template parameter `N`), so the compiler can't be sure whether `to_string` is a template or not without help. 
+- By writing `template`, you're telling the compiler that `to_string` is indeed a template member function of `std::bitset` and you're supplying explicit template arguments. 
+- Without the extra use of `.template`, the compiler does not know that the less-than token (`<`) that follows is not really less-than, but the beginning of a template argument list. 
+- Note, this is only a problem if the method parameter (`bs`) depends on the template parameter (`N`).
+
+
 
 ## Concepts
 
@@ -284,6 +390,24 @@ template<std::integral T>
 void foo(T);
 ```
 
+### Tricky example
+
+```cpp
+template <typename T>
+requires requires (std::is_arithmetic<T> x) { x + x; }
+constexpr T add(const T a, const T b) {
+    return a + b;
+}
+```
+- Compiles and is syntactically well formed, but it works for non-arithmetic types
+- Only `x+x` expression is required to be well formed
+- `is_arithmetic<T>` itself has `operator bool()` inherited from `std::integral_constant`, so the expression `x+x` is well formed
+- Hence here it does not matter whether `T` is arithmetic or not i.e. `std::is_arithmetic<T>::value` is false 
+- This would work on strings e.g. `add("a", "b")` since strings support concatenation
+- The correct way would be `requires std::is_arithmetic_v<T>`, or  `requires requires(T t) { requires std::is_arithmetic_v<T>; }`
+
+
+
 ## Trailing Return types
 
 In C++, a trailing return type allows you to specify a function's return type after its parameter list. It requires using the `auto` keyword at the beginning as a placeholder.
@@ -328,6 +452,118 @@ auto add(int a, int b) {
 ## Curiously Recurring Template Pattern (CRTP)
 
 - compile time / static polymorphism
+
+## Template Definition
+```cpp
+// MyContainer.cpp
+#include "MyContainer.hpp"
+
+template <typename T>
+MyContainer<T>::MyContainer(T val) : data(val) {}
+
+// Tell the compiler to bake the code for these types explicitly:
+template class MyContainer<int>;
+template class MyContainer<double>; 
+```
+- Template declarations and definitions must reside entirely in header files because templates are not real functions or classes, but rather blueprints that the compiler uses to generate concrete code at compile time. 
+	- When a translation unit (`.cpp` file) uses a template, the compiler must see the full implementation to substitute the type parameters and generate the specialized object code.
+	- If you put a template's definition in a separate `.cpp` file like a standard function, your code will compile but result in "undefined reference" linker errors whenever other files try to instantiate it
+
+```cpp
+#ifndef EXAMPLE_HPP
+#define EXAMPLE_HPP
+
+template <typename T>
+void print(const T& value);
+
+#endif /// EXAMPLE_HPP
+
+// example.cpp
+
+#include <iostream>
+#include "example.hpp"
+template <typename T>
+void print(const T& value)
+{
+    std::cout << value;
+}
+
+// main.cpp
+
+#include "example.hpp"
+
+int main()
+{
+    double cracked = 1.0;
+    print(cracked);
+}
+```
+- This produces a **linker** error
+	- The definition of the function template `print(...)` has not been instantiated
+	- In order for a template to be instantiated, the compiler must know which definition should be instantiated and for what template arguments it should be instantiated.
+	- When the compiler sees the call to `print()`, but has no definition in sight to instantiate this function for `double`, it just assumes that such a definition is provided elsewhere and creates a reference (for the linker to resolve) to that definition.
+	- When the compiler then processes the file `example.cpp`, it has no indication at that point that it must instantiate the template definition it contains for specific arguments.
+	- The common solution is to include the definitions of a template in the header file that declares that template.
+	- Alternatively, we can keep `example.cpp` and, at the bottom, declare the template that needs to be instantiated, such as `template void print;` 
+		- This is called **explicit template instantiation**.
+
+## Templates with Packs 
+
+Template sum:
+```cpp
+template <typename ...Args>
+auto sum(Args... args) {
+    return (args + ... + 0);
+}
+
+int main() {
+    auto x = sum(0.5, 2, 0.5, 2);
+    auto y = sum(2, 0.5, 2, 0.5);
+    std::cout << x << y; // prints 55
+}
+```
+
+```cpp
+template <typename T, typename... U>
+constexpr bool areSameType(T, U...)
+{
+    return (std::is_same_v<T, U> && ...);
+}
+
+int main() {
+    std::cout << areSameType("upgrade", "to get", "cracked", "");
+    // prints 1
+}
+```
+- The result yields true because all passed arguments are deduced to be `char const*` (the argument types decay because the call arguments are passed by value).
+
+## Practice Questions 
+
+```cpp
+template <typename Type>
+struct X {
+    void bar() { std::cout << Type::identify() << std::endl; }
+    static std::string_view identify() { return "X"; }
+};
+
+template <typename Type>
+struct Y : Type {
+    void bar() { std::cout << Type::identify() << std::endl; }
+    static std::string_view identify() { return "Y"; }
+};
+
+class Z {
+protected:
+    void bar() { std::cout << identify() << std::endl; }
+    static std::string_view identify() { return "Z"; }
+};
+
+int main() {
+    Y<X<Y<Z>>>{}.bar(); // prints X
+    Y<Z>{}.bar();       // Z
+}
+```
+
 
 ## Relevant Links \& Articles
 

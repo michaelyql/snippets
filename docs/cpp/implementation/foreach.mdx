@@ -1,0 +1,14 @@
+# For Each
+
+```cpp
+template <typename Iter, typename Callable, typename... Args>
+void foreach(Iter current, Iter end, Callable op, const Args&... args)
+{
+    while (current != end) {
+        std::invoke(op, args..., *current++);
+    }
+}
+```
+
+- Note: `std::invoke` - if the callable is a pointer to a member function, the first argument should be a pointer to `this` object
+

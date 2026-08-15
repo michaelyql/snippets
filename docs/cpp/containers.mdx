@@ -32,22 +32,70 @@
 
 - Interesting functions:
     - `reserve(size_t new_cap)`
-        - If new capacity is greater than current capacity, new storage is allocated, and all iterators and references are invalidated
-        - After reserving enough space, insertions will not cause reallocation unless the size of the vector is greater than `capacity()`
+        - `reserve()` does not change the size of the vector.
+        - If new capacity is greater than current capacity, new storage is allocated, and all iterators and references are invalidated. Otherwise, no iterators or references are invalidated.
+        - After a call to `reserve()`, insertions will **not** trigger reallocation unless the insertion would make the size of the vector greater than the value of `capacity()`.
+        - On reallocation, all elements are copied over to the new memory location
         - Can throw `std::length_error` if new capacity > max size, or if memory allocation fails e.g. `std::bad_alloc`
     - `shrink_to_fit()`
         - Non-binding request to remove the unused memory, reducing `capacity()` to `size()`
         - If reallocation occurs, all iterators and references are invalidated
-- On reallocation, all elements are copied over to the new memory location
 - Vector has a specialization `vector<bool>` which is a space-efficient dynamic bitset (compared to fixed size `std::bitset`)
+- Default constructible
+    - `std::vector` does not unconditionally require its element type to be default constructible
+    - But you must provide a default constructor (or allow default insertion) if you use methods that create elements out of thin air without supplying an initial value
+    - E.g. `resize`, `vector<T>(n)` 
+```cpp
+struct Bar
+{
+    Bar() { std::cout << "1"; }
+    Bar(const Bar&) { std::cout << "2"; }
+};
+
+int main()
+{
+    std::vector<Bar> bar(5);
+}
+// prints 11111
+```
+- The syntax of the vector constructor is: `explicit vector(size_type count, const T& value = T(), const Allocator& alloc = Allocator());`. So `T` is default constructed
+- `[]` vs `at()`
+    - `at()` performs bounds checking and throws exceptions for out of bounds so it has some additional overhead 
+
+
+
+
+### `std::erase`
+```cpp
+void erase_all_of_first(auto& container) {
+    std::erase(container, container.front());
+}
+
+int main() {
+    std::vector<std::string> values{ "test",
+        "hello",
+        "test",
+        "gta 6",
+        "bob" };
+    erase_all_of_first(values);
+    // Prints hello, test, gta 6, bob
+}
+```
+- `std::erase` takes value to erase by const reference 
+	- https://en.cppreference.com/cpp/container/vector/erase2
+	- `std::erase` is equivalent to calling `std::remove` under the hood
+	- `std::remove` shifts the elements such that the removed elements are moved to the end, and returns an iterator to one-past-the-end of the new range
+	- when the elements are swapped, it will override `front()` 
+	- `front()` always reference `values[0]` - it is equivalent to `*c.begin()`, so after the first `"test"` is moved to the back, it mutates the vector in place and so the value being compared is now `"hello"` instead
 
 ## `std::deque`
 
-- Insertions to either end never invalidate iterators or references
-- Elements are not stored contiguously; deque is split into chunks of fixed-sized array with additional bookkeeping
+- Unlike vector, deque elements are **not stored contiguously**
+    - deque is split into chunks of _fixed-sized array_ with additional bookkeeping
     - Indexed access performs two pointer dereferences, compared to vector which only performs one
 - Expansion of deque is typically cheaper than vector as it does not involve copying all elements to the new memory location
     - But a deque has larger minimal memory cost e.g. holding one element requires allocating the entire fixed-size array
+- Insertions to both ends **never invalidate** iterators or references
 
 
 ## `std::unordered_map`
@@ -95,3 +143,18 @@
 Read only methods never invalidate iterators or references. Insertion/erasure may invalidate certain iterators/references, so you have to check and make sure they are still valid to use. 
 
 ## Non-owning Views 
+
+## C-style arrays 
+Indexing arrays
+```cpp
+int arr[] = {1, 3, 5};
+
+// all valid to access second element
+arr[1];  
+1[arr];
+*(arr + 1);
+
+std::cout << 2["123"]; // prints "3"
+```
+- Array indexing is commutative in C++
+

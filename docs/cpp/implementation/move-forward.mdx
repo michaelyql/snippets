@@ -1,4 +1,6 @@
-# Move
+# Move / Forward
+
+## `std::move`
 
 `std::move` casts an lvalue expression into an rvalue reference, signaling that an object's resources can be moved from. 
 
@@ -28,3 +30,7 @@ template<class T> struct remove_reference<T&&> { typedef T type; };
 Other notes 
 - `std::remove_cvref_t` is essentially `std::remove_cv_t<std::remove_reference_t<T>>`
 - Other functions like `remove_volatile`, `remove_cv`, `remove_const`, `add_cv`, `add_const`, `remove_pointer` etc. are found in the `<type_traits>` header
+
+## `std::forward`
+
+- A simple utility over `static_cast<T&&>` 

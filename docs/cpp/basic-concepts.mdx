@@ -1,0 +1,103 @@
+# Basic Concepts
+
+## As-if Rule
+- The as-if rule allows compilers to perform any code transformations as long as the program's observable behavior remains unchanged.
+- Observable behavior includes actions like input/output operations, volatile variable accesses, and system calls, which must occur in the order specified by the code
+- This rule enables aggressive optimizations while preserving the program's correctness.
+- E.g. the compiler may compute 3 + 4 at compile time and directly output 7, eliminating runtime calculation. `int main() { int x = 3 + 4; std::cout << x; }`
+
+## Type support
+ 
+### `std::ptrdiff_t`
+- A signed type that represents the difference between two pointers (i.e., the number of elements between them)
+- It's large enough to represent any difference between two pointers in the same array.
+- `ptrdiff_t` can store negative values 
+- `std::uintptr_t` is only used to store the distance between memory addresses, not their differences 
+
+### `std::size_t`
+- `size_t` is used to represent the sizes of objects, array lengths, etc
+- It's large enough to store the size of any object in memory in bytes (as it has 2^64 bits, which is ~16 EB) 
+- Because `size_t` is guaranteed to be large enough to hold the byte size of any object your system can handle, its size matches the architecture's word and address space size
+
+### `sizeof`
+
+`sizeof long` vs `sizeof int`
+- `std::cout << (sizeof(long) > sizeof(int));`
+- Implementation defined
+- Only minimum size requirements are given
+- The C++ standard guarantees: 
+	- `sizeof(char) == 1`
+	- `sizeof(short) >= sizeof(char)` 
+	- `sizeof(int) >= sizeof(short)` 
+	- `sizeof(long) >= sizeof(int)` 
+	- `sizeof(long long) >= sizeof(long)`
+- It does not say that `sizeof(long) > sizeof(int)`, only that it’s at least as large. It could be equal
+    - For example, on Linux / MacOS (64-bit), sizeof(int) is 4 and sizeof(long) is 8. 
+    - On Windows (32-bit or 64-bit), they are the same size.
+	- If you want an 8 byte integer in windows, you need to use long long.
+
+### `char` signedness
+- The sign of `char` is implementation defined
+```cpp
+std::is_signed<char>::value; // can be true or false
+```
+- `char`, `signed char`, and `unsigned char` are treated as **three distinct types**. Use explicit sign types when used for arithmetic
+- g++ has `-f(un)signed-char` flag that forces char to be (un)signed.
+
+### `void` pointer
+- Can't dereference void pointer (compile time error)
+	- You have to cast it to another type (C-style or `static_cast` etc.)
+- Can't perform arithmetic on void pointer 
+- Size of void pointer is typically 0, but can be 1 based on compiler extension
+- `void*` is an incomplete type with no size
+
+### Size of pointer
+- Mostly should be 4 bytes on 32 bit arch, 8 bytes on 64 bit arch
+- Non-member and static member function pointers are the same size as regular pointers. You can check using `sizeof(void(*)())` 
+- But the size of **member** function pointers are a slightly different
+
+## Floating Point 
+
+### Number of floating point types
+- 3: `float`, `double`, `long double` (extended precision, 80 to 128 bits vs 64 bits of long)
+- `long double` is implementation defined 
+
+### Floating point addition
+- The order in which you add three floating point numbers a+b+c affects the final outcome
+- According to the IEEE-754 standard, 64-bit doubles (in C++, for example), have 53 bits of precision.
+- That means the largest whole number they can store is 2^53 - 1. This **doesn't mean** the largest double is 2^53 - 1.
+- If you add 1 to 2^53, the 1 is lost because there isn't any more bits available to store that level of granularity. **This is not an overflow**.
+```cpp
+const double a = 2^53, b = -2^53, c = 1; 
+const double ab = a + b; 
+// 0 
+const double ac = a + c; 
+// ac == a 
+const double abc = ab + c; 
+// 1 
+const double acb = ac + b; 
+// 0
+// abc != acb
+```
+
+## Non-complete types 
+- The compiler has seen a **declaration** of `T` (like `class T;`) but **not the full definition** (like `class T { int x; };`)
+- For complete types, the compiler knows the full memory layout (size, members, alignment).
+- `void` is a non-complete type.
+```cpp
+// ---- Allowed with incomplete types 
+class T;  // forward declaration (incomplete)
+
+T* ptr;          // pointer to incomplete type (OK)
+T& ref;          // reference to incomplete type (OK)
+std::shared_ptr<T> sp;  // OK (smart pointers don't need complete type)
+T* foo(T* p);    // function declarations (parameters/return as pointers/references)
+
+
+// --- Not allowed with incomplete types
+T obj;           // ERROR: cannot create object (don't know size)
+delete ptr;      // ERROR: don't know if destructor is trivial/non-trivial
+sizeof(T);       // ERROR: don't know size
+new T();         // ERROR: don't know size
+T::static_member; // ERROR: don't know members
+```

@@ -1,0 +1,575 @@
+# Design Patterns 
+
+## Creational Patterns
+
+### Singleton
+
+A Singleton is a design pattern that restricts users from creating more than one instance of said object. This means it cannot be copied or moved from. For example, loggers, setting managers, database connections are often implemented as singletons. 
+
+```cpp showLineNumbers title="singleton.cpp"
+class A {
+private:
+    A() = default;
+
+public:
+    A(const A&) = delete;
+    A(A&&) = delete;
+    A& operator=(const A&) = delete;
+    A& operator=(A&&) = delete;
+
+    static *A Instance() {
+        static A a_;
+        return &a_;
+    }
+};
+
+int main() {
+    A& a = A::Instance();
+    // A a = A::Instance(); // not allowed
+}
+```
+- Notes:
+    - The move and copy constructor/assignment operator are marked as deleted so that only a reference to the singleton can be obtained 
+        - The return types can actually be `void`, as the function signature uniquely identifies the method, and the return type is not part of the function signature
+    - If the move and copy constructor/assignment operator were not deleted, someone could write code like this: 
+        ```cpp
+        A a = A::Instance(); 
+        ```
+        which would invoke the copy constructor.
+    - Initialization of method-scoped static variables is threadsafe since C++11. This is referred to as "Magic Statics"
+        - You can use `std::call_once` with `std::once_flag` (from `<mutex>`), which guarantees that a method is called once
+            ```cpp
+            #include <iostream>
+            #include <mutex>
+
+            class Singleton {
+            public:
+                // Static member function to be executed once
+                static void init() {
+                    std::cout << "Initialization logic running once..." << std::endl;
+                }
+
+                static void execute() {
+                    // static flag ensures one-time execution across threads
+                    static std::once_flag init_flag;
+                    std::call_once(init_flag, &Singleton::init);
+                }
+            };
+
+            int main() {
+                // Both calls share the same static flag, but init() only runs once
+                Singleton::execute();
+                Singleton::execute(); 
+                return 0;
+            }
+            ```
+        - Magic statics are the preferred method since C++11 unless there is some complex requirement for `call_once`
+
+
+### Factory 
+- create one specific object using class inheritance 
+- typically one main method to create
+```cpp
+class Creator {
+public:
+    virtual std::unique_ptr<Product> Create() = 0;
+};
+```
+
+
+
+### Abstract Factory 
+
+create a family of related objects, using object composition
+	- usually multiple creation methods
+```cpp
+struct GUIFactory { // abstract factory 
+    virtual Button* createButton() = 0;
+    virtual Checkbox* createCheckbox() = 0;
+};
+```
+
+## Structural Patterns
+
+### Adapter 
+```cpp
+class Warrior {
+public:
+    virtual void attack() = 0;
+    virtual ~Warrior() = default;
+};
+
+class Knight : public Warrior {
+public:
+    void attack() override {
+        std::cout << "Knight swings a sword!" << std::endl;
+    }
+};
+
+class Dragon {
+public:
+    void breatheFire() {
+        std::cout << "Dragon breathes a massive fireball!" << std::endl;
+    }
+
+    void fly() {
+        std::cout << "Dragon takes flight!" << std::endl;
+    }
+};
+
+// Dragon joins the army.
+class DragonWarrior : public Warrior {
+private:
+    Dragon* dragon;
+
+public:
+    DragonWarrior(Dragon* d) : dragon(d) {}
+
+    void attack() override {
+        dragon->fly();
+        dragon->breatheFire();
+    }
+};
+
+// Client code for battle!
+void battle(Warrior* warrior) {
+    warrior->attack();
+}
+
+int main() {
+    Knight knight;
+    Dragon dragon;
+    DragonWarrior dragonWarrior(&dragon);
+
+    std::vector<Warrior*> army = { &knight, &dragonWarrior };
+
+    for (Warrior* fighter : army) {
+        battle(fighter);
+    }
+}
+```
+- Warrior is the target interface, and Knight is a class already using this interface. 
+- Dragon is an incompatible class that your team wanted to make compatible with a warrior. 
+- DragonAdapter adapts Dragon to Warrior; hence, this is the adapter pattern. 
+- Now, Dragon can participate in battles alongside knights. In other words, the intent of the adapter is to convert the interface of a class into another interface clients expect. 
+- Adapter lets classes work together that couldn't otherwise because of incompatible interfaces.
+
+
+### Decorator 
+```cpp
+class Weapon {
+public:
+    virtual std::string getName() const = 0;
+    virtual int getDamage() const = 0;
+    virtual ~Weapon() = default;
+};
+
+class Axe : public Weapon {
+public:
+    std::string getName() const override {
+        return "Axe";
+    }
+
+    int getDamage() const override {
+        return 10;
+    }
+};
+
+class EnhancedWeapon : public Weapon {
+protected:
+    std::shared_ptr<Weapon> baseWeapon;
+
+public:
+    EnhancedWeapon(std::shared_ptr<Weapon> weapon) : baseWeapon(weapon) {}
+};
+
+class BasicWeapon : public EnhancedWeapon {
+public:
+    BasicWeapon(std::shared_ptr<Weapon> weapon) : EnhancedWeapon(weapon) {}
+
+    std::string getName() const override {
+        return "Basic " + baseWeapon->getName();
+    }
+
+    int getDamage() const override {
+        return baseWeapon->getDamage() + 5;
+    }
+};
+
+// Another implementation for RareWeapon.
+
+class ExaltedWeapon : public EnhancedWeapon {
+public:
+    ExaltedWeapon(std::shared_ptr<Weapon> weapon) : EnhancedWeapon(weapon) {}
+
+    std::string getName() const override {
+        return "Exalted " + baseWeapon->getName();
+    }
+
+    int getDamage() const override {
+        return baseWeapon->getDamage() * 10;
+    }
+};
+
+double getPlayerRoll() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    double randomValue = dis(gen);
+    return randomValue;
+}
+
+// Method may or may not be called on boss' death.
+std::shared_ptr<EnhancedWeapon> getCrackedBossAxeDrop(double roll) {
+    auto* axe = new Axe();
+    if (roll >= 0.99) {
+        return std::make_shared<ExaltedWeapon>(axe);
+    } else if (roll >= 0.9) {
+        return std::make_shared<RareWeapon>(axe);
+    } else {
+        return std::make_shared<BasicWeapon>(axe);
+    }
+}
+
+int main() {
+    // Assume the axe loot drops, and user rolls for it.
+    auto roll = getPlayerRoll();
+    auto axe = getCrackedBossAxeDrop(roll);
+}
+```
+- The decorator pattern allows for additional responsibilities to be dynamically attached to an object as an alternative for subclassing to extend functionality. 
+- In this example, Weapon is the base interface. Axe is a concrete weapon. 
+- Enhanced is an abstract wrapper for other weapons. BasicWeapon, RareWeapon, and ExaltedWeapon add layered effects (extra damage, name prefix). 
+- You can stack decorators to represent progressively enchanted or empowered weapons dynamically at runtime (which is what getCrackedBossAxeDrop is doing) .
+
+
+
+
+### Facade
+```cpp
+class CutsceneManager {
+public:
+    void playIntro() {
+        std::cout << "[Cutscene] A crack splits the sky...";
+    }
+};
+
+class MusicSystem {
+public:
+    void playBossTheme() {
+        std::cout << "[Music] Playing: 'The Cracked One' Theme";
+    }
+};
+
+class EnvironmentController {
+public:
+    void darkenSky() {
+        std::cout << "[Environment] The sky grows dark.";
+    }
+};
+
+class BossAI {
+public:
+    void activatePhaseOne() {
+        std::cout << "[Boss AI] The Cracked One begins its attack!";
+    }
+
+    void activatePhaseTwo() {
+        std::cout << "[Boss AI] The Cracked One cracks open.";
+        std::cout << "[Boss AI] Identifying The Intern for execution.";
+    }
+};
+
+class HealthSystem {
+public:
+    void initializeHealth(int hp) {
+        std::cout << "[Health] The Cracked One appears with " << hp << " HP!";
+    }
+};
+
+
+class BossBattle {
+private:
+    CutsceneManager cutscene;
+    MusicSystem music;
+    EnvironmentController environment;
+    BossAI ai;
+    HealthSystem health;
+
+public:
+    void startBattle() {
+        cutscene.playIntro();
+        environment.darkenSky();
+        music.playBossTheme();
+        health.initializeHealth(10000);
+        ai.activatePhaseOne();
+    }
+
+    void triggerPhaseTwo() {
+        music.playBossTheme();
+        ai.activatePhaseTwo();
+    }
+    
+    void initiate() {
+        std::cout << "== Initiating Final Encounter ==" << std::endl;
+        bossBattle.startBattle();
+
+        // Simulate battle...
+        std::cout << "(Player fights...)" << std::endl;
+
+        // Later in battle, transition to Phase 2
+        bossBattle.triggerPhaseTwo();
+    }
+};
+
+int main() {
+    BossBattle bossBattle;
+    bossBattle.initiate();
+}
+```
+- The facade design pattern provides a unified interface to a set of interfaces in a subsystem. It helps provide structure and reduce complexity. 
+- One way to achieve the facade is to provide a single simplified interface to the more general facilities of a subsystem. 
+- In this example, subsystems like music, environment, AI, etc. are each their own classes. The BossBattle provides a single method to kick off everything in proper sequence. 
+- The client (main()) doesn’t need to know how to coordinate all those systems — just call initiate(). 
+- You may be wondering why this isn't a mediator since, at a glance, facade and mediator can look similar because they both centralize control. 
+	- The main difference is that in a facade, subsystems are independent and don't talk to each other. 
+	- Hence, the facade is just a convenience layer. 
+	- A mediator would coordinate communication between subsystems, potentially registering the sending and receiving of messages between each other through the mediator (e.g. if mediator handles an OnBossDefeated event, and uses it to trigger a cutscene through the CutsceneManager).
+
+
+## Behavioural Patterns
+
+### Chain of Responsibility 
+- one object calls another in the chain to do something else
+
+### Command 
+Encapsulates a request as an independent object. E.g. A restaurant order slip written down by a waiter. Use when You need to queue, delay, log, or support "undo" actions.
+
+- Objectifying the "What": The Command Pattern turns a specific request or operation into a fully self-contained object. Because the request is now an object, you can pass it to functions, save it for later execution, put it in a queue, or stack it to build an undo/redo history. 
+- How it works: It decouples the object that triggers the action from the object that actually knows how to perform it. 
+- Example: A remote control button or a menu shortcut. Clicking "Save" triggers a `SaveCommand.execute()`, which encapsulates exactly what parameters are needed to complete the task.
+
+```cpp
+class Wizard {
+private:
+    std::string name;
+
+public:
+    Wizard(std::string name) : name(name) {}
+
+    void castFireball() {
+        std::cout << name << " casts Fireball!" << std::endl;
+    }
+
+    void castHeal() {
+        std::cout << name << " casts Heal!" << std::endl;
+    }
+
+    void defend() {
+        std::cout << name << " raises a Magic Shield!" << std::endl;
+    }
+};
+
+class Action {
+public:
+    virtual void execute() = 0;
+    virtual ~Action() = default;
+};
+
+// Concrete Actions
+class FireballAction : public Action {
+private:
+    Wizard& wizard;
+
+public:
+    FireballAction(Wizard& wiz) : wizard(wiz) {}
+    void execute() override {
+        wizard.castFireball();
+    }
+};
+
+class HealAction : public Action {
+private:
+    Wizard& wizard;
+
+public:
+    HealAction(Wizard& wiz) : wizard(wiz) {}
+    void execute() override {
+        wizard.castHeal();
+    }
+};
+
+class DefendAction : public Action {
+private:
+    Wizard& wizard;
+
+public:
+    DefendAction(Wizard& wiz) : wizard(wiz) {}
+    void execute() override {
+        wizard.defend();
+    }
+};
+
+// Invoker: handles Action queue
+class ActionQueue {
+private:
+    std::queue<std::shared_ptr<Action>> actions;
+
+public:
+    void addAction(std::shared_ptr<Action> cmd) {
+        actions.push(cmd);
+    }
+
+    void executeAll() {
+        while (!actions.empty()) {
+            actions.front()->execute();
+            actions.pop();
+        }
+    }
+};
+
+int main() {
+    Wizard merlin("Merlin");
+
+    auto fireball = std::make_shared<FireballAction>(merlin);
+    auto heal = std::make_shared<HealAction>(merlin);
+    auto defend = std::make_shared<DefendAction>(merlin);
+
+    ActionQueue queue;
+    queue.addAction(fireball);
+    queue.addAction(heal);
+    queue.addAction(defend);
+
+    queue.executeAll();
+}
+```
+- The command pattern encapsultates a request as an object, letting you parameterize clients with different requests, queue said requests, and support the undoing of operations. 
+- Concrete command subclasses specify a receiver-action pair by storing the receiver as an instance variable and by implementing Execute to invoke the request. 
+- The receiver has the knowledge to carry out the request. 
+- A classic example is Microsoft Word. 
+	- A candidate that submitted this question was asked about how they might implement MenuItem actions in an interview. 
+	- When you click on 'File', for example, you'll see a list of meny items. When the user selects a MenuItem, the MenuItem calls Execute on its command, and Execute carries out the peration (with the command subclass storing the receiver of the request, invoking one or more actions on the receiver). For example, the PasteCommand supports pasting text from the clipboard into a Document.
+
+
+### Strategy 
+Swaps different ways to execute the **same** underlying goal. E.g. Choosing a transportation method (bus, car, bike). Use when you have multiple algorithms for one task (e.g., sorting or payment).
+
+- Changing the "How": The Strategy Pattern isolates a specific behavior from a business logic class, letting you switch out that behavior at runtime. It focuses on standardizing an input/output contract through an interface so that different implementation variations are entirely interchangeable. 
+- How it works: A single host object holds a reference to a Strategy interface and delegates the work. 
+- Example: A checkout cart where you dynamically swap the tax calculation method between a USATaxStrategy and a EUTaxStrategy.
+
+### Visitor
+Runs operations across a structure of different object types. E.g. An insurance auditor reviewing a factory, office, and store. Use when you want to add features to an existing object tree without changing its classes.
+
+- Adding Operations from the Outside: The Visitor Pattern separates an operation from an entire graph or hierarchy of objects. Instead of writing new code inside every class in an object tree, you create a "Visitor" class that travels through the tree and executes distinct logic tailored for each specific class type. 
+- How it works: It relies on a mechanism called double dispatch. The elements in your structure accept the visitor `(element.accept(visitor))`, and then pass themselves right back to it `(visitor.visit(this))` so the visitor knows exactly what class type it is handling. 
+- Example: A code compiler traversing a syntax tree. A TypeCheckingVisitor behaves one way when it looks at an AssignmentNode, but behaves completely differently when it visits a LoopNode.
+
+### Template Method 
+- Defining an algorithm in a base class while allowing subclasses to customize individual steps
+```cpp
+class Base {
+public:
+    void Run() {
+        Step1();
+        Step2();  // customizable
+    }
+protected:
+    virtual void Step2() = 0;
+};
+
+struct ComplexObject  // this uses template method pattern
+// but also debatable whether it's a factory pattern
+{
+protected:
+    virtual void Initialize(size_t seed) const
+    {
+        // Set x_, y_, z_ using seed.
+    }
+
+    ComplexObject() = default;
+
+    int x_, y_, z_;
+public:
+
+    static ComplexObject Create()
+    {
+        using std::chrono::system_clock;
+
+        auto now = system_clock::now();
+        auto duration = now.time_since_epoch();
+        auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+        
+        ComplexObject(x); // note here it is declaring an object of type 
+        // ComplexObject x
+        // the parenthesis are just ignored
+        x.Initialize(nanoseconds);
+        return x;
+    }
+};
+```
+
+### Mixin 
+- a way to mix in different behaviour from other classes, typically via multiple inheritance
+```cpp
+template<typename... T>
+class Point : public T... {
+public:
+    double x, y;
+    Point() : T()..., x(0.0), y(0.0) { }
+    Point(double x, double y) : T()..., x(x), y(y) { }
+};
+
+class Label {
+public:
+    std::string label;
+    Label() : label("") { }
+};
+
+class Color {
+public:
+    unsigned char red = 0, green = 0, blue = 0;
+};
+
+using LabeledPoint = Point<Label>;
+using MyPoint = Point<Label, Color>;
+```
+
+### Null 
+Null design pattern
+```cpp
+class MazeResourceManager
+{
+public:
+    virtual void LoadSounds() = 0;
+};
+class DefaultMazeResourceManager : public MazeResourceManager
+{
+public:
+    virtual void LoadSounds() { throw std::logic_error("Sounds are not yet implemented.") };
+};
+
+class MazeGame
+{
+public:
+    MazeGame();
+private:
+    std::unique_ptr<MazeResourceManager> resources_{ std::make_unique<DefaultMazeResourceManager>() };
+};
+
+MazeGame::MazeGame()
+{
+    resources_->LoadSounds();
+}
+```
+- The null design pattern is used to provide a default object in place of a null pointer, avoiding the need for explicit null checks. 
+- This pattern involves creating a "null object" that implements the same interface as the real object but performs no action. 
+- Sometimes the interface may also throw an exception instead of performing no action to signal to the caller that another implementation must be used in-place of the default / null implementation.
+
+## UML Diagrams 
+
+### Aggregate vs Composition 
+
+- aggregation: weak ownership
+- composition: strong ownership
+

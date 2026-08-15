@@ -3,3 +3,17 @@ description: Instruction Set Architecture (ISA) and more
 ---
 
 # Computer Organisation
+
+## Endianness
+
+- Little-endian 
+    - Little endian means the least significant byte is stored at the lowest memory address. 
+    - E.g. the value `0x12345678` if stored at address `0x1000`, would be stored as `78 56 34 12` where the byte `78` or `0111 1000` is stored at `0x1000`, the byte `56` or `0101 0110` is stored at `0x1004` etc.
+    - Little endian is adopted by most modern architectures
+    - Little endian ordering simplifies arithmetic operations as well as enables easy type-casting based on a starting address by just reading more/less bytes
+- Big-endian
+    - Big endian means the least significant byte is stored at the highest memory address
+    - It is default for sending data packest over networks
+    - The big end (most significant byte) is sent first, followed by less significant bytes
+    - It is also known as 'reading order' because it is typically the way in which we read the values from left to right
+- Conversion from little to big endian and vice versa can be done with `htonl` / `htons` / `ntohl` / `ntohs` (network to host long/short and host to network long/short)

@@ -1,0 +1,27 @@
+# Iterators 
+
+Iterators are a generalization of pointers that allow a C++ program to work with different data structures (for example, containers and ranges(since C++20)) in a uniform manner. 
+
+The iterator library provides definitions for iterators, as well as iterator traits, adaptors, and utility functions.
+
+Since iterators are an abstraction of pointers, their semantics are a generalization of most of the semantics of pointers in C++. This ensures that every function template that takes iterators works as well with regular pointers.
+
+## Iterator categories
+ - There are five(until C++17) (six(since C++17)) kinds of iterators: 
+	 - LegacyInputIterator
+	 - LegacyOutputIterator  (this is the only one that allows writes)
+	 - LegacyForwardIterator 
+	 - LegacyBidirectionalIterator
+	 - LegacyRandomAccessIteraton
+ - A newly added category, as of C++17, is contiguous iterators (_LegacyContiguousIterator_)
+ - All of the iterator categories (except _LegacyOutputIterator_) can be organized into a hierarchy, where more powerful iterator categories (e.g. _LegacyRandomAccessIterator_) support the operations of less powerful categories (e.g. _LegacyInputIterator_).
+ - If an iterator falls into one of these categories and also satisfies the requirements of _LegacyOutputIterator_, then it is called a *mutable* iterator and supports both input and output. Non-mutable iterators are called _constant iterators_.
+
+## `std::contiguous_iterator` 
+    - From `<iterator>` header
+	- The `contiguous_iterator` **concept** refines `random_access_iterator` by providing a guarantee the denoted elements are stored contiguously in the memory.
+	- Contiguous iterator is a **concept**. 
+	- only `std::vector`, `std::array` and `std::string` have iterators which are `LegacyContiguousIterator`s
+	- A contiguous iterator has _all the traits of a random access iterator_, but operates on containers that are laid out *contiguously* in memory. This provides the following advantages:
+		- **Iteroperability with Legacy C APIs**: A random access iterator only requires that `iterator + offset` can be done in constant time, whereas a contiguous iterator guarantees that `std::addressof(*((iterator) + (offset))) == std::addressof(*(iterator)) + (offset)`. In short, this means that the iterator is a pointer or a light wrapper around a pointer; hence, it can be passed to low-level C APIs that expect a raw pointer to an array.
+		- **Algorithm Optimization**: Algorithms can leverage the contiguous memory layout for improved performance. For instance, operations like `memcpy` or `memset` can be used on ranges defined by contiguous iterators, potentially leading to significantly faster execution compared to element-by-element operations. These algorithms can also exploit cache locality of data with this additional information while optimizing.

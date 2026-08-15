@@ -3,7 +3,45 @@
 
 ## Storage Duration 
 
+- dynamic, thread_local, automatic, static
+- Automatic: 
+	- Objects that have automatic storage duration are created upon entry into the code block that encloses the objects. These objects are destroyed upon exit from the code block. Such objects are local objects declared without the static, extern, or thread_local specifiers
+- Static:
+	- For objects that have static storage duration, storage is allocated when the program starts execution and deallocated when the program ends execution. In this case, the object itself is created before the first access to this object.
+	- Objects that have static storage duration are all identifiers declared at some namespace scope, plus those identifiers declared with static or extern specifier.
+	- For each identifier that has static storage duration, only one instance of the object is created.
+- Thread local: 
+	- For objects that have thread storage duration, storage is allocated when the thread is initialized and deallocated when the thread ends. The object itself is created before the first access to this object. Each thread has its own instance of the object. For the identifier to have thread storage duration, it must be declared with the `thread_local` specifier
+	- The declaration of an object that have thread storage duration may also contain the static or extern specifiers. In this case, these specifiers do not affect the storage duration but determine its linkage
+- Dynamic:
+	- To create or destroy an object that has dynamic storage duration, you need to use special functions for dynamic memory management. To create such an object, for example, you can use the new operator. In this case, this object will exist until the corresponding delete operator is called.
+
 ## Linkage 
+
+### Global Variables 
+```cpp
+int x{ 1 };
+
+int main() {
+}
+
+// in header.h 
+inline int x = 1; // external linkage 
+
+// in some .cpp 
+#include "header.h"
+int main() { 
+    return x; // Ok, refers to the same x across TUs 
+}
+```
+- By default, a non-const global variable has _external_ linkage
+	- This means they're accessible across translation units
+	- `inline` here does not change linkage, it just tells the compiler that it's allowed to have multiple identical definitions in different translation units,, and they will be merged at link time 
+	- I.e. they can appear in multiple translation units without violating the _One Definition Rule_ (ODR)
+- Only adding `inline` doesn't change `x`'s linkage from external to internal
+	- `static`, `constexpr` and `const` all change its linkage to _internal_
+
+
 
 
 ## `std::exit`

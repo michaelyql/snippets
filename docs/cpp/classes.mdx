@@ -56,6 +56,34 @@ struct Derived2 : Derived {
     - **all public and protected members** of the base class are accessible as **private members** of the derived class 
     - **private members** of the base are **never accessible** unless **friended**
 
+### Method Hiding
+```cpp
+struct A {
+    void operator()(int) const {
+        std::cout << "A";
+    }
+};
+
+struct B {
+    void operator()(std::string) const {
+        std::cout << "B";
+    }
+};
+
+struct C : A, B {
+    // using A::operator(); 
+    // using B::operator();
+};
+
+int main() {
+    C f;
+    f("hello"); // doesn't compile
+}
+```
+- C does not define `operator()` so it doesn't hide anything
+    - The call to `operator()` here is ambiguous because both A and B define it 
+    - Unqualified name lookup finds both `A::operator()` and `B::operator()` so the compiler doesn't know what to pick (this is **before** overload resolution takes place)
+    - Fix by bringing both into `C`'s scope `using A::operator()` and `using B::operator()`
 
 
 
@@ -143,6 +171,28 @@ struct Z
 - Virtual call is suppressed by using *qualified name lookup* (using scope resolution operator `::`)
 - The overriding function must have the same **name**, **parameter type list**, **cv-qualifiers** and **ref-qualifiers**
     - Does not have to have the same return type as the original function
+```cpp
+struct A {
+    virtual void foo(int a) {
+        std::cout << "1";
+    }
+};
+
+struct B : A {
+    virtual void foo(int a) const {
+        std::cout << "2";
+    }
+};
+
+int main() {
+    A* a = new B();
+    a->foo(0); // prints 1
+}
+
+// `B`'s foo does not override that of A since it declares const qualifier, 
+// so it is a separate function on its own
+// Calling `a->foo` still calls `A::foo` (nothing has been overridden)
+```
 - Default arguments for virtual functions are substituted at **compile time**
 - The return type of the overriding function must be **the same** or **covariant**
 - Two types are covariant if:
@@ -424,7 +474,7 @@ int main() {
 }
 ``` 
 
-### Initialization
+### Initialization Order
 
 - The **most derived class** is responsible for **initializing a virtual base class** (call the constructor of the virtual base class)
     - If the virtual base class provides a default no-args constructor, the call can be omitted
@@ -529,6 +579,22 @@ int main() {
 
 Other notes:
 - Using `memset` directly on polymorphic objects is dangerous. See [C++ Object Model](./object-model#tldr)
+
+### Virtual Template Member Functions 
+
+```cpp
+template <typename T>
+class Dynamic {
+public:
+    virtual ~Dynamic(); // 1
+
+    template <typename U>
+    virtual void copy(const U&); // 2
+};
+```
+- Only the destructor is allowed to be `virtual` since there is exactly one destructor 
+- But templated member functions cannot be `virtual`, since each class has a vtable of fixed size but there are an unbounded number of instantiations of a template method, the vtable cannot know ahead of time how big it will be
+
 
 ## Abstract Base Class (ABC)
 
@@ -814,29 +880,25 @@ int main()
 
 ### Move / Copy Constructor
 
-- To generate move ctor / assignment, cannot have user-defined copy ctor / assignment, user-defined move ctor / assignment, or destructor
-
+- If you **declare** a copy constructor or copy assignment operator (or both), the move assignment and move operator are both not generated. The copy constructor/assignment operator is still generated if it is not declared. 
+    - Declare means either declaring, defining, declaring `=default` or `=delete`
+    - Vice versa, if you declare move ctor/assignment, the copy ctor/assignment is not generated unless you explicitly `=default` them or declare/define them
+- The compiler only generates the move ctor/assignment if **none** of the five special member functions are _user-declared_ (copy ctor/assignment, move ctor/assignment, dtor)
+    - If you declare _any_ of these five, the move operations are not auto-generated, unless you explicitly `= default` them
 - If a data member does not have a move constructor, the move constructor would be defined as deleted
-
-- If you define move ctor/assignment, copy ctor/assignment is implicitly deleted (unless you explicitly declare)
-
-- If you define copy ctor/assignment, it is not generated
-
 - Direct initialization `C c1; C c2 = c1;` uses copy ctor, not copy assignment  
-
 - The generated copy constructor does a member-wise copy of all non-static data members
-
 - The generated move constructor does a member-wise move of all non-static data members by casting them to rvalue references with `std::move`
-
-#### Best Practice
-
-If you declare any custom constructor and you still want move semantics, you should explicitly declare the move constructor and move assignment as `= default` or implement them:
+- Only declaring constructor doesn't implicitly disable generating move constructor
+    - But declaring any of copy constructor, copy assignment, destructor tells the compiler you want to manually handle resources, so it avoids generating the move constructor (to avoid unsafe behaviour) 
+- Best Practice
+    - If you declare any custom constructor and you still want move semantics, you should explicitly declare the move constructor and move assignment as `= default` or implement them
 
 ### Rule of Three/Five/Zero
 
 - **Rule of Three**: If you define a custom destructor/copy ctor/assignment, you probably should define all three
 - **Rule of Five**: If you define a custom destructor/copy ctor/assignment, move ctor/assignment, you probably should define all five
-- If you leave it to the compiler, default generated functions perform a shallow copy, which duplicates memory addresses rather than the actual data, which can lead to double-free problems, memory leak etc.
+    - If you leave it to the compiler, default generated functions perform a shallow copy, which duplicates memory addresses rather than the actual data, which can lead to double-free problems, memory leak etc.
 - **Rule of Zero**: the modern approach - don't define any custom ctor, let the compiler handle it 
 
 ### Member Initializer List 
@@ -858,7 +920,7 @@ public:
 };
 ```
 - It is the **only** way to initialize `const` data members, reference variables (`&`), or base class constructors that lack a default constructor. 
-- It prevents double-initialization. If oyu initialize variables inside the `{}` body, they are first default-initialized, then the value is assigned to them. The initializer list invokes the copy/move constructor directly. 
+- It prevents double-initialization. If you initialize variables inside the `{}` body, they are first default-initialized, then the value is assigned to them. The initializer list invokes the copy/move constructor directly. 
 - Members are **always** initialized **in the order they are declared in the class definition**, not the order you list them in the constructor.
 
 Additionally, a `std::initializer_list` constructor allows an object to be initialized using a _brace list of elements_. You must include `<initializer_list>` to use this feature.
@@ -889,18 +951,17 @@ int main() {
 
 ### `noexcept` specifier
 
-A `noexcept` constructor in C++ guarantees that the object initialization process will not throw any exceptions. 
-
-It ensures memory safety, preventing resource leaks or partially constructed objects from entering undefined states.
-
-You can use a compile-time condition to make a constructor conditionally `noexcept`. This is useful for wrapper classes and templates.
+- A `noexcept` constructor in C++ guarantees that the object initialization process will not throw any exceptions. 
+- It ensures memory safety, preventing resource leaks or partially constructed objects from entering undefined states.
+- You can use a compile-time condition to make a constructor _conditionally_ `noexcept`. This is useful for wrapper classes and templates.
 ```cpp
 template <typename T>
 class Wrapper {
     T value;
 public:
     // This constructor is noexcept only if T's move constructor is noexcept
-    Wrapper(Wrapper&& other) noexcept(std::is_move_constructible_v<T> && std::is_nothrow_move_constructible_v<T>)
+    Wrapper(Wrapper&& other) 
+        noexcept(std::is_move_constructible_v<T> && std::is_nothrow_move_constructible_v<T>)
         : value(std::move(other.value)) {}
 };
 ```
@@ -908,13 +969,39 @@ public:
 - Always pair a `noexcept` move constructor with a `noexcept` move assignment operator 
 - Destructors are implicitly `noexcept` by default (since C++11)
 
+### Destructor 
+
+```cpp
+struct A {
+    ~A() { std::cout << 1; }
+};
+
+int main() {
+    A a;
+    a.~A();
+}
+```
+- Technically UB to double destroy
+- Manually calling destructor of an object with automatic (stack) storage almost always leads to UB unless you immediately "re-create" the object in the same storage using placement new
+
+```cpp
+struct A {
+    void fun() { delete this; }
+};
+
+int main() {
+    A* ptr = new A;
+    ptr->fun(); // Ok, delete A object that's on the heap
+}
+```
+- `delete` operator works only for objects allocated on the heap (using `operator new`)
+- If the object is allocated on the stack, the behaviour is undefined
+
 ### Virtual destructor
 
-When you delete a derived object using a base class pointer, the compiler defaults to static binding. It only calls the destructor of the pointer's type (the base class).
-
-A virtual destructor in C++ ensures that the destructor of a derived class is called when a derived object is deleted through a pointer to the base class. Without it, only the base class destructor executes, which causes resource leaks.
-
-Adding the `virtual` keyword to the base class destructor forces dynamic binding. The runtime system looks up the actual object type and calls the derived destructor first, followed by the base destructor.
+- If destructor is not virtual, compiler defaults to static binding and only calls destructor of base class, but does not destroy derived subobject
+- `virtual` destructor lets you delete a derived class object using a pointer to base class 
+- `virtual` destructor forces dynamic binding, looks up actual object type and calls derived destructor first, followed by the base destructor
 
 ```cpp
 class Base {
@@ -935,10 +1022,49 @@ delete ptr; // Clean up is completely successful
 - The rule of thumb is, if your class has at least one `virtual` function, it should almost certainly have a `virtual` destructor.
 - Mark derived destructors with `override` to let the compiler check that it successfully overrides a base virtual destructor.
 - You can use `virtual ~Base() = default;` if you do not need custom cleanup logic in the base class.
+- A base class destructor should either be public and virtual, or protected and non-virtual
+    - If you want to allow deletion through the base class interface, the base class destructor must be public and virtual
+    - If you delete polymorphically without a virtual destructor, it is UB
+    - Base classes don't always need to allow for polymorphic deletion. in such cases, make the destructor protected and non-virtual 
 
 (See also [Abstract Base Class](#abstract-base-class-abc))
 
-## `explicit` specifier
+### Templated constructor 
+```cpp
+template <typename T, size_t size>
+class Fixed_vector {
+    private:
+        T m_vec[size];
+
+    public:
+        T* begin() { return m_vec; }
+        const T* begin() const { return m_vec; }
+        T* end() { return m_vec + size; }
+        const T* end() const { return m_vec + size; }
+        
+        Fixed_vector() {};
+
+        template <typename O, size_t O_size>
+        explicit Fixed_vector(const Fixed_vector<O, O_size>& other) {
+            std::cout << "Copy\n";
+            std::copy(other.begin(), other.end(), begin());
+        }
+
+        // implicitly generates a copy ctor
+        // Fixed_vector(const Fixed_vector&); 
+};
+
+int main() {
+    const Fixed_vector<int, 5> v1{};
+    Fixed_vector<int, 5> v2(v1);
+    // Compiles but prints nothing
+}
+```
+- The compiler generates a copy constructor with the signature `Fixed_vector(const Fixed_vector&);` and that is a better match than the user-written templated constructor
+    - A templated constructor is never considered a copy constructor under the C++ rules, and the compiler prefers the non-template (implicitly-declared) copy constructor when both are viable.
+    - The compiler chooses the implicitly-generated non-templated copy constructor.
+
+### `explicit` specifier
 
 - Used for single argument constructors
 - Require user to explicitly construct the class using direct initialization instead of relying on type conversion
@@ -964,7 +1090,7 @@ A a{5};
 foo(A(5));
 ```
 
-## `= default` specifier (C++11)
+### `= default` specifier (C++11)
 
 - Tells compiler to generate the function without having to provide a definition.
     - For copy/move ctor/assignment operator, the default generated function does a member-wise copy/move
@@ -991,3 +1117,79 @@ foo(A(5));
     - If it somehow turns out to be the best match, the compiler halts and throws a compile error
 - If you want to remove a candidate from overload resolution entirely so the compiler falls back to a different, less ideal match, `= delete` will not work
     - Instead, you must use SFINAE (`std::enable_if_t`) or C++20 Concepts (`requires` clauses) to conditionally exclude the function during the candidate phase
+
+## cv and ref qualifiers
+
+- They are the `&` and `&&` that appear after function parameters but before the function body
+- `&` means that member function can only be called on lvalue objects
+-  `&&` means the function can only be called on rvalue objects
+- You can provide both versions to optimize behavior based on whether the object is an lvalue or rvalue (i.e. you can overload a function with just the ref qualifiers)
+- `const` can be combined with `&` and `&&` to specify const lvalue or const rvalue (rarely used)
+- const lvalues also binds to rvalues, so `const&` function can be called on rvalues
+- When to use
+	- There are niche cases when you'd need to optimize the memory footprint
+	- A more practical case is when you're iterating over the result of a temporary object created in a loop
+	- For example, `for (const auto& item : MyFactory().getList()) { ... }`
+	- if` getList()` returns a reference to a member of the temporary returned by `MyFactory()`, you have undefined behavior.
+	- because after `getList()` returns, the `MyFactory()` temporary is destroyed — but you're still iterating over a dangling reference or pointer
+	- This would be safer if the factory had some method `makeList()` which returns it by value
+- `static` methods cannot have `const` or ref qualifiers, because it does not have a `this` pointer 
+- Destructors cannot have cv qualifiers (compile error)
+
+## Unions 
+
+```cpp
+struct Skill {
+    int cooked;
+    char cracked;
+};
+
+union U {
+    Skill r;
+    long long ll;
+};
+
+int main() {
+    U u{};
+    u.ll = std::numeric_limits<long long>::max();
+    std::cout << u.r.cooked;
+}
+```
+- Reading from a union member different from the one most recently written is only permitted if the members share a **common initial sequence**, use one of the **explicit type punning cases** (reading unsigned char bytes), or you **reinterpret** the object with `std::bit_cast` (C++20)
+- _Common initial sequence_ (CIS) is a specific exception to strict aliasing rules when it deals with active and inactive members inside a union
+- If a standard-layout union contains multiple standard-layout structs, you are permitted to read a non-static data member of an inactive struct member, provided that the member is part of the CIS shared with the active struct member
+
+```cpp
+union storage {
+    int x;
+    char y;
+    char z[5]; 
+};
+
+int main() {
+    std::cout << sizeof(storage); // 8
+}
+```
+- The size of a union is the size of its largest member, plus any padding added by the compiler for alignment purposes. `char[5]` is 5 bytes, larger than the other data types when compared independently. Since we are aligning to 4 byte boundaries, the compiler inserts 3 bytes of padding.
+
+### `std::variant`
+```cpp
+struct A {
+    std::array<std::byte, 10> data_;
+};
+
+struct B {
+    std::array<std::byte, 20> data_;
+};
+
+struct C {
+    std::array<std::byte, 30> data_;
+};
+
+int main() {
+    std::cout << sizeof(std::variant<A, B, C>); // > 30
+}
+```
+- `variant` takes the size of the largest alternative data type 
+    - It also takes at least one byte to keep track of the active alternative 
+    - It may also insert padding bytes for alignment

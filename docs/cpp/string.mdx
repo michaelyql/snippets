@@ -10,3 +10,57 @@
     - The control block typically contains: a pointer to the heap memory location storing the characters (8 bytes), a `size_t` integer for the current length (8 bytes), a `size_t` integer for the capacity (8 bytes), and a SSO buffer (15 to 22 bytes), which most modern compilers reuse the existing internal storage to double as the buffer.
 - `str.size()` on the other hand is evaluated at runtime and returns the length of the current string. 
 - `sizeof("abcde")` on the other hand, returns the number of characters in the null-terminated C-string. Note that it also includes the null-terminator `\0` at the end. In this case, the size is 6.
+
+
+## Size of empty C-string
+```cpp
+int main() {
+    std::cout << sizeof(""); // 1
+}
+```
+- 1 due to null terminator `'\0'`
+
+## `std::stringstream`
+- From `<sstream>`, it represents a string as a stream. You can read and write from a string as if it were a stream
+```cpp
+int main() {
+  std::stringstream ss("a");
+  std::cout << ss.str();
+  ss << "b";
+  std::cout << ss.str();
+}
+// prints "ab"
+```
+- stringstream is backed by a character buffer. 
+- Initializing it with a string initializes the buffer with that string, in this case a. 
+- Calling `str()` returns the contents of the buffer, printing `a`
+- `operator<<` writes to the next position in the buffer, in this case the beginning of the buffer, overwriting whatever is already there. 
+- `b` is written, overwriting the `a` which was previously in the buffer. 
+- Finally, `str()` is called again, this time printing `b`
+
+## `std::stoi`, `std::atoi` 
+- `atoi` returns 0 as error code on invalid input, `stoi` throws an exception 
+- Both discard leading whitespaces and read as many digit characters as possible up to the first non-digit character 
+
+
+## Address of C-string literal
+```cpp
+int main() {
+    std::cout << &"Test";
+}
+```
+- String literals are stored in a read-only memory segment, thus allowing they have a unique address that we can retrieve. You could also do `std::addressof("Test")`
+
+## `std::string` constructor
+```cpp
+int main() {
+  using namespace std::string_literals;
+  std::string s1("hello world",5);
+  std::string s2("hello world"s,5);
+
+  std::cout << s1 << s2;//prints "hello world"
+}
+```
+- Although these two constructor calls appear almost identical, their interpretation of the second argument differs. 
+- When constructing from a C-style string, the second parameter specifies “up to this number of characters”. 
+- But when constructing from a `std::basic_string`, it instead specifies “starting at this position”.

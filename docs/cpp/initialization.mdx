@@ -6,11 +6,13 @@ description: Default-init, value-init, copy-init, direct-init, list-init and mor
 
 Initialization provides a variable its initial value at the time of construction.
 
+## Types of Initialization
+
 There are a few types of initialization: 
-- default initialization
+- default initialization (no initializer)
     - `T t;`
     - `new T`
-- value initialization 
+- value initialization (empty constructor)
     - `T()`
     - `T t{}`
     - `T{}` 
@@ -19,7 +21,7 @@ There are a few types of initialization:
     - `Class::Class(...) : member() {...}` (initializer list)
     - `Class::Class(...) : member{} {...}` (initializer list)
     - `T t();` does not initialize a class (because of most vexing parse). The way to do direct initialization before C++11 is `T t = T()` to value-initialize a temporary and copy-initialize the object, where the copy is optimized away most of the time due to URVO
-- copy initialization
+- copy initialization (initialize an object from another object)
     - `T t1 = t2;`
     - `T t1 = { t2 };`
     - `f(t)` (passing argument by value)
@@ -27,20 +29,72 @@ There are a few types of initialization:
     - `throw t;` (throwing by value)
     - `catch (T t2)` (catching by value)
     - `T arr[n] = { other-seq }` as part of aggregate initialization 
-- direct initialization 
+- direct initialization (explicit set of arguments)
     - `T t(arg);`
     - `T t(arg1, arg2, ...);`
     - `T t { arg };`
-    - `T(t2);
+    - `T(t2);`
     - `T(arg1, arg2, ...)`
     - `static_cast<T>(t2)`
     - `new T(args, ...)`
     - `Class::Class() : member (args, ...) {...}` (initializer list)
     - `[arg]() {...}` (capture by copy in lambda)
-- aggregate initialization
-- list initialization 
+- list initialization (initialize from brace-enclosed initializer list)
+    - There is _direct-list_ and _copy-list_ initialization
+    ```cpp
+    int main()
+    {
+    auto x = {1, 2, 3}; // std::initializer_list<int>
+    auto y{1, 2, 3};    // compile error
+    
+    auto i(3);       // i is an int with value 3
+    auto i{3};       // i is a std::initializer_list<int>
+    }
+    ```
+    - x is `std::initializer_list<int>`, y is compilation error
+    - `auto y{1, 2, 3}` with multiple values is a compilation error in C++17 onwards. Direct list initialization with auto requires exactly one element. For example, `auto y{ 1 }` is valid (deduces  `initializer_list`)
+    - https://stackoverflow.com/questions/25612262/why-does-auto-x3-deduce-an-initializer-list 
+- aggregate initialization (also initialize from an initializer list)
+    - It is a form of list initialization
 - reference initialization 
 - non-local static and dynamic initialization
+
+### Reference Initialization 
+- References must be assigned when declared
+- They cannot be reassigned
+- The address of a reference is exactly the same as address of object it references 
+    - There is no such thing as pointer to a reference to an object
+```cpp
+int main()
+{
+    const int a = 1;
+    int& b = a; // does not compile, it drops const
+    b = 2;
+    std::cout << a;
+}
+```
+
+```cpp
+int x;
+&x; // returns a virtual address
+```
+- Ampersand returns the address of `x` as it exists in the process. The process works with its own abstraction of physical memory, that being virtual memory.
+
+```cpp
+struct C {
+    int& a;
+};
+
+int main() {
+    int y = 1;
+    int z = 2;
+
+    C c{y};
+    c.a = z;
+
+    std::cout << y << z << c.a; // prints 222
+}
+```
 
 
 ## Summary Cheat Sheet
@@ -52,6 +106,22 @@ There are a few types of initialization:
 | **Direct** | `int x(5);` | Calling specific multi-argument constructors. Be careful with the *most vexing parse*. |
 | **Copy** | `int x = 5;` | Intuitive, simple assignments where narrowing isn't a risk. |
 | **List (Uniform)** | `int x{5};` | **Modern Standard.** Use by default to catch type-mismatch errors. |
+
+## Nested initialization
+```cpp
+int x{42};
+
+int main() {
+    int x{x};
+    std::cout << x;
+    // prints junk
+}
+```
+- Each identifier 'x' in this problem exist in different scopes. 
+- The printed value is not 42 because the global x is shadowed by the local x in main. 
+- When we enter the curly braces to initialize x, it is already declared but still uninitialized. 
+- The nested scope x inside of the initialization braces then looks outwards to the local scope x, which holds a garbage value and assigns it as such. 
+- This initialization is functionally identical to: `int x; x = x`;
 
 ## Copy Elision
 

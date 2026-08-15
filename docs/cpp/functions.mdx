@@ -6,7 +6,7 @@ description: Functions, default arguments, variadic arguments, lambdas
 
 ## Function Declaration 
 
-### Triailing Return Type
+### Trailing Return Type
 
 Syntax: `auto func(T a, T b) -> decltype(a + b)` places the return type after the parameter list.
 
@@ -14,33 +14,38 @@ This lets the compiler see parameters (`a` and `b`) before working out the type 
 
 ### `decltype(auto)`
 
-`decltype(auto)` is a _type specifier_ introduced in C++14 that deduces the _exact type_ of an expression, preserving its references (`&`, `&&`) and cv-qualifiers (`const`, `volatile`). 
-
-It essentially tells the compiler to use auto as a placeholder, but apply the strict type deduction rules of decltype instead of standard auto rules.
-
-Standard `auto` strips away references and top-level `const` qualifiers. If an expression returns a reference to a constant value, `auto` will copy it into a plain, non-const value.
+- It is a _type specifier_ 
+- Introduced in C++14 
+- Deduces the _exact type_ of an expression, preserving its references (`&`, `&&`) and cv-qualifiers (`const`, `volatile`). 
+- `auto` on its own removes references and top-level `const` qualifiers
 
 ```cpp
-const int global_val = 42;
-const int& get_ref() { return global_val; }
+const int x = 1;
+const int& foo() { return x; }
 
 int main() {
-    auto a = get_ref();           // Type is 'int' (creates a copy!)
-    decltype(auto) b = get_ref(); // Type is 'const int&' (exact match!)
+    auto a = foo(); // Type is 'int'
+    decltype(auto) b = foo(); // Type is 'const int&'
 }
 ```
-
-`decltype(auto)` is heavily used by developers writing template libraries. It allows a wrapper function to "perfectly forward" the exact return type of the function it is wrapping without manual intervention.
 
 ```cpp
-template <typename F, typename... Args>
-decltype(auto) proxy_wrapper(F f, Args&&... args) {
-    // Log something or manage a mutex
-    return f(std::forward<Args>(args)...); // Perfect returns whatever f returns
+class A {
+    int x = 0;
+public:
+    int& getx() { return x; }
+    void printx() { std::cout << x; }
+};
+
+int main() {
+    A a;
+    auto x = a.getx(); // type is int
+    ++x;
+    a.printx(); // 0
 }
 ```
 
-One thing to take note of is how `decltype(auto)` behaves with parenthesis. Without parenthesis, it deduces the declared type of the variable. With parenthesis, it evaluates the expression as an lvalue reference (`T&`)
+- One thing to take note of is how `decltype(auto)` behaves with parenthesis. Without parenthesis, it deduces the declared type of the variable. With parenthesis, it evaluates the expression as an lvalue reference (`T&`)
 
 ```cpp
 decltype(auto) get_x() {
@@ -54,18 +59,56 @@ decltype(auto) get_x_ref() {
 }
 ```
 
+```cpp
+int main() {
+    int a = 0;
+    decltype(a) b = a; // int
+    b++;
+    std::cout << a << b; // 01
+}
+```
+
+
 This is consistent with how the `decltype` specifier behaves. If the name of an object is parenthesized, it is treated as an ordinary lvalue expression, thus `decltype(x)` and `decltype((x))` are often different types. 
 
 `decltype` is useful when declaring types that are difficult or impossible to declare using standard notation, like lambda-related types or types that depend on template parameters.
 
-Note:
-- `const decltype(auto)& f();` is an error. `decltype(auto)` must be used on its own.
+Note: `const decltype(auto)& f();` is an error. `decltype(auto)` must be used on its own (cannot be used with `&`)
 
+`decltype(auto)` is heavily used by developers to write template libraries. It allows a wrapper function to "perfectly forward" the exact return type of the function it is wrapping without manual intervention.
+
+```cpp
+template <typename F, typename... Args>
+decltype(auto) wrapper(F f, Args&&... args) {
+    return f(std::forward<Args>(args)...); // Perfect returns whatever f returns
+}
+```
+
+- `decltype` does not evaluate expressions, it only inspects types at compile time
+```cpp
+int main() {
+    int x { 3 };
+    decltype((x = 4)) y = x; // int&, no assignment occurs
+    std::cout << x; // prints 3
+
+    decltype(x == 4) z; // bool
+    std::cout << typeid(z).name() << '\n'; // prints 'b' (for bool)
+}
+```
+- `typeid` is a built-in operator used to determine the data type of an expression or variable at **runtime**
+	-  It is part of C++'s **Run-Time Type Information (RTTI)** mechanism
+	- You can use `typeid(type)` or `typeid(expression)`
+	- It returns a static-duration object of type `const std::type_info` 
+	- If the expression is a primitive type (like `int` or `double`) or a standard, non-polymorphic struct/class, `typeid` is evaluated entirely at compile time
+	- If an expression is a dereferenced pointer or a reference to a **polymorphic class** (a class containing at least one virtual function), `typeid` evaluates the **dynamic (runtime) type** instead of the static (compile-time) type
+	- The string returned by `typeid(...).name()` is implementation-dependent
+	- If you pass a dereferenced null pointer to a polymorphic type (e.g., `typeid(*ptr)` where `ptr` is `nullptr`) , it will throw a `std::bad_typeid` exception at runtime 
+	- `typeid` ignores top-level `const` and `volatile` qualifiers. Therefore, `typeid(int)` is identical to `typeid(const int)`
 
 
 ### Return Type Deduction 
 
-If the function uses `auto`, trailing return type may be omitted, and will be deduced by the compiler from the type of the operand used in the `return` statement. 
+If the function uses `auto` for its return type, trailing return type may be omitted. The return type will be deduced from the type of the operand used in the `return` statement. 
 
 If the return type does not use `decltype(auto)`, the deduction follows the rules of **template argument deduction**. 
 
@@ -118,6 +161,86 @@ struct F {
 };
 ```
 
+### `auto` parameters 
+
+`auto` in function parameter is supported in C++20 (compiler implicitly treats it as a function template). `auto&&` is perfect forwarding, `auto&` is lvalue reference
+	- You can even place a constraint just before `auto` e.g. `std::integral auto x` to constrain it
+	- Starting in C++14 you can also declare lambda parameters `auto` making it a generic lambda, it takes in lvalue ref and perfect forwarding as well
+```cpp
+// x and y can be completely different types
+void process(auto x, auto y) { /* ... */ }
+
+// Equivalent to:
+template <typename T, typename U>
+void process(T x, U y) { /* ... */ }
+```
+
+## Function Call Syntax
+
+```cpp
+struct A { void foo() { } };
+
+int main() {
+    A* a = new A();
+
+    a->foo();   
+    (*a).foo() 
+    A::foo(&a); // implicit 'this' as first argument
+}
+```
+- `->` is just syntactic sugar for `(*variable).method()` 
+
+```cpp
+template <typename Begin, typename End, typename Pred>
+void for_each(Begin begin, End end, Pred predicate) {
+    if (begin > end) {
+        throw std::logic_error("Begin cannot be past end.");
+    }
+
+    for (; begin != end; begin++) {
+        predicate(*begin);
+    }
+}
+
+void func(int i) { std::cout << i; }
+struct FuncObj 
+{ 
+    void operator()(int i) const { std::cout << i; }
+};
+
+int main() {
+    std::vector<int> vec{ 1, 2 };
+    for_each(vec.begin(), vec.end(), func); // ok
+    for_each(vec.begin(), vec.end(), &func); // ok
+    for_each(vec.begin(), vec.end(), &FuncObj()); // does not compile
+    for_each(vec.begin(), vec.end(), FuncObj()); // ok
+}
+```
+
+## Default Arguments 
+
+- Default arguments are evaluated at the call site **each time the function is called** without the corresponding arguments
+    - They are not fixed constants stored in the function binary
+    - The compiler injects the default evaluation expression directly into the caller's context
+-  If a function uses multiple default arguments, the **order** in which those default expressions evaluate relative to each other is _undefined_
+    - You **cannot** use one function parameter to initialize another default parameter (since their order of initialization is undefined)
+- Note:
+	- The names used in a default argument expression are bound and resolved at the **point of the function declaration**, not at the point of the function call
+
+```cpp
+int x = 10;
+
+// Resolved where declared: x refers to global x (10)
+void printVal(int a = x) { 
+    std::cout << a << "\n"; 
+}
+
+int main() {
+    int x = 20; // Local x does not override the default expression bound name
+    printVal(); // Prints 10
+}
+```
+
 ## Function Overloading 
 
 To compile function calls, the compiler first performs _name lookup_. If the name refers to more than one entity, the function is said to be _overloaded_ and the compiler must determine which overload to call. For function templates, this may be followed by template argument deduction.
@@ -163,7 +286,179 @@ The ranking generally follows the order: exact match > promotion > conversion > 
 
 If there is no best candidate, the function call is ambiguous and the compiler throws an error. 
 
+### Examples 
+
+```cpp
+using ll = long long;
+
+void foo(ll ll) { 
+    std::cout << "1";
+}
+
+void foo(unsigned ll) {
+    std::cout << "2";
+}
+
+int main() {
+    foo(-1);
+}
+```
+- First `foo` is `long long ll` where `ll` is the parameter name, this is valid C++. Second `foo` type is `unsigned ll` where `ll` is the parameter name and it's type is `unsigned int`. `-1` literal is a `signed int`, which is implicitly convertible to both `unsigned int` as well as `long long`. Neither overload is better so the compiler throws an error
+
+```cpp
+void ConvertToInt(const void*) { std::cout << "A"; }
+void ConvertToInt(const std::string&) { std::cout << "B"; }
+
+int main()
+{
+    ConvertToInt("C");
+    // prints "A"
+}
+```
+- `const char*` to `const void*` uses standard conversion, which the compiler prefers. `const char*` to `const string&` requires user-defined conversion constructor
+
+## Array to Pointer Decay 
+- Occurs when you pass array to parameter expecting a pointer
+- If the argument takes a reference to an array, you can keep the array size information and avoid pointer decay
+
+## Argument-Dependent Lookup (ADL)
+- Also known as _Koenig lookup_, is the set of rules for looking up the **unqualified function names** in function-call expressions, including implicit function calls to overloaded operators.
+- These function names are looked up **in the namespaces of their arguments** in addition to the scopes and namespaces considered by the usual unqualified name lookup.
+- Argument-dependent lookup makes it possible to use operators defined in a different namespace.
+```cpp
+namespace A {
+    class D {};
+    void bar(const D& i) {
+        std::cout << "1";
+    }
+}
+
+namespace B {
+    void bar(const A::D& i) {
+        std::cout << "2";
+    }
+}
+
+int main() {
+    bar(A::D()); // prints 1
+}
+```
+- How ADL works: 
+	- The compiler first performs standard unqualified lookup for `bar` (checking the current and enclosing scopes). If no viable candidate is found, ADL kicks in. 
+	- ADL examines the types of the arguments passed to `bar`. Since the argument is `A::D`, the compiler searches the associated namespaces of `A::D`, which includes: 
+		- The namespace `A` (where `D` is defined). 
+		- The enclosing namespaces of `D` (if any). 
+		- The namespaces of `D`’s base classes (if any)
+	- The compiler finds `A::bar` in namespace `A` and selects it for the call.
+
 ## Lambdas 
+
+- Lambdas have unique, unnamed types generated by the compiler 
+- When you write: `auto foo = [](double a) { return a; };` foo becomes an object of a compiler-generated closure type. That type is something like `__lambda_12345`, not interchangeable with any other lambda type
+
+```cpp
+int main() {
+    auto foo = [](double a) {return a; };
+    auto foo = [](int a) {return a + 1; }; // does not compile
+
+    std::cout << foo(3) << std::endl; 
+}
+```
+- So lambda cannot be overloaded this way
+
+### Allowed specifiers 
+
+- Only `mutable`, `noexcept` and `->` are allowed after the parameter list. `const` is not allowed (it is a cv-qualifier). The `operator()` in the functor is already implicitly `const`, and so the C++ standard forbids it to reduce redundancy
+
+### Stateful vs Stateless Lambdas 
+
+- If a lambda is stateless, meaning it does not capture any variables using `[]`, the compiler is able to convert it into a function pointer. This makes it possible to store them in containers, like a `std::vector`, and invoke them later
+- However if the lambda captures a variable, it cannot longer be represented as a function pointer because it contains internal state
+- `std::function` provides a type erasing wrapper that can store any callable object, including lambdas with captured state
+    - If you need to store different lambdas (with or without captures) that share the same function signature in a single container, you must wrap them using `std::function` or `std::move_only_function` (C++23), which abstracts away the unique underlying closure type at a small runtime cost
+```cpp
+
+int main() {
+    using TFunc = void (*)(int&);
+    std::vector<TFunc> functions;
+
+    functions.push_back([](int& i) { std::cout << i; }); // converted to fn pointer
+    functions.push_back([](int& i) { i++; });
+    functions.push_back(functions.front());
+    
+    int i = 0;
+    for(const auto& lambda : functions)
+        lambda(i);
+    // prints 01, not 011
+}
+
+/*
+int a = 3; 
+functions.push_back([=](int& x) { std::cout << x << a; }); // does not compile
+*/
+
+/*
+std::vector<std::function<void(int&)>> vec;
+int a = 3; 
+vec.push_back([=](int& x) { std::cout << x << a; }); // ok, compiles
+*/
+```
+
+### `static` lambdas
+```cpp
+int main() {
+    int x = 1, y = 2;
+    auto foo = [x](int y) static -> bool { return x + y; }; // does not compile 
+    foo(y);
+}
+```
+Static lambdas were added in C++23 to solve a very specific problem. Lambdas are converted into something like this by the compiler:
+```cpp
+struct Lambda {
+    int operator()() const { ... }  // non-static const member function
+};
+```
+but with `[]() static { ... }` it becomes:
+```cpp
+struct Lambda {
+    static int operator()() { ... }  // static member function
+};
+```
+Because static member functions don’t have `this`, you cannot:
+- access members of the closure
+- use captures (even implicitly)
+
+So the lambda cannot capture `x`.
+
+Static lambas have stronger guarantees than normal lambdas, acting more like functions than classes (since a method can act independent of the object instance when marked `static`).
+
+### `static` variables in lambdas 
+
+```cpp
+void foo(int a = []() { static int b = 1; return b++; }())
+{
+    std::cout << a;
+}
+
+int main()
+{
+    foo();
+    foo();
+} // prints 12
+```
+- Default arguments are evaluated every time the function is invoked without an explicit argument
+- Every lambda has a unique _closure type_, and the static int `b` resides in the call operator of that closure type, it’s the same object across invocations
+	- The **closure type** is the unique, unnamed, non-union class type (the functor that the compiler generates)
+	- Even if two lambda expressions have the exact same parameters, return type, and body, they still generate completely distinct closure types
+	- Because the generated class type is unnamed, you cannot declare a lambda variable using an explicit type name. You must use `auto`
+```cpp
+template <typename F>
+void execute(F func) { func(); }
+
+// Results in two distinct template instantiations of execute()
+execute([](){ std::cout << "A"; });
+execute([](){ std::cout << "B"; });
+```
 
 ### Capture type
 
@@ -192,10 +487,38 @@ struct Lambda {
 // declaring mutable allows you to modify the copied variables
 ```
 
+### `sizeof` empty lambda 
+
+```cpp
+int main() {
+    auto lambda = [] { };
+    std::cout << sizeof(lambda); // prints 1
+}
+```
+- The compiler synthesizes a type at compile time and creates a functor object to represent the lambda
+- it creates a struct with no private data members (empty struct) which is _at least_ 1 byte, so that its representation can hold a unique address in memory
+
+
 ## Operator Overloading
 
 ## Name Mangling
 
+## `std::invoke` vs `std::apply`
+- With `invoke`, you can pass arguments as a comma separated list
+- `apply` requires that you pack the arguments into a tuple/pair, it unpacks the arguments later
+- `apply` is actually implemented with `invoke` under the hood
+- Syntax for apply: `std::apply(f, std::tuple{arg1, arg2});` 
+- Syntax for invoke: `std::invoke(f, arg1, arg2);`
+
+## `noexcept` functions 
+- You can throw exceptions inside a `noexcept` function - the compiler doesn't prevent this at compile time
+	- Nothing happens as long as the exception is caught and handled within method scope
+    - But if the exception escapes the `noexcept` function `std::terminate` is called 
+- `std::terminate` is called if the `nothrow` exception safety guarantee is violated and all bets are off
+- The `noexcept` promise binds an exception from not ever leaving the method's scope.
+
 ## Relevant Articles 
 
 - [Name Mangling - IBM Documentation](https://www.ibm.com/docs/en/i/7.2.0?topic=linkage-name-mangling-c-only)
+- [Functions - cppref](https://en.cppreference.com/cpp/language/functions)
+- [C++ Lambda Story - Bartlomiej Filipek](https://www.amazon.com/Lambda-Story-Full-Color-Expressions/dp/B08VM82YF3?crid=R4ZYTAHEWWU3&dib=eyJ2IjoiMSJ9.doeHxp4xQI2tFZTjTYCNPQ.x6_wA7H2tf11QdHl2-_TZtrXq2fsIjQ-5wifFuKj9X8&dib_tag=se&keywords=cpp+lambda+story&qid=1756747521&sprefix=cpp+lambda+dtory,aps,99&sr=8-1&linkCode=sl1&tag=codingjesus02-20&linkId=fe695007ea05842df603e49474b9b9ad&language=en_US&ref_=as_li_ss_tl)

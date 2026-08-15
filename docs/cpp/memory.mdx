@@ -9,6 +9,15 @@
 - If allocation succeeds, returns a pointer to the lowest (first) byte in the allocated memory block that is suitably aligned for any scalar type 
 - On  failure, returns a `nullptr`
 - If `size` is zero, the behaviour is implementation defined (null pointer may be returned, or some non-null pointer that may not be used to access storage but has to be passed to `std::free`)
+- How `malloc` works under the hood
+    - `malloc` is actually just a user-space library function that manages a pool of memory
+    - Internally it calls `sbrk` and `mmap` (wrappers around the actual system calls) to expand that pool
+    - `brk` is the boundary marking the end of heap data segment, `sbrk` (set break) is used to increment or decrement it by a number of bytes 
+    - Think of `malloc` as a retailer that buys memory "wholesale" from the kernel, and sells it to the programmer at exactly the right size that was requested 
+    - Calling `delete` or `free` marks a region of memory as freed, which `malloc` can reuse first before requesting new virtual memory pages from the kernel
+    - Small allocations (usually under 1 MB or 128 KB) stay inside the program's free-list pool indefinitely. Large allocations are often allocated using system commands like mmap and are returned to the OS immediately upon being freed
+    - The heap behaves like a continuous LIFO stack. Heavy reliance on `sbrk` can lead to fragmented memory. `mmap` skips the traditional heap entirely - it tells the kernel to find an empty gap anywhere in your virtual address space and map a fresh block of memory pages there
+    - Unlike `sbrk`, regions created via `mmap` can be completely unmapped (`munmap`) in any order at any time. When used by `malloc` for general RAM, it uses a flag called `MAP_ANONYMOUS`, meaning the memory isn't backed by any physical file on your storage disk
 
 ### `new`
 
@@ -16,6 +25,15 @@
 - Returns a prvalue pointer to the constructed object, or if an array of objects was constructed, a pointer to the initial element of the array
     - On failure, throws `std::bad_alloc`
     - Using `new (std::nothrow) ...`, it returns a `nullptr` on failure instead
+- The memory allocator may allocate a slightly larger block of memory than requested
+    - This extra space is reserved for metadata to manage the allocated memory
+    - This metadata is commonly referred to as the _allocation header_, _heap header_, or _control block_
+    - The pointer returned by `new` is offset to point to the usable memory after the header
+    ```cpp
+    int* arr = new int[10];
+    arr++;
+    delete[] arr; // UB
+    ```
 - Syntax: 
     - (1) `new (type) initializer` 
     - (2) `new type initializer` 
@@ -96,6 +114,24 @@ new int * 1; // error, parsed as (new int*) (1)
     - Or you can use `std::make_unique` to safely allocate heap memory and wrap it in a single-owner smart pointer
 - `new` allocates memory and calls the provided constructor 
 
+`new` and `delete`
+- you CANNOT use `delete` on `malloc`'d memory
+- you also cannot free memory allocated using `new`
+```cpp
+int main() {
+    int* i = (int*)malloc(sizeof(int));
+    delete i; // UB
+}
+```
+- `malloc / free` come from the C standard library. They allocate raw memory, tracked by the C runtime memory allocator
+- `new / delete` are C++ operators. They not only allocate memory (usually also via the heap allocator under the hood), but they also: 
+	- Call constructors (`new`), 
+	- Call destructors (`delete`)
+	- Maintain C++-specific allocation metadata 
+- Mixing them breaks expectations 
+	- `delete` expects metadata that `malloc` never set up (and calls the destructor on memory that never had a live object)
+	- `free` won’t call destructors on objects allocated with `new`
+
 ## Smart Pointers
 
 ## `std::unique_ptr`
@@ -107,6 +143,23 @@ new int * 1; // error, parsed as (new int*) (1)
     auto arr = std::make_unique<int[]>(5);
     ```
     - The limitation is that you cannot specify a custom deleter (like closing a file handling). You have to construct the `std::unique_ptr` directly 
+
+
+`std::shared_ptr`
+-  reference count is thread safe, but object access is not (does not synchronize read/writes to the object, only keeps the object alive using shared ownership)
+- Access to the same `shared_ptr` object from multiple threads is **safe only if the access is read-only**
+- the control block (which holds the reference count and deleter) is thread-safe with respect to incrementing and decrementing
+- actual object managed by the shared pointer is not protected
+
+
+### `sizeof` unique_ptr
+```cpp
+int main() {
+    std::cout << sizeof(std::unique_ptr<int>);
+}
+```
+- A `unique_ptr` is a RAII wrapper over a raw pointer. It adds no overhead to a raw pointer. Hence, it is the same size of a raw pointer, which is 8 bytes on 64-bit architecture.
+- `shared_ptr` on the other hand, uses 16 bytes, one for the stored pointer `T* ptr`, one pointing to the control block
 
 
 ### `std::enable_shared_from_this<T>`
@@ -128,4 +181,80 @@ new int * 1; // error, parsed as (new int*) (1)
 It has a single member function `void operator()(T* ptr) const` which calls `delete` on `ptr`.
 
 It also has an array specialization to delete arrays.
+
+
+## Small Object Optimization (SOO)
+- Also known as Small Buffer Optimization (SBO)
+	- It is a design pattern used to prevent expensive heap allocations for minor items
+- SOO is when a class contains a fixed size internal buffer for small objects and a pointer for larger, heap-allocated objects.
+	- It allocates a fixed-size internal buffer directly on the stack inside the object
+	- If it is too large, the class falls back to a traditional heap allocation
+- Where SOO is used
+	- Small string optimization (SSO) skips heap allocation for strings shorter than 15-23 chars
+	- `std::function`: Stores small, simple lambda functions natively to bypass dynamic allocation costs.
+	- `std::any` uses internal byte arrays to avoid dynamic memory for small data types
+
+## Stack, Heap
+- Uninitialized global variables and uninitialized static variables are stored in `.bss` and are zeroed out before the program starts 
+- Initialized global variables and initialized static variables are stored in `.data`
+- Automatic (local) variables are stored on the stack
+
+```cpp
+static void foo() {
+    int x = 1; // stored in stack
+}
+
+void bar() {
+    static int y = 1; // .data
+}
+
+int main() {
+    foo();
+    bar();
+}
+```
+
+```cpp
+struct A 
+{ 
+    void foo() { } 
+}; 
+
+int main() { 
+    A* x = new A(); // Ignore the cost of heap allocation here.
+    A y;
+    
+    x->foo(); 
+    y.foo(); 
+}
+```
+- Without optimization, `x->foo()` is most likely slower due to extra level of pointer indirection (minor overhead)
+- `x->foo()` requires reading the pointer x to get the address of the object and then calling the method on that address. This is two memory accesses. 
+- `y.foo()` operates directly on the object, which is already in scope and typically resides on the stack (or in a register if optimized)
+- With optimization, `x->foo()` and `y.foo()` can actually be optimized to the same set of assembly instructions. the overhead then comes from the fact that:
+	- The stack-allocated object `y` is usually close to the current stack frame and often resides in the CPU cache. 
+	- The heap-allocated object `x` might be in a different region of memory, possibly leading to more cache misses or less predictable locality
+	- This effect can dominate in performance-critical or memory-intensive programs.
+
+## `std::launder`
+- Forces the compiler to read value from object again instead of reading it from cache 
+- Usually used with `placement new` when a new object is created in place of old object
+- Overwriting `const` field is UB, compiler expects the field to never be changed
+
+## `std::addressof`
+```cpp
+struct Weird {
+    int value;
+
+    Weird* operator&() {
+        std::cout << "Custom operator& called\n";
+        return nullptr;
+    }
+};
+
+int main() {
+    Weird w;
+} 
+```
+- `std::addressof(w)` Obtains the actual address of the object or function `arg`, even in presence of overloaded `operator&` 
 

@@ -1,0 +1,173 @@
+# Declarations 
+
+## `volatile`
+
+```cpp
+volatile int b;
+
+int main() {
+  std::cout << (b + b); // UB
+}
+```
+- Unsequenced accesses to a volatile object within a single expression result in undefined behavior, because the compiler is free to perform the accesses in any order, possibly even concurrently, or to interleave them in a way that is not well-defined
+- Volatile variables in C++ are intended to represent memory that can change outside the program's control (e.g., hardware registers, shared memory)
+- The `volatile` qualifier tells the compiler not to optimize away accesses and to always actually load or store the value
+- For non-volatile variables, this is fine because the compiler can optimize and reuse the value of b. 
+- But for `volatile` variables, each access must result in a distinct load from memory.
+
+## `const` 
+
+```cpp 
+void bar(int& a, const int& b) {
+  a = 1;
+  std::cout << b;
+}
+
+int main() {
+  int c = 0;
+  bar(c, c); // prints 1
+}
+```
+- Both `a` and `b` refer to the same variable `c`. 
+    - `c` is not const, so `c` can be changed through a reference to it. 
+    - If `c` itself was const, then this code would not compile since you can't create a mutable view of a constant object. 
+    - The fact that `b` is a const reference doesn't mean it can't be changed through `a`, as both `a` and `b` point to `c`.
+
+### Multiple `const` in declaration
+- They are ignored, only one `const` is needed but having more than 1 is ok
+
+### `inline`
+- Suggests to the compiler to replace a function call with the function's body directly at the call site, reducing function call overhead
+- It is a hint, but not a requirement.
+- The compiler is usually smart enough to inline small functions where it deems appropriate, making the keyword's usage for compile-time suggestions moot
+
+
+
+## Variable Length Arrays (VLA) 
+- A compiler extension
+- The stack pointer is adjusted to fit the size of the array at runtime
+- VLAs in GCC have automatic storage duration. It subtract some number of bytes from the stack pointer (on a downward growing stack) to reserve enough space for the stack
+- When exiting, the SP is restored to the original value
+```cpp
+int main() {
+    int n = some_runtime_value();
+    int arr[n] { };
+
+    return 0;
+}
+```
+
+## Type aliasing
+```cpp
+using int_ptr = int*;
+const int_ptr foo; // const pointer to int
+const int* bar;    // pointer to const int
+```
+- There are two types of const
+	- **Top-level const**: When the pointer itself cannot be reassigned to point elsewhere. For instance, `int* const pi` is read right-to-left as "pi is a const pointer to int
+	- **Low-level const**: When the object being pointed to is const. For instance, `const int* pi` is read right-to-left as "pi is a pointer to const int".
+- When you write `const int_ptr foo`, `const` applies to the typedef itself, not to what it points to, so it expands to `int* const foo`, which is a constant pointer to int.
+- `typedef` and `using` create aliases for complete types, not for syntactic fragments
+- When you say `using int_ptr = int*;`, this includes the `*`. Adding a const before the alias makes the alias itself const, not the pointee.
+
+## Reserved Identifiers 
+
+- Any identifier with double underscore `__` is reserved e.g. `__myVariable`, `my__variable`, `variable__`
+- Any identifier in the **global namespace** starting with a single underscore are reserved (i think for name mangling so it doesnt clash with the compiler) e.g. `_MyVariable`, `_Int`
+- Any identifier in **any namespace** starting with single underscore and a capital letter is reserved e.g. `_myGlobalFunc`, `_myGlobalVar`
+- The program is ill-formed if you use reserved identifiers 
+	- But it is IFNDR (too slow or hard to detect at compile time), so it (may or may not) compile
+	- but if a program that is IFNDR runs, it is UB 
+- `std`: You are also forbidden from adding declarations or definitions directly to the `std` namespace (or its inline namespaces), with very selective exceptions like explicit template specializations for user-defined types.
+```cpp
+int _global_variable = 1;
+
+int main() {
+  std::cout << _global_variable; // ill formed, but still compiles and runs
+}
+```
+
+## Namespaces 
+
+### `inline namespace`
+- Members of an inline namespace are treated as if they are members of the enclosing namespace in many situations
+	- A _using-directive_ that names the inline namespace is implicitly inserted in the enclosing namespace (similar to the implicit using-directive for the unnamed namespace)
+	- In _argument-dependent lookup_, when a namespace is added to the set of associated namespaces, its inline namespaces are added as well, and if an inline namespace is added to the list of associated namespaces, its enclosing namespace is added as well.
+	- Each member of an inline namespace can be partially specialized, explicitly instantiated, or explicitly specialized as if it were a member of the enclosing namespace.
+	- Qualified name lookup that examines the enclosing namespace will include the names from the inline namespaces even if the same name is present in the enclosing namespace.
+- This property is transitive: if a namespace N contains an inline namespace M, which in turn contains an inline namespace O, then the members of O can be used as though they were members of M or N.
+- inline namespaces allow you to define a versioned API where one version is "preferred" and automatically visible at the enclosing namespace level.
+```cpp
+// in C++14, std::literals and its member namespaces are inline
+{
+    using namespace std::string_literals; // makes visible operator""s
+    // from std::literals::string_literals
+    
+    auto str = "abc"s;
+}
+
+{
+    using namespace std::literals; // makes visible both
+    // std::literals::string_literals::operator""s
+	// and std::literals::chrono_literals::operator""s
+    auto str = "abc"s;
+    auto min = 60s;
+}
+
+
+{
+    using std::operator""s; // makes both std::literals::string_literals::operator""s
+    // and std::literals::chrono_literals::operator""s visible
+    
+    auto str = "abc"s;
+    auto min = 60s;
+}
+```
+- Namespaces can also be _unnamed_ 
+```cpp
+namespace {
+//...
+};
+```
+
+## `constexpr`
+```cpp
+constexpr int second(int c) {
+    static_assert(c > 0); // remove this line for the program to compile
+    return c;
+}
+
+constexpr int first(int b) {
+    int result = second(b);
+    return result;
+}
+
+int main() {
+    constexpr int a = first(4);
+    std::cout << a;
+}
+```
+- Arguments to `constexpr` functions cannot be `constexpr` themselves, thus they cannot be used in `static_assert` which occurs at compile time
+- We _are_ allowed to use arguments to call `constexpr` functions at compile time
+
+```cpp
+// 1
+const constexpr int a = 1;
+
+// 2
+int i = 1;
+constexpr const int* b = &i;    // adding constexpr is not redundant
+//
+
+// 3 
+constexpr const int c() { return 1; }
+
+// 4
+struct d {
+    constexpr const static inline e = 1;
+};
+```
+- `constexpr` is implicitly `const`
+  - In case 2, `b` is a pointer  to a `const int` 
+  - In the other cases, `constexpr` is redundant
+
