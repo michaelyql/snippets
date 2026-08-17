@@ -1,0 +1,73 @@
+# New 
+
+Internally uses placement `new` to construct objects in place.
+
+
+```cpp 
+template<typename T, typename... Args>
+T* my_new(Args&&... args) {
+    T* ptr = static_cast<T*>(malloc(sizeof(T)));
+    if (ptr == nullptr) {
+        throw std::bad_alloc{};
+    }
+    try {
+        new (ptr) T{std::forward<Args>(args)...};
+    } catch (...) {
+        free(ptr);
+        throw;
+    }
+
+    return ptr;
+}
+
+template<typename T>
+void my_delete(T* ptr) {
+    if (ptr == nullptr) return;
+    ptr->~T();
+    free(ptr); 
+}
+
+template<typename T>
+T* my_new_array(size_t n) {
+    if (n > std::numeric_limits<size_t>::max() / sizeof(T)) throw std::bad_alloc{};
+    T* ptr = static_cast<T*>(malloc(sizeof(T) * n));
+    if (ptr == nullptr) {
+        throw std::bad_alloc{};
+    }
+    for (size_t i = 0; i < n; i++) {
+        try {
+            new (ptr + i) T;
+        } catch (...) {
+            if (i > 0) {
+                for (size_t j = i - 1; j >= 0; ) {
+                    ptr[i].~T();
+                    if (j == 0) break;
+                    j--;
+                }
+            }
+            free(ptr);
+            throw;
+        }
+    }
+    return ptr;
+}
+
+template<typename T>
+void my_delete_array(T* ptr, size_t n) {
+    if (ptr == nullptr) return;
+    if (n > 0) {
+        for (size_t i = n - 1; i >= 0;) {
+            (ptr + i)->~T();
+            // or ptr[i].~T()
+            if (i == 0) break;
+            i--;
+        }
+    }
+    free(ptr);
+}
+```
+
+Note:
+- From C++17 onwards, there is `std::construct_at(T* location, Args&&... args)` which uses placement `new` internally as well.
+- `if (n > std::numeric_limits<size_t>::max() / sizeof(T))` is a standard way to check if allocation of `n` objects will not exceed the maximum possible allocatable memory size
+- `malloc` has `calloc` (zero initialize), `realloc`, and `aligned_alloc` variants 

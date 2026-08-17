@@ -170,6 +170,22 @@ int main() {
 
 ## `std::allocator` 
 
+- The purpose of an allocator is to separate the allocation of memory from calling the constructor for objects 
+- For example, in `std::vector<int> v; v.resize(5);`, you don't want to construct the objects immediately, only allocate sufficient memory for the objects
+    - Similarly, with `v.clear()`, you don't want to deallocate memory right away, only call the destructors 
+    - As compared to `new T{}`, where the allocation and construction are done together and you have no control over it
+- `std::allocator` is the default allocator for the standard library containers
+- Member functions 
+    - `allocate`
+    - `allocate_at_least` 
+    - `deallocate` 
+    - `construct` 
+    - `destroy`
+    - `address`
+    - `max_size`
+- Helper template `std::allocator_traits<Alloc>`
+    - Has static member functions `allocate(a, ...)`, `deallocate` etc. which just wraps around calling `Alloc::allocate(a, ...)` / `a.allocate(...)` etc.
+
 ### Custom Allocator
 
 ## Deleter 

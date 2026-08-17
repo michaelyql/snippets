@@ -1,0 +1,135 @@
+# Drop Last 
+
+- Drops the last type from a pack of types 
+
+## Implementation
+
+```cpp showLineNumbers title="drop_last.cpp"
+#include <iostream>
+#include <cstdlib>      // size_t
+#include <type_traits>
+#include <tuple>        // tuple_element and tuple
+#include <utility>      // make_index_sequence and integer_sequence
+
+template<typename C, typename Sequence>
+struct Internal; 
+
+template<template<typename...> typename Container, std::size_t... I, typename... Ts> 
+struct Internal<Container<Ts...>, std::integer_sequence<std::size_t, I...>> {
+    using type = Container<typename std::tuple_element<I, std::tuple<Ts...>>::type...>;
+};
+
+template<typename... T>
+struct drop_last;
+
+template<template<typename...> typename Container>
+struct drop_last<Container<>> {
+    using type = Container<>; 
+};
+
+template<template<typename...> typename Container, typename... Ts>
+requires (sizeof...(Ts) > 0) 
+struct drop_last<Container<Ts...>> {
+    using type = typename Internal<
+        Container<Ts...>,
+        std::make_index_sequence<sizeof...(Ts) - 1>
+    >::type;
+};
+
+template<typename T>
+using drop_last_t = typename drop_last<T>::type;
+
+template<typename... Ts>
+struct TypeList;
+
+int main() {
+    std::cout << std::is_same_v<std::tuple<int, float>, 
+        drop_last<std::tuple<int, float, double>>::type> << '\n';
+        
+    std::cout << std::is_same_v<std::tuple<int, float>,         
+        drop_last_t<std::tuple<int, float, double>>> << '\n';
+
+    std::cout << std::is_same_v<TypeList<>, drop_last<TypeList<int>>::type> << '\n';
+}
+```
+
+- Learning Points:
+    - `typename T` means the template expects a _complete_ type for that parameter
+    - Likewise, `typename... Ts` means the template expects zero or more completed types for that pack
+    - `template<typename...> typename T` is a template template parameter and is considered an incomplete type. You can't pass it to something expecting a complete type 
+        - In order to turn it into a complete type, you have to instantiate the template `T<args>`
+    - `typename` and `template` are used whenever there is a dependent name on a type
+    - A partial specialization can have multiple parameter packs in the template parameters, so long as it can be deduced properly 
+    - But the primary template can only have one parameter pack as its last template parameter
+    - Type template parameters (`typename T`) cannot be passed into non-type parameters (e.g. `int T`)
+
+## Alternative Implementation
+```cpp 
+template <typename ...P>
+struct dummy {}; // dummy to hold temporary types
+
+template <template <typename ...> class Obj, typename T, typename ...P>
+struct internal; // primary template
+
+template <template <typename ...> class Obj, typename ...P1, typename T, typename L>
+struct internal<Obj, dummy<P1...>, T, L> // base case with two types
+{
+    using type = Obj<P1..., T>;
+};
+
+template <template <typename ...> class Obj, typename ...P1, typename T, typename ...P2>
+struct internal<Obj, dummy<P1...>, T, P2...>
+{
+    using type = typename internal<Obj, dummy<P1..., T>, P2...>::type;
+    // dummy is used to 'collect' the types until it reaches the second last
+};
+
+template <template <typename ...> class T, typename ...P>
+struct subst_all_but_last
+{
+    using type = typename internal<T, dummy<>, P...>::type;
+};
+
+// Usage:
+// using bar = typename subst_all_but_last<some_template, Ts...>::type;
+```
+
+```cpp
+template <int... T>
+struct Numbers { };
+
+template<int... Ints>
+struct Dummy;
+
+template<typename D, int... Ints>
+struct Internal;
+
+template<int... Ints>
+struct Internal<Dummy<Ints...>> { // zero numbers
+    using type = Numbers<Ints...>;
+};
+
+template<int... Ints, int Last>
+struct Internal<Dummy<Ints...>, Last> { // single number
+    using type = Numbers<Ints...>;
+};
+
+template<int... Ints, int First, int Last>
+struct Internal<Dummy<Ints...>, First, Last> { // two numbers
+    using type = Numbers<Ints..., First>;
+};
+
+template<int... Ints, int First, int... Rest>
+struct Internal<Dummy<Ints...>, First, Rest...> { // more than two
+    using type = typename Internal<Dummy<Ints..., First>, Rest...>::type;
+};
+
+template<typename T>
+struct PopBack;
+
+template<int... Ints>
+struct PopBack<Numbers<Ints...>> : Internal<Dummy<>, Ints...> {};
+```
+
+## References 
+- [Remove last type of template parameter pack - StackOverflow](https://stackoverflow.com/questions/32024522/remove-the-last-type-of-a-template-parameter-pack)

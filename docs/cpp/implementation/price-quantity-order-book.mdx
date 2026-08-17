@@ -1,0 +1,353 @@
+# Price-Quantity Order Book 
+
+## Problem Description:
+
+Requirements
+- `AddOrder` – Add a new buy or sell order to the orderbook.
+- `CancelOrder` – Cancel an existing order by its ID. The orderbook must handle matching between buy and sell orders automatically when new orders are added.
+
+Order Matching Rules:
+- Buy orders (`isBuy = true`) match with the lowest-priced sell orders.
+- Sell orders (`isBuy = false`) match with the highest-priced buy orders.
+- Orders are matched based on price-quantity priority, not price-time priority. 
+    - This means that orders with a higher quantity are matched sooner, despite ariving later. If two orders have the same quanity break the tie on time.
+
+Adding Orders (`AddOrder`):
+- If an order with the same orderId already exists, it should be rejected (no trades generated).
+- Otherwise, add the order to the appropriate side (bids for buys, asks for sells) and attempt to match trades.
+
+Canceling Orders (`CancelOrder`):
+- If an order exists, remove it from the orderbook.
+- If it does not exist, do nothing.
+
+Trades:
+- Each trade records:
+    - IDs of both matched orders
+    - The aggressor order (the one arriving last)
+    - Trade price (the resting order’s price)
+    - Traded quantity
+    - Partial fills are supported — orders may match partially and remain open.
+
+Aggressor: 
+- The party whose action lead to the match. This is the second party to the transaction.
+- For example, if person A wants to sell at T = 0 at \$20, and person B wants to buy at T = 2 at \$20, person B is the aggressor.
+
+## Implementation
+
+```cpp 
+#include <cmath>
+
+using Id = size_t;
+using Price = long;
+using Quantity = int;
+
+class Order {
+public:
+    Id orderId;
+    Price level;
+    bool isBuy;
+    Quantity quantity;
+    mutable size_t arrive_time;
+
+    Order(Id orderId, Price level, bool isBuy, Quantity quantity)
+        : orderId(orderId), level(level), isBuy(isBuy), quantity(quantity) {
+    }
+
+    Order(const Order& other) = default; // member-wise copy
+
+    void set_time(size_t t) const {
+        arrive_time = t;
+    }
+};
+
+struct BuyComp {
+    // highest price first, break tie by quantity, break tie by time
+    bool operator()(const Order& o1, const Order& o2) const {
+        if (o1.level != o2.level) return o1.level > o2.level;
+        if (o1.quantity != o2.quantity) return o1.quantity > o2.quantity;
+        if (o1.arrive_time != o2.arrive_time) return o1.arrive_time < o2.arrive_time;
+        return o1.orderId < o2.orderId; // shouldn't reach this but just in case
+    }
+};
+
+struct SellComp {
+    // lowest price first, break tie by quantity, break tie by time
+    bool operator()(const Order& o1, const Order& o2) const {
+        if (o1.level != o2.level) return o1.level < o2.level;
+        if (o1.quantity != o2.quantity) return o1.quantity > o2.quantity;
+        if (o1.arrive_time != o2.arrive_time) return o1.arrive_time < o2.arrive_time;
+        return o1.orderId < o2.orderId; 
+    }
+};
+
+using Orders = std::vector<Order>;
+
+// DO NOT MODIFY ANY OF THIS!
+// operator== is implemented in the test harness.
+struct Trade {
+    Id OrderIdA;
+    Id OrderIdB; // Aggressor's OrderId
+    Id AggressorOrderId;
+    bool AggressorIsBuy;
+    Price Level;
+    Quantity Size;
+    bool operator==(const Trade&) const;
+};
+
+using Trades = std::vector<Trade>;
+
+class Orderbook {
+public:
+    Trades AddOrder(const Order& order) {  
+        /*
+        std::cerr << "\n=== AddOrder ===\n";
+        std::cerr << "id=" << order.orderId
+                  << " side=" << (order.isBuy ? "BUY" : "SELL")
+                  << " price=" << order.level
+                  << " qty=" << order.quantity
+                  << '\n';
+        */
+
+        if (orderAlreadyExists(order)) {
+            // std::cerr << "REJECT: order already exists\n";
+            return {};
+        }
+
+        order.set_time(clock_++);
+
+        // std::cerr << "assigned arrive_time=" << order.arrive_time << '\n';
+
+        Trades trades_;
+        
+        if (order.isBuy) { // Buy Order Logic
+            // std::cerr << "BUY branch\n";
+
+            if (sells_.empty()) {
+                // std::cerr << "No resting sells -> inserting buy\n";
+                insertBuyOrder(order);
+            } else {
+                /*
+                std::cerr << "Best resting sell: id=" << sells_.begin()->orderId
+                          << " price=" << sells_.begin()->level
+                          << " qty=" << sells_.begin()->quantity
+                          << '\n';
+                */
+
+                Order currentOrder {order};
+
+                while (!sells_.empty() 
+                    && currentOrder.quantity > 0 
+                    && currentOrder.level >= sells_.begin()->level) 
+                {
+                    auto it = sells_.begin(); // resting order
+
+                    Id restingId          = it->orderId;
+                    Price restingLevel    = it->level;
+
+                    Quantity buyQty       = currentOrder.quantity;
+                    Quantity sellQty      = it->quantity;
+                    Quantity txQty        = std::min(buyQty, sellQty);
+                    Quantity remainingQty = std::abs(buyQty - sellQty);
+
+                    currentOrder.quantity -= txQty;
+
+                    /*
+                    std::cerr << "MATCH BUY:\n";
+                    std::cerr << "  aggressor id=" << currentOrder.orderId
+                              << " price=" << currentOrder.level
+                              << " qty=" << buyQty << '\n';
+                    std::cerr << "  resting   id=" << restingId
+                              << " price=" << restingLevel
+                              << " qty=" << sellQty << '\n';
+                    std::cerr << "  trade qty=" << txQty
+                              << " remaining=" << remainingQty << '\n';
+                    */
+                    
+                    if (buyQty >= sellQty) { 
+                        // std::cerr << "  resting sell FULLY FILLED\n";
+
+                        removeSellOrder(it);
+                        currentOrder.quantity = remainingQty;
+                    } else {
+                        // std::cerr << "  resting sell PARTIALLY FILLED\n";
+
+                        Order newSellOrder {*it};
+                        newSellOrder.quantity = remainingQty;
+
+                        // erase existing sell order
+                        removeSellOrder(it);
+
+                        // insert new one with remaining quantity
+                        insertSellOrder(newSellOrder);
+                    }
+
+                    trades_.emplace_back(
+                        restingId,
+                        order.orderId, // aggressor id
+                        order.orderId,
+                        true,
+                        restingLevel,
+                        txQty
+                    );
+
+                    // std::cerr << "  trades.size()=" << trades_.size() << '\n';
+                } 
+                if (currentOrder.quantity > 0) { // partial fill 
+                    /*
+                    std::cerr << "BUY remainder=" << currentOrder.quantity
+                              << " -> inserting into book\n";
+                    */
+                    insertBuyOrder(currentOrder);
+                } else {
+                    // std::cerr << "BUY fully consumed\n";
+                }
+                
+            } 
+        } else { // Sell Order Logic
+            // std::cerr << "SELL branch\n";
+
+            if (buys_.empty()) {
+                // std::cerr << "No resting buys -> inserting sell\n";
+                insertSellOrder(order);
+            } else {
+                /*
+                std::cerr << "Best resting buy: id=" << buys_.begin()->orderId
+                          << " price=" << buys_.begin()->level
+                          << " qty=" << buys_.begin()->quantity
+                          << '\n';
+                */
+                Order currentOrder {order};
+                while (!buys_.empty() 
+                    && currentOrder.quantity > 0 
+                    && currentOrder.level <= buys_.begin()->level) 
+                {
+                    auto it = buys_.begin(); // resting order
+
+                    Id restingId          = it->orderId;
+                    Price restingLevel    = it->level;
+
+                    Quantity sellQty      = currentOrder.quantity;
+                    Quantity buyQty       = it->quantity;
+                    Quantity txQty        = std::min(buyQty, sellQty);
+                    Quantity remainingQty = std::abs(buyQty - sellQty);
+
+                    currentOrder.quantity -= txQty;
+
+                    /*
+                    std::cerr << "MATCH SELL:\n";
+                    std::cerr << "  aggressor id=" << currentOrder.orderId
+                              << " price=" << currentOrder.level
+                              << " qty=" << sellQty << '\n';
+                    std::cerr << "  resting   id=" << restingId
+                              << " price=" << restingLevel
+                              << " qty=" << buyQty << '\n';
+                    std::cerr << "  trade qty=" << txQty
+                              << " remaining=" << remainingQty << '\n';
+                    */
+                    
+                    if (sellQty >= buyQty) { 
+                        // std::cerr << "  resting buy FULLY FILLED\n";
+                        removeBuyOrder(it);
+                        currentOrder.quantity = remainingQty;
+                    } else {
+                        // std::cerr << "  resting buy PARTIALLY FILLED\n";
+                        Order newBuyOrder {*it};
+                        newBuyOrder.quantity = remainingQty;
+
+                        // erase existing buy order
+                        removeBuyOrder(it);
+
+                        // insert new one with remaining quantity
+                        insertBuyOrder(newBuyOrder);
+                    }
+
+                    trades_.emplace_back(
+                        restingId,
+                        order.orderId, // aggressor id
+                        order.orderId,
+                        false, // AggressorIsBuy = false;
+                        restingLevel,
+                        txQty
+                    );
+                    // std::cerr << "  trades.size()=" << trades_.size() << '\n';
+                }
+                if (currentOrder.quantity > 0) { // partial fill
+                    /*
+                    std::cerr << "SELL remainder=" << currentOrder.quantity
+                              << " -> inserting into book\n";
+                    */
+                    insertSellOrder(currentOrder);
+                } else {
+                    // std::cerr << "SELL fully consumed\n";
+                }
+            }
+        }
+        // std::cerr << "RETURNING trades.size()=" << trades_.size() << '\n';
+        return trades_;
+    } 
+    void CancelOrder(const Id orderId) { 
+        auto it = buy_ids_.find(orderId);
+        if (it != buy_ids_.end()) {
+            buys_.erase(it->second);
+            buy_ids_.erase(it);
+            return;
+        } 
+        auto it2 = sell_ids_.find(orderId);
+        if (it2 != sell_ids_.end()) {
+            sells_.erase(it2->second);
+            sell_ids_.erase(it2);
+        } 
+    }
+private:
+    std::unordered_map<Id, Order> buy_ids_, sell_ids_ {};
+    std::set<Order, BuyComp> buys_ {};
+    std::set<Order, SellComp> sells_ {};
+    std::size_t clock_ {0};
+
+    void removeSellOrder(auto it) {
+        // std::cerr << "    removeSellOrder(id=" << it->orderId << ")\n";
+        sell_ids_.erase(it->orderId);
+        sells_.erase(it);
+    }
+
+    void removeBuyOrder(auto it) {
+        // std::cerr << "    removeBuyOrder(id=" << it->orderId << ")\n";
+        buy_ids_.erase(it->orderId);
+        buys_.erase(it);
+    }
+
+    void insertSellOrder(const Order& order) {
+        /*
+        std::cerr << "    insertSellOrder(id=" << order.orderId
+                  << ", price=" << order.level
+                  << ", qty=" << order.quantity << ")\n";
+        */
+
+        sell_ids_.emplace(std::make_pair(order.orderId, order));
+        sells_.emplace(order);
+    }
+
+    void insertBuyOrder(const Order& order) {
+        /*
+        std::cerr << "    insertBuyOrder(id=" << order.orderId
+                  << ", price=" << order.level
+                  << ", qty=" << order.quantity << ")\n";
+        */
+        buy_ids_.emplace(std::make_pair(order.orderId, order));
+        buys_.emplace(order);
+    }
+
+    bool orderAlreadyExists(const Order& order) {
+        bool exists =
+            buy_ids_.find(order.orderId) != buy_ids_.end() ||
+            sell_ids_.find(order.orderId) != sell_ids_.end();
+
+        /*
+        std::cerr << "orderAlreadyExists(" << order.orderId
+                  << ") = " << std::boolalpha << exists << '\n';
+        */
+
+        return exists;
+    }
+};
+```

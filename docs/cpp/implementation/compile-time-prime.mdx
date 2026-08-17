@@ -1,0 +1,64 @@
+# Compile Time IsPrime
+
+```cpp
+template <unsigned T, unsigned I = 2>
+constexpr bool IsPrime() {
+    if constexpr (T <= 1) return false;
+    else if constexpr (T == I) return true;
+    else if constexpr (T % I == 0) return false; 
+    else if constexpr (I * I > T) return true; 
+    else return IsPrime<T, I + 1>();
+}
+```
+
+Alternative Implementation 1
+```cpp 
+template <unsigned n>
+consteval bool IsPrime() {
+    if (n <= 1) return false;
+
+    for (unsigned i = 2; i <= n / i; ++i) {
+        if (n % i == 0)
+            return false;
+    }
+
+    return true;
+}
+```
+Note: 
+- `consteval` just means the function _must_ be evaluated at compile time when called. 
+    - It doesn't mean the function has to be written recursively
+- `constexpr` says the function _can_ be evaluated at compile time, though it doesn't have to 
+
+Alternative Implementation 2
+```cpp 
+template <unsigned T, unsigned Divisor>
+struct IsPrimeUntil {
+    constexpr static inline bool value = T % Divisor != 0 
+        && IsPrimeUntil<T, Divisor - 1>::value;
+};
+
+template <unsigned T>
+struct IsPrimeUntil<T, 2> {
+    constexpr static inline bool value =
+        T % 2 != 0;
+};
+
+template <unsigned T>
+constexpr bool IsPrime() { 
+    return IsPrimeUntil<T, static_cast<unsigned>(std::sqrt(T))>::value; 
+}
+
+template <>
+constexpr bool IsPrime<0>() { return false; }
+
+template <>
+constexpr bool IsPrime<1>() { return false; }
+
+template <>
+constexpr bool IsPrime<2>() { return true; }
+```
+Notes: 
+- There is a maximum compile-time template recursion depth, typically 1024 
+- `std::sqrt` is `constexpr` as of C++23, so we use it to find divisors that would result in the number (`T`) being considered non-prime.
+- Template functions **do not** allow for _partial specialization_, only template classes do. Hence all the methods are _fully specialized_.

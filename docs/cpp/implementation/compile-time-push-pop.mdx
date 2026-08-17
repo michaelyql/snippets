@@ -1,0 +1,29 @@
+# Compile Time Push
+
+Push Back
+```cpp
+template <int... T>
+struct Numbers { };
+
+template<int V, typename Container>
+struct PushBack;
+
+template<int V, int... T>
+struct PushBack<V, Numbers<T...>> {
+    using type = Numbers<T..., V>;
+};
+```
+
+Push Front
+```cpp
+template <int... T>
+struct Numbers { };
+
+template<int V, typename T>
+struct PushFront;
+
+template<int V, int... T>
+struct PushFront<V, Numbers<T...>> {
+    using type = Numbers<V, T...>;
+};
+```

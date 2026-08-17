@@ -1,0 +1,45 @@
+# Compile Time FindIf
+
+Finds the first index (1-based) in a sequence of numbers that passes a predicate, or `std::nullopt` if there is none.
+
+```cpp 
+template <int... AllNumbers>
+struct Numbers {};
+
+template <typename Container>
+struct FindIf;
+
+template<typename T, typename F>
+struct Internal;
+
+template<typename F>
+struct Internal<Numbers<>, F> {
+    static constexpr std::optional<int> value = std::nullopt;
+};
+
+template<int First, int... Rest, typename F>
+struct Internal<Numbers<First, Rest...>, F> {
+    static constexpr bool match = F{}(First);
+    static constexpr auto tail = Internal<Numbers<Rest...>, F>::value;
+    static constexpr std::optional<int> value = 
+        match ? std::optional<int>{1}
+              : tail ? std::optional<int>{1 + *tail}
+                     : std::nullopt;
+};
+
+template<int... Ints>
+struct FindIf<Numbers<Ints...>> {
+    template<typename F>
+    constexpr std::optional<int> operator()(F) {
+        return Internal<Numbers<Ints...>, F>::value;
+    }
+};
+```
+
+- Notes
+    - We deduce the type of the lambda function using `typename F`, then later instantiate it and call it using `F{}(First)`
+        - You can also use `auto f` as the method parameter type to deduce the type of `F` 
+    - Using `template<auto F>` (i.e. using `auto` in the _template parameter_ rather than method parameter) instead makes `F` a _value_ (a non-type template parameter). In this case `F f` does not make sense, since `F` is not a type 
+        - You can still call it by `f(First)` or `std::invoke(f, First)`, but the syntax changes slightly
+    - C++20 made stateless closure types (i.e. non-capturing lambdas) default-constructible and empty
+        - This only works for lambdas with no captures. If you try a capturing lambda, you will get an error message: 'lambda closure type has a deleted default constructor' 

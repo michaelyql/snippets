@@ -1,0 +1,19 @@
+# Compile Time Reverse 
+
+```cpp
+template <int... T>
+struct Numbers {
+};
+
+template <typename NumbersInput, typename NumbersOutput = Numbers<>>
+struct Reverse {
+    using type = NumbersOutput;
+};
+
+template<int First, int... Rest, int... Output>
+struct Reverse<Numbers<First, Rest...>, Numbers<Output...>> {
+    using type = typename Reverse<Numbers<Rest...>, Numbers<First, Output...>>::type;
+};
+```
+- When there are no more numbers, the specialized template is not matched anymore. 
+- The best match is the primary template, which ends the recursion, collecting the reversed number list in the output

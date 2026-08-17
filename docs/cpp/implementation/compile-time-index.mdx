@@ -1,0 +1,54 @@
+# Compile Time Index 
+
+Returns the value of an integer sequence at a 0-based index
+
+```cpp 
+template<int...>
+struct Numbers {};
+
+template<int I, typename T>
+struct ValueAt;
+
+template<int I>
+struct ValueAt<I, Numbers<>> {
+    static constexpr int value = std::numeric_limits<int>::min();
+};
+
+template<int I, int First>
+struct ValueAt<I, Numbers<First>> {
+    static constexpr int value = I == 0 ? First : std::numeric_limits<int>::min();
+};
+
+template<int I, int First, int... Rest>
+struct ValueAt<I, Numbers<First, Rest...>> {
+    static constexpr int value = I < 0 || I > sizeof...(Rest) 
+        ? std::numeric_limits<int>::min() 
+        : I == 0 
+            ? First 
+            : ValueAt<I - 1, Numbers<Rest...>>::value;
+};
+```
+
+Alternative Implementation
+```cpp 
+template<int...>
+struct Numbers {};
+
+template<int Index, typename Container>
+struct ValueAt;
+
+template<int Index>
+struct ValueAt<Index, Numbers<>> {
+    static constexpr int value = std::numeric_limits<int>::min();
+};
+
+template<int First, int... Rest>
+struct ValueAt<0, Numbers<First, Rest...>> { // Observe the specialization for Index = 0 case
+    static constexpr int value = First;
+};
+
+template<int Index, int First, int... Rest>
+struct ValueAt<Index, Numbers<First, Rest...>> {
+    static constexpr int value = ValueAt<Index - 1, Numbers<Rest...>>::value;
+};
+```

@@ -1,0 +1,14 @@
+# Compile Time Concat
+
+```cpp 
+template <int... T>
+struct Numbers { };
+
+template<typename T, typename U>
+struct Concat;
+
+template<int... Ts, int... Us>
+struct Concat<Numbers<Ts...>, Numbers<Us...>> {
+    using type = Numbers<Ts..., Us...>;
+};
+```

@@ -88,7 +88,57 @@ public:
 
 ## Lock-Free SPSC Ring Buffer
 
-Below is an implementation of a single producer-single consumer ring buffer:
+Core Algorithm:
+- Capacity
+    - Allocate one extra slot for `capacity`
+- Push
+    - Load `writeIdx` and get the next index `nextWriteIdx`
+    - If `nextWriteIdx` has reached the end, loop back to 0
+    - While `nextWriteIdx` is equal to `readIdxCache`, update `readIdxCache` by loading `readIdx` (effectively a spinlock)
+    - Once `nextWriteIdx` is not equal to `readIdxCache`, push the item to `slots[writeIdx]`
+    - Finally, update `writeIdx` to `nextWriteIdx`
+    - How it works: 
+        - `readIdxCache` is a 'cache' to store where the writer has last seen the reader read from 
+        - `readIdxCache` is only ever updated by the writer, and since there is only a single writer, it does not have to be atomic
+        - If `readIdxCache` is out of date (reader has since advanced), then the writer is safe to write to that index, since the element at that index has been consumed
+        - Otherwise, the reader has not read past that index yet, so the writer cannot push a new element to that index and spins
+    - `try_push` follows the same logic but only checks if `nextWriteId` is equal to `readIdx` once (does not spin) 
+        - If the check fails, it returns `false`  
+- Pop
+    - `pop()` is split into two parts - the first part checks if `front()` returns a non-`nullptr`, and only if it does, then the second part advances the `readIndx`
+    - Otherwise, `pop()` returns false, because it can't pop from an empty queue
+    - `front()` loads the current `readIdx` and compares it against `writeIdxCache`
+        - If `readIdx` is not equal to `writeIdxCache`, then the reader has not caught up to the writer yet, so it is safe to return a pointer to the element at that index
+        - Otherwise if they are equal, update `writeIdxCache` by loading `writeIdx`
+        - If they are still equal, then the queue is empty, so it returns a `nullptr`
+- Size 
+    - Computes the difference between `writeIdx` and `readIdx` (cast to `std::ptrdiff_t`), and if it is negative, adds `capacity` back 
+    - The current implementation relies on converting any underflows of `writeIdx - readIdx` into a negative value using `ptrdiff_t`, which is implementation-defined 
+    - A cleaner way may be to compute `writeIdx - readIdx` (with potential underflow), adding `capacity` if `writeIdx < readIdx` (with overflow), since underflow and overflow on unsigned integral types are well-defined
+- Empty 
+    - Simply checks if `readIdx` is equal to `writeIdx` at that snapshot in time 
+
+Optimizations:
+- Alignment
+    - The data members `readIdx`, `writeIdx`, `readIdxCache` and `writeIdxCache` are aligned to the cache line size `KCacheLineSize` to avoid false sharing between threads 
+    - `KCacheLineSize` is set to `std::hardware_destructive_interference_size`, or 64 if it is not defined
+- Memory 
+    - When constructing the queue and allocating memory, padding is added around the slots, so that the memory layout of the slots is as such: 
+    ```
+                allocated memory
+    ┌───────────┬───────────────┬──────────┐
+    │  padding  │  actual ring  │ padding  │
+    └───────────┴───────────────┴──────────┘
+                ↑
+                slots_[kPadding]
+    ```
+    - It adds `KPadding * sizeof(T)` bytes, i.e. one extra slot before and after the actual ring
+    - Padding is added to avoid false sharing between the memory allocated for `slots` and adjacent allocations
+    - Here `KPadding` is essentially `ceil(KCacheLineSize / sizeof(T))`, so it is at least one cache line size if `sizeof(T) > KCacheLineSize`, but also sufficient to completely pad and fill a cache line if `sizeof(T) < KCacheLineSize`
+
+### Implementation
+
+The following is an implementation of a SPSC ring buffer / circular queue implementing the algorithm described above.
 
 ```cpp showLineNumbers title="spsc-queue.cpp"
 // From https://github.com/rigtorp/SPSCQueue/blob/master/include/rigtorp/SPSCQueue.h
@@ -294,16 +344,123 @@ private:
 };
 ```
 
-- The buffer uses a pre-allocated block of memory. Once full, old data is either overwritten, or producers are blocked until consumers catch up.
-- It uses atomic pointers for the `read_idx` (consumer) and `write_idx` (producer). When an index hits the end of the buffer, it wraps back to zero.
-- The buffer size is set to a power of 2 to allow fast bitwise AND (`&`) masking instead of expensive modulo `%` operations
-- Atomic variables are padded so read and write indices sit on different CPU cache lines. This prevents false sharing.
+Notes
+- If capacity is a power of 2, we can use bitwise masking `&` instead of expensive modulo `%` operations
 
-#### Usage in Production Codebases
+Examples of concurrent ring buffers in production codebases:
+- LMAX Disruptor (Java)
+    - A concurrent ring buffer widely used in financial software for handling inter-thread message routing and event publishing.
+- Aeron (Java)
+    - Used in financial market data distribution for zero-copy message exchanges over shared memory.
+- io_uring & DPDK 
+    - Linux kernel asynchronous I/O and Intel's Data Plane Development Kit use concurrent ring buffers to queue packets and I/O completion events between NICs and drivers.
 
-- **LMAX Disruptor**: A concurrent ring buffer pattern widely used in financial software for handling inter-thread message routing and event publishing.
-- **Aeron**: Used in financial market data distribution for zero-copy message exchanges over shared memory.
-- **io_uring, DPDK**: Linux kernel asynchronous I/O and Intel's Data Plane Development Kit use concurrent ring buffers to queue packets and I/O completion events between NICs and drivers.
+### Alternative Implementation 
+
+```cpp 
+template <typename T>
+class SPSCQ {
+public:
+    SPSCQ(size_t capacity)
+        : capacity_{capacity},
+          items_{std::make_unique<T[]>(capacity)} {
+
+        // It's fine to assume 8 bits per byte.
+        // Otherwise, use CHAR_BIT.
+        if (capacity < 2 || std::bitset<sizeof(size_t) * 8>(capacity).count() != 1) {
+            throw std::logic_error(
+                "Capacity must be a power of 2, and greater than 1."
+            );
+        }
+    }
+
+    void operator=(const SPSCQ&) {
+        throw std::logic_error("Cannot copy!");
+    }
+
+    SPSCQ(const SPSCQ&) {
+        throw std::logic_error("Cannot copy!");
+    }
+
+    void operator=(SPSCQ&&) {
+        throw std::logic_error("Cannot move!");
+    }
+
+    SPSCQ(SPSCQ&&) {
+        throw std::logic_error("Cannot move!");
+    }
+
+    ~SPSCQ() = default;
+
+    bool push(const T& item) {
+        const auto writeIdx = writeIdx_.load(std::memory_order_relaxed);
+        const auto readIdx  = readIdx_.load(std::memory_order_acquire);
+
+        const auto nextWriteIdx = (writeIdx + 1) & (capacity_ - 1);
+        const auto isFull = nextWriteIdx == readIdx;
+
+        if (isFull) {
+            return false;
+        }
+
+        items_[writeIdx] = item;
+        writeIdx_.store(nextWriteIdx, std::memory_order_release);
+        return true;
+    }
+
+    bool pop(T& item) {
+        const auto readIdx  = readIdx_.load(std::memory_order_relaxed);
+        const auto writeIdx = writeIdx_.load(std::memory_order_acquire);
+
+        const auto isEmpty = readIdx == writeIdx;
+        if (isEmpty) {
+            return false;
+        }
+
+        item = std::move(items_[readIdx]);
+        const auto nextReadIdx = (readIdx + 1) & (capacity_ - 1);
+        readIdx_.store(nextReadIdx, std::memory_order_release);
+        return true;
+    }
+
+    [[nodiscard]] bool full() const {
+        const auto writeIdx = writeIdx_.load(std::memory_order_relaxed);
+        const auto nextWriteIdx = (writeIdx + 1) & (capacity_ - 1);
+        const auto readIdx = readIdx_.load(std::memory_order_relaxed);
+
+        return nextWriteIdx == readIdx;
+    }
+
+    [[nodiscard]] size_t size() const {
+        const auto readIdx  = readIdx_.load(std::memory_order_relaxed);
+        const auto writeIdx = writeIdx_.load(std::memory_order_relaxed);
+
+        if (writeIdx > readIdx) {
+            return writeIdx - readIdx;
+        } else {
+            // This has a branchless version, but it's hard to think of on the spot.
+            return capacity_ - (readIdx - writeIdx);
+        }
+    }
+
+    [[nodiscard]] bool empty() const {
+        const auto readIdx  = readIdx_.load(std::memory_order_relaxed);
+        const auto writeIdx = writeIdx_.load(std::memory_order_relaxed);
+
+        return readIdx == writeIdx;
+    }
+
+private:
+    size_t capacity_;
+    std::unique_ptr<T[]> items_;
+
+    alignas(std::hardware_destructive_interference_size)
+    std::atomic<size_t> readIdx_{0};
+
+    alignas(std::hardware_destructive_interference_size)
+    std::atomic<size_t> writeIdx_{0};
+};
+```
 
 ## MPMC Queue
 

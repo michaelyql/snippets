@@ -1,0 +1,32 @@
+# Apply 
+
+Returns a tuple of applying a function `F` to every element of a `std::tuple<T1,...,Tn>{v1,...,vn}` and returns a `std::tuple{f(v1), f(v2),...,f(vn)}`
+
+```cpp 
+template <class F, typename... Ts, size_t... Is>
+constexpr decltype(auto) apply_impl(F&& f, std::tuple<Ts...>& t, std::index_sequence<Is...>) {
+    return std::make_tuple(
+        std::invoke(
+            std::forward<F>(f), 
+            std::get<Is>(std::forward<decltype(t)>(t))
+        )...
+    );
+}
+
+// declaration
+template <class F, typename... Ts>
+constexpr decltype(auto) apply(F f, std::tuple<Ts...> t) {
+    using Tuple = decltype(t);
+    return apply_impl(
+        std::forward<F>(f), 
+        std::forward<Tuple>(t), 
+        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{}
+    );
+}
+```
+
+Notes
+- The original `std::apply` (https://en.cppreference.com/cpp/utility/apply) applies `F` to a tuple of arguments, i.e. `INVOKE(F, args...)`. It also uses `std::invoke` under the hood.
+- `std::make_index_sequence<N>` still has to be instantiated with `{}` in order to pass an object of an integer sequence
+- `std::decay_t<T>` is the actual type after decay. Otherwise you can use `std::decay<T>::type`
+- `std::get<I>` is `constexpr` since C++14 (? have to check) but `I` must be a compile time constant

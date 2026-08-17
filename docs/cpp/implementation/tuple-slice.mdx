@@ -1,0 +1,13 @@
+# Tuple Slice 
+
+Accepts a list of indices as compile-time constants and returns the selected elements as a tuple.
+
+```cpp 
+template<size_t... I>
+constexpr decltype(auto) tuple_slice(auto&& tuple) {
+    return std::make_tuple(std::get<I>(std::forward<decltype(tuple)>(tuple))...);
+}
+
+static_assert(tuple_slice<0, 2, 4>(std::make_tuple(1, 2, 3, 4, 5, 6)) ==
+              std::make_tuple(1, 3, 5));
+```

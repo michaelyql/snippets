@@ -1,0 +1,57 @@
+# Compile Time Unique 
+
+- Keep only unique ints in an non-decreasing integer sequence
+
+```cpp
+template <int... T>
+struct Numbers { };
+
+template<int P = -1> 
+struct Previous {};
+
+template<typename... T>
+struct Internal;
+
+template<int P, int... Ints>
+struct Internal<Previous<P>, Numbers<Ints...>, Numbers<>> {
+    using type = Numbers<Ints...>;
+};
+
+template<int P, int... Ints, int First, int... Rest>
+struct Internal<Previous<P>, Numbers<Ints...>, Numbers<First, Rest...>> {
+    using type = typename std::conditional_t<P == First, 
+        Internal<Previous<P>, Numbers<Ints...>, Numbers<Rest...>>,
+        Internal<Previous<First>, Numbers<Ints..., First>, Numbers<Rest...>>
+    >::type; 
+};
+
+template<typename T>
+struct Unique;
+
+template<int... Ints> 
+struct Unique<Numbers<Ints...>> : Internal<Previous<>, Numbers<>, Numbers<Ints...>> {};
+```
+
+Alternative (cleaner) Implementation 
+```cpp
+template <int... T>
+struct Numbers {
+};
+
+template <typename NumbersInput, typename NumbersOutput = Numbers<>>
+struct Unique {
+    using type = NumbersOutput;
+};
+
+// Case 1
+template <int Front, int... Rest, int... InOutputVector>
+struct Unique<Numbers<Front, Front, Rest...>, Numbers<InOutputVector...>> {
+    using type = typename Unique<Numbers<Front, Rest...>, Numbers<InOutputVector...>>::type;
+};
+
+// Case 2
+template <int Front, int... Rest, int... InOutputVector>
+struct Unique<Numbers<Front, Rest...>, Numbers<InOutputVector...>> {
+    using type = typename Unique<Numbers<Rest...>, Numbers<InOutputVector..., Front>>::type;
+};
+```
