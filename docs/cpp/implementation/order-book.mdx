@@ -1,6 +1,6 @@
-# Price-Quantity Order Book 
+# Order Book 
 
-## Problem Description:
+## Price-Time
 
 Requirements
 - `AddOrder` – Add a new buy or sell order to the orderbook.
@@ -9,11 +9,10 @@ Requirements
 Order Matching Rules:
 - Buy orders (`isBuy = true`) match with the lowest-priced sell orders.
 - Sell orders (`isBuy = false`) match with the highest-priced buy orders.
-- Orders are matched based on price-quantity priority, not price-time priority. 
-    - This means that orders with a higher quantity are matched sooner, despite ariving later. If two orders have the same quanity break the tie on time.
+- Orders are matched based on price-time priority. 
 
 Adding Orders (`AddOrder`):
-- If an order with the same orderId already exists, it should be rejected (no trades generated).
+- If an order with the same `orderId` already exists, it should be rejected (no trades generated).
 - Otherwise, add the order to the appropriate side (bids for buys, asks for sells) and attempt to match trades.
 
 Canceling Orders (`CancelOrder`):
@@ -32,7 +31,207 @@ Aggressor:
 - The party whose action lead to the match. This is the second party to the transaction.
 - For example, if person A wants to sell at T = 0 at \$20, and person B wants to buy at T = 2 at \$20, person B is the aggressor.
 
-## Implementation
+### Implementation
+
+```cpp
+using Id = size_t;
+using Price = long;
+using Quantity = int;
+
+class Order {
+private:
+    Id orderId_;
+    Price level_;
+    bool isBuy_;
+    Quantity quantity_;
+    mutable size_t arrive_time_;
+public: 
+    Order(Id orderId, Price level, bool isBuy, Quantity quantity)
+        : orderId_(orderId), level_(level), isBuy_(isBuy), quantity_(quantity), arrive_time_(0) {}
+    Order(const Order&) = default;
+
+    Id OrderId() const { return orderId_; }
+    Price level() const { return level_; }
+    bool isBuy() const { return isBuy_; };
+    Quantity quantity() const { return quantity_; }
+    size_t arrive_time() const { return arrive_time_; }
+    void set_arrive_time(size_t t) const { arrive_time_ = t; }
+    void set_quantity(Quantity q) { quantity_ = q; }
+    void debug() const { 
+        // zu for size_t (unsigned), zd for ssize_t (signed)
+        fprintf(stderr, 
+            "(id=%zu, level=%ld, isBuy=%s, quantity=%d, arrive_time=%zu)\n", 
+            orderId_,
+            level_,
+            (isBuy_ ? "true" : "false"),
+            quantity_,
+            arrive_time_
+        );
+    }
+};
+
+struct BuyComp {
+    bool operator()(const Order& o1, const Order& o2) const {
+        if (o1.level() != o2.level()) return o1.level() > o2.level();
+        return o1.arrive_time() < o2.arrive_time();
+    };
+};
+
+struct SellComp {
+    bool operator()(const Order& o1, const Order& o2) const {
+        if (o1.level() != o2.level()) return o1.level() < o2.level();
+        return o1.arrive_time() < o2.arrive_time();
+    };
+};
+
+using Orders = std::vector<Order>;
+
+struct Trade {
+    Id OrderIdA;
+    Id OrderIdB; // Aggressor's OrderId
+    Id AggressorOrderId;
+    bool AggressorIsBuy;
+    Price Level;
+    Quantity Size;
+};
+
+using Trades = std::vector<Trade>;
+
+class Orderbook {
+public:
+    Trades AddOrder(const Order& order) {
+        Trades trades_ {};
+        if (orderExists(order.OrderId())) return {};
+        order.set_arrive_time(clock_++);
+
+        if (order.isBuy()) {
+            if (sells_.empty()) {
+                buys_.emplace(order);
+                buy_ids_.emplace(std::make_pair(order.OrderId(), order));
+            } else {
+                Order currentOrder {order};
+                while (!sells_.empty() 
+                    && currentOrder.quantity() > 0 
+                    && currentOrder.level() >= sells_.begin()->level()) {
+                    auto it = sells_.begin();
+
+                    Id restingOrderId       = it->OrderId();
+                    Price restingOrderLevel = it->level();
+                    Quantity buyQty         = currentOrder.quantity();
+                    Quantity sellQty        = it->quantity();
+                    Quantity txnQty         = std::min(buyQty, sellQty);
+                    Quantity remQty         = std::abs(buyQty - sellQty);
+
+                    currentOrder.set_quantity(buyQty - txnQty);
+
+                    if (buyQty >= sellQty) {
+                        sell_ids_.erase(restingOrderId);
+                        sells_.erase(it);
+                    } else {
+                        Order newSellOrder { *it };
+                        sell_ids_.erase(restingOrderId);
+                        sells_.erase(it);
+                        newSellOrder.set_quantity(remQty);
+                        sell_ids_.emplace(std::make_pair(restingOrderId, newSellOrder));
+                        sells_.emplace(newSellOrder);
+                    }
+
+                    trades_.emplace_back(
+                        restingOrderId,
+                        currentOrder.OrderId(),
+                        currentOrder.OrderId(), // aggressor 
+                        true, 
+                        restingOrderLevel,
+                        txnQty
+                    );
+                }
+                if (currentOrder.quantity() > 0) {
+                    buys_.emplace(currentOrder);
+                }
+            }
+        } else {
+            if (buys_.empty()) {
+                sells_.emplace(order);
+                sell_ids_.emplace(std::make_pair(order.OrderId(), order));
+            } else {
+                Order currentOrder {order};
+                while (!buys_.empty() 
+                    && currentOrder.quantity() > 0 
+                    && currentOrder.level() <= buys_.begin()->level()) {
+                    auto it = buys_.begin();
+
+                    Id restingOrderId       = it->OrderId();
+                    Price restingOrderLevel = it->level();
+                    Quantity sellQty        = currentOrder.quantity();
+                    Quantity buyQty         = it->quantity();
+                    Quantity txnQty         = std::min(buyQty, sellQty);
+                    Quantity remQty         = std::abs(buyQty - sellQty);
+
+                    currentOrder.set_quantity(sellQty - txnQty);
+
+                    if (sellQty >= buyQty) {
+                        buy_ids_.erase(restingOrderId);
+                        buys_.erase(it);
+                    } else {
+                        Order newBuyOrder { *it };
+                        buy_ids_.erase(restingOrderId);
+                        buys_.erase(it);
+                        newBuyOrder.set_quantity(remQty);
+                        buy_ids_.emplace(std::make_pair(restingOrderId, newBuyOrder));
+                        buys_.emplace(newBuyOrder);
+                    }
+
+                    trades_.emplace_back(
+                        restingOrderId,
+                        currentOrder.OrderId(),
+                        currentOrder.OrderId(), // aggressor 
+                        false, // aggressor sell
+                        restingOrderLevel,
+                        txnQty
+                    );
+                }
+                if (currentOrder.quantity() > 0) {
+                    sells_.emplace(currentOrder);
+                }
+            }
+        }
+
+        return trades_;
+    }
+
+    void CancelOrder(Id orderId) {
+        if (!orderExists(orderId)) return;
+        auto it = buy_ids_.find(orderId);
+        if (it != buy_ids_.end()) {
+            buys_.erase(it->second);
+            buy_ids_.erase(it);
+            return;
+        }
+        it = sell_ids_.find(orderId);
+        if (it != sell_ids_.end()) {
+            sells_.erase(it->second);
+            sell_ids_.erase(it);
+            return;
+        }
+    }
+
+private:
+    std::unordered_map<size_t, Order> buy_ids_, sell_ids_;
+    std::set<Order, BuyComp> buys_;
+    std::set<Order, SellComp> sells_;
+    size_t clock_ {0};
+
+    bool orderExists(Id orderId) {
+        return buy_ids_.contains(orderId) || sell_ids_.contains(orderId);
+    }
+};
+```
+
+## Price-Quantity
+
+Same as price-time priority, but break ties in price by quantity first, then by arrival time. This means that orders with the same price but higher quantity are matched sooner, despite ariving later. 
+
+### Implementation
 
 ```cpp 
 #include <cmath>

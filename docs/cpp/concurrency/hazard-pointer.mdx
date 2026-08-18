@@ -1,6 +1,54 @@
 
 # Hazard Pointers
 
+The main idea behind hazard pointers is, each thread declares its own set of hazard pointers (usually 1-5 hazard pointers)
+- A node/region of memory pointed to by a hazard pointer indicates that the node/memory region is "dangerous" i.e. some other thread is using it, and can't be deleted
+- A node can only be deleted when a thread is sure that no other thread has a hazard pointer pointing to it
+
+Typically, a thread also maintains a thread-local, private _retire_ list, which is a list of nodes that the thread wants to delete (e.g. the thread popped the node from a queue and is done with it)
+    - The thread does not delete the node right away, instead it appends it to the end of the retire list 
+    - This allows the thread to batch deletes together instead of running a scan for every single pop, and improves performance
+    - When the size of the retire list exceeds some threshold (usually ~2x the maximum number of hazard pointers a thread can hold), the thread tries to free nodes in the retire list 
+- For each node in the retire list, the thread scans the hazard pointers held by all other threads 
+    - If no other thread holds a hazard pointer to that node, then the node can be freed
+    - Otherwise, the node is "protected" by the hazard pointer, and the thread skips it
+
+Why hazard pointers work 
+    - Before using a node, a thread has to first call `protect()` on it, i.e. to declare that it intends to use the node 
+    - It first calls `node = load()` to load the node. Then it updates `hp[thread_id] = &node`. 
+    - Crucially, before it starts using the node, it has to _validate_ whether or not the node is still alive by checking `node == load()`
+    - If the node is no longer up to date, then some other thread has deleted it, and the node can't be used anymore
+    - Otherwise, the thread can be sure that if another thread is trying to delete the current node, that thread would have seen the updated hazard pointer
+    - This only works because we update the hazard pointer in between two atomic loads. If the node has not changed since the thread last saw it, then thread's hazard pointer should be visible to other threads who are also trying to load the node 
+
+To visualize this, consider the operation of two threads on a linked list `src -> X -> Y`. There are two situations:
+
+```
+T1: X is unlinked
+T1: src == Y
+T1: scan HPs (no HP == X)
+T1: delete X
+
+T2: p = src.load()
+T2: // p = Y
+```
+
+In this case, thread 2 never sees `X`, so thread1 is safe to delete `X`.
+
+```
+T2: p = src.load()   // p == X
+
+T1: unlink X
+T1: scan HP
+T1: delete X
+
+T2: hp.store(X)
+T2: src.load()       // != X
+T2: do not use X
+```
+
+In this case, even though thread 2 loaded `X` before thread 1 and went to sleep, when thread 2 woke up and tried to load `src` again, it sees that `src` has moved past `X` meaning that it was deleted, so it wasn't able to update its hazard pointer in time to protect `X` in order to use it. So, thread 2 does not use `X`, and there is no use-after-free.
+
 ## Relevant Articles
 
 - [Hazard Pointers in C++26 - Rainer Grimm](https://www.modernescpp.com/index.php/hazard-pointers-in-c26/)

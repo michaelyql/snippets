@@ -1,5 +1,11 @@
 # Allocator
 
+See [Memory - `std::allocator`](../memory.mdx#stdallocator) for more
+
+Also see [Custom Allocators - CppCon 2025](https://www.youtube.com/watch?v=RpD-0oqGEzE)
+
+note to self: revisit this later, it's a pretty complicated topic...
+
 ## Basic Custom Allocator 
 
 ```cpp
@@ -58,6 +64,29 @@ int main() {
 ```
 
 ## Bump Allocator 
+
+- A.k.a arena allocator
+- Pre-allocate a large buffer 
+- Hand out chunks of memory
+- Each time, increment (bump) or decrement a pointer
+- Chunks store the size of the allocated memory and a pointer to the start. They are like embedded metadata and take up space as well 
+    - They also store a magic number to represent that they are allocated 
+    - If something else overflows memory and writes into the chunk, it will overwrite the magic number 
+    - This can be used for overflow detection
+    - Memory looks like this: 
+        ```
+        [ SIZE ][ MAGIC ][ USER MEMORY STARTS HERE ]
+        ```
+    - Common values are `0xBAADF00D` etc.
+- Bump allocator is fast ($O(1)$ allocation) since it only performs pointer arithmetic 
+- Usage:
+    - Allocate a large number of objects whose size is not known ahead of time
+    - Give out slices instead of dynamically allocating each object
+- Downsides 
+    - Deallocation means deallocating the entire buffer
+- See [Arena Allocator - Ng Song Guan](https://medium.com/@sgn00/high-performance-memory-management-arena-allocators-c685c81ee338)
+
+### Basic Implementation
 
 ```cpp
 struct ChunkHeader {
@@ -130,3 +159,314 @@ class Allocator {
     std::unique_ptr<std::byte[]> chunks_{nullptr};
 };
 ```
+
+Issues with this implementation:
+
+```
+Order dependent deallocation:
+
+the offset is stored under used_ variable which we shift forward 
+on allocation and backward on deallocation.
+
+Consider the next scenario:
+1. We allocate 32 bytes, so we get:
+
+used_ = 48
+(32 (requested capacity) + sizeof(ChunkHeader)) = 48
+Chunk location = 0
+Returned memory location = 16
+
+2. Then we allocate, let's say 8 bytes:
+
+used_ = 48 + 24 = 72
+(8 (requested bytes) + 16 (sizeof(ChunkHeader))) = 24
+Chunk location = 48
+Returned memory location = 64
+
+3. Deallocate the first allocated address
+
+used_ = 72 - 48 = 24
+4. Allocate a large block, e.g. 128 bytes, as we can see the third
+allocated memory block overlaps with the second one!
+```
+
+### Refined Implementation
+```cpp
+#pragma once
+#include <cstddef>
+#include <new>
+#include <memory>
+
+class Arena {
+
+public:
+    // Constructor: allocate a raw memory block of given size
+    explicit Arena(std::size_t size)
+        : buffer_(static_cast<char*>(::operator new(size))), 
+                    capacity_(size), offset_(0) {}
+
+    // Destructor: free the memory block
+    ~Arena() {
+        ::operator delete(buffer_);
+    }
+
+    // Allocate memory of `size` bytes with specified `alignment`
+    void* allocate(std::size_t size, std::size_t alignment) {
+        char* current_ptr = buffer_ + offset_;
+        std::size_t space = capacity_ - offset_;
+        void* aligned_ptr = current_ptr;
+
+        // Align the ptr to the specified alignment
+        if (std::align(alignment, size, aligned_ptr, space) == nullptr) {
+            throw std::bad_alloc();
+        }
+
+        // Bump the offset of the arena
+        offset_ = static_cast<char*>(aligned_ptr) - buffer_ + size;
+
+        return aligned_ptr;
+    }
+
+    // Reset arena to reuse the memory block from the start
+    void reset() {
+        offset_ = 0;
+    }
+
+    // Non-copyable, non-movable type
+    Arena(const Arena&) = delete;
+    Arena(Arena&&) = delete;
+
+private:
+    char* buffer_;           // Start of the allocated memory block
+    std::size_t capacity_;   // Total size of the block
+    std::size_t offset_;     // Current allocation offset
+
+};
+```
+
+## First Fit Allocator 
+
+```cpp 
+struct ChunkHeader {
+    const static inline size_t HeaderMagicId = std::numeric_limits<size_t>::max();
+    size_t Size{ HeaderMagicId };
+    size_t Magic{ HeaderMagicId };
+};
+
+struct Chunk {
+    ChunkHeader Header;
+    std::byte* Memory{ nullptr };
+};
+
+class Allocator
+{
+    constexpr static auto SALT{ 0x9E37'7989'7F4A'7C15uz };
+    constexpr static auto TAG_SIZE{ sizeof(Chunk) };
+
+    [[nodiscard]] static size_t generate_magicID(std::byte* mem_ptr) noexcept {
+        auto const addr{ reinterpret_cast<uintptr_t>(mem_ptr) };
+        auto magic{ static_cast<size_t>(((addr >> 32) ^ addr) ^ SALT) };
+
+        if (magic == 0 || magic == ChunkHeader::HeaderMagicId) {
+            magic ^= 0xA5A5'A5A5'A5A5'A5A5uz;
+        }
+
+        return magic == 0 ? 1 : magic;
+    }
+
+public:
+    explicit Allocator(size_t capacity)
+        : mem{ std::make_unique<std::byte[]>(capacity) }
+        , mem_begin{ mem.get() }
+        , mem_end{ mem_begin + capacity }
+    {
+        initialize_first_chunk();
+    }
+
+    Allocator(size_t capacity, std::byte* allocated)
+        : mem{ allocated }
+        , mem_begin{ allocated }
+        , mem_end{ allocated ? allocated + capacity : nullptr }
+    {
+        if (!allocated && capacity != 0) {
+            throw std::bad_alloc();
+        }
+
+        initialize_first_chunk();
+    }
+
+    Allocator(const Allocator&) = delete;
+    Allocator& operator=(const Allocator&) = delete;
+    Allocator(Allocator&&) = delete;
+    Allocator& operator=(Allocator&&) = delete;
+
+    std::byte* Allocate(size_t capacity) {
+        auto const [prev_memPtr, curr_memPtr] = find_block(capacity);
+        static_cast<void>(prev_memPtr);
+
+        if (!curr_memPtr) {
+            throw std::bad_alloc();
+        }
+
+        auto* const curr_chunk{ chunk_from_payload(curr_memPtr) };
+        auto* const old_limit{ curr_chunk->Memory };
+        auto const free_cap{ available_capacity(curr_chunk) };
+
+        curr_chunk->Header.Size = capacity;
+        curr_chunk->Header.Magic = generate_magicID(curr_memPtr);
+
+        auto const remaining{ free_cap - capacity };
+
+        if (remaining > TAG_SIZE) {
+            auto* const new_chunk_raw{ curr_memPtr + capacity };
+            auto* const new_chunk{ reinterpret_cast<Chunk*>(new_chunk_raw) };
+
+            *new_chunk = Chunk{ { 0, 0 }, old_limit };
+
+            curr_chunk->Memory = new_chunk_raw;
+        }
+
+        return curr_memPtr;
+    }
+
+    void Deallocate(std::byte* bytes) {
+        auto* const chunk{ find_allocated_chunk(bytes) };
+
+        if (!chunk) {
+            throw std::bad_alloc();
+        }
+
+        chunk->Header.Size = 0;
+        chunk->Header.Magic = 0;
+
+        coalesce_all();
+    }
+
+private:
+    std::unique_ptr<std::byte[]> mem{ nullptr };
+    std::byte* mem_begin{ nullptr };
+    std::byte* mem_end{ nullptr };
+
+    void initialize_first_chunk() noexcept {
+        if (!mem_begin || (mem_end - mem_begin) < static_cast<std::ptrdiff_t>(sizeof(Chunk))) {
+            return;
+        }
+
+        auto* const first{ reinterpret_cast<Chunk*>(mem_begin) };
+        *first = Chunk{ { 0, 0 }, mem_end };
+    }
+
+    [[nodiscard]] Chunk* first_chunk() const noexcept {
+        if (!mem_begin || (mem_end - mem_begin) < static_cast<std::ptrdiff_t>(sizeof(Chunk))) {
+            return nullptr;
+        }
+
+        return reinterpret_cast<Chunk*>(mem_begin);
+    }
+
+    [[nodiscard]] static std::byte* payload_from_chunk(Chunk* chunk) noexcept {
+        return reinterpret_cast<std::byte*>(chunk) + sizeof(Chunk);
+    }
+
+    [[nodiscard]] static Chunk* chunk_from_payload(std::byte* payload) noexcept {
+        return reinterpret_cast<Chunk*>(payload - sizeof(Chunk));
+    }
+
+    [[nodiscard]] bool valid_boundary(std::byte* ptr) const noexcept {
+        return ptr && ptr >= mem_begin && ptr <= mem_end;
+    }
+
+    [[nodiscard]] Chunk* next_chunk(Chunk* chunk) const noexcept {
+        if (!chunk || !valid_boundary(chunk->Memory) || chunk->Memory == mem_end) {
+            return nullptr;
+        }
+
+        return reinterpret_cast<Chunk*>(chunk->Memory);
+    }
+
+    [[nodiscard]] size_t available_capacity(Chunk* chunk) const noexcept {
+        auto* const payload{ payload_from_chunk(chunk) };
+
+        if (!valid_boundary(chunk->Memory) || chunk->Memory < payload) {
+            return 0;
+        }
+
+        return static_cast<size_t>(chunk->Memory - payload);
+    }
+
+    [[nodiscard]] static bool is_free(Chunk* chunk) noexcept {
+        return chunk->Header.Magic == 0;
+    }
+
+    [[nodiscard]] std::pair<std::byte*, std::byte*> find_block(size_t request_cap) const noexcept {
+        std::byte* prev_memPtr{ nullptr };
+
+        for (auto* curr{ first_chunk() }; curr; curr = next_chunk(curr)) {
+            auto* const curr_memPtr{ payload_from_chunk(curr) };
+
+            if (is_free(curr) && available_capacity(curr) >= request_cap) {
+                return { prev_memPtr, curr_memPtr };
+            }
+
+            prev_memPtr = curr_memPtr;
+        }
+
+        return { nullptr, nullptr };
+    }
+
+    [[nodiscard]] Chunk* find_allocated_chunk(std::byte* bytes) const noexcept {
+        if (!bytes) {
+            return nullptr;
+        }
+
+        for (auto* curr{ first_chunk() }; curr; curr = next_chunk(curr)) {
+            auto* const curr_memPtr{ payload_from_chunk(curr) };
+
+            if (curr_memPtr != bytes) {
+                continue;
+            }
+
+            if (is_free(curr)) {
+                return nullptr;
+            }
+
+            if (curr->Header.Magic != generate_magicID(bytes)) {
+                return nullptr;
+            }
+
+            if (curr->Header.Size > available_capacity(curr)) {
+                return nullptr;
+            }
+
+            return curr;
+        }
+
+        return nullptr;
+    }
+
+    void coalesce_all() noexcept {
+        for (auto* curr{ first_chunk() }; curr; curr = next_chunk(curr)) {
+            if (!is_free(curr)) {
+                continue;
+            }
+
+            auto* next{ next_chunk(curr) };
+
+            while (next && is_free(next)) {
+                curr->Memory = next->Memory;
+                next = next_chunk(curr);
+            }
+        }
+    }
+};
+
+static_assert(sizeof(Allocator) <= 24);
+```
+
+## Optimization Goals
+
+- Low fragmentation
+- Low contention when using multi-threading
+- Constant time allocation/deallocation
+- Little space for meta data
+- Exploiting cache locality

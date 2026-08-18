@@ -9,30 +9,30 @@ description: Threads, Atomics, Semaphores, Mutexes, Futures
 ```cpp
 #include <thread>
 
+// ==== launch new thread ====
 void f(int a, double b) {}
-std::thread t1(f, 1, 2.0); // std::thread(f, arg1, arg2, ...)
 
-struct X {
-    int g(string s) {};
-}
+// Syntax: std::thread t(f, arg1, arg2, ...)
+std::thread t1(f, 1, 2.0); 
+
+struct X { int g(string s) {}; }
 X x;
-std::thread t2(&X::g, &x, "a"); // pass implicit "this" pointer
 
+// Alternative method, pass implicit "this" pointer
+std::thread t2(&X::g, &x, "a"); 
+
+// Hardware threads
 unsigned int HARDWARE_THREADS = std::thread::hardware_concurrency();
 
+// Thread management
 if (t.joinable()) t.join();
-
 std::thread::id tid = t.get_id();
-
 swap(t1, t2);
 
-// std::this_thread namespace
+// namespace std::this_thread 
 std::thread::id tid = std::this_thread.get_id();
-
 std::this_thread::yield(); 
-
 std::this_thread::sleep_for(2000ms); 
-
 std::this_thread::sleep_until(std::chrono::steady_clock::now() + 2000ms);
 ```
 - Notes
@@ -91,9 +91,7 @@ while (v.test_and_set(std::memory_order_release)) { // spinlock
         - `std::atomic_flag` is the only specialization that is guaranteed to be lock-free. Unlike `std::atomic<boolean>`, it does not provide load or store operations.
         - There are aliases for all integral types, e.g. `atomic_bool` for `atomic<bool>`
 
-## `mutex`
-
-## `conditional_variable`
+## `mutex` / `conditional_variable`
 
 ```cpp
 #include <conditional_variable> 
@@ -117,16 +115,20 @@ std::mutex mtx;
 void thread_func() {
     std::unique_lock<std::mutex> lk(mtx);
 
-    // ...
+    // do work ...
 
     std::notify_all_at_thread_exit(cv, lk); 
     // unlocks mtx and notifies other threads waiting on the cv at thread exit
 }
 ```
 
+- There is also `std::shared_mutex` (multiple reader single writer)` and `std::recursive_mutex` 
+- There are `std::unique_lock<mtx>` (exclusive mutex), `std::shared_lock<mtx>` (shared reader lock for shared mutex)
+
 ## `future`, `packaged_task`, `promise`
 
 ```cpp
+// === packaged_task ===
 int f(int x, int y) { return x + y; }
 
 std::packaged_task<int(int, int)> task([](int a, int b) {
@@ -153,6 +155,25 @@ std::future<typename std::invoke_result_t<F, Args...>> post(F&& f, Args&&... arg
 }
 auto fut = post(f, 5, 10); 
 fut.get(); // 15
+
+// === promise ===
+std::promise<int> p;
+std::future f = p.get_future();
+std::thread t1([&p] {
+    // available methods  
+    p.set_value(1);
+    p.set_value_at_thread_exit(5);  
+    p.set_exception(std::exception{});
+    p.set_exception_at_thread_exit(std::exception{});
+});
+f.wait(); // or f.get();
+t1.join();
+
+std::promise<void> barrier;
+std::future = barrier.get_future();
+std::thread t([&barrier] { barrier.set_value(); });
+future.get(); // blocks until promise is fulfilled
+t.join();
 ```
 - Notes
     - Without `mutable`, `operator()` and `std::move()` cannot be invoked on a const object, which is why the lambdas need to be marked `mutable` in the example above
@@ -160,3 +181,20 @@ fut.get(); // 15
     - `std::invoke_result_t` (`<type_traits>`) is only available from C++17 and onwards
     - `packaged_task` is not copyable, only moveable
     - You can specify a custom allocator for `packaged_task`.
+    - `std::promise` has a `std::promise<void>` specialization to communicate stateless events
+
+## `async`
+
+- If you don't store the `std::future` returned by `std::async`, the destructor of the temporary `std::future` will **block** at the end of the full expression until the asynchronous task completes
+    - This is often surprising behavior that leads to synchronous execution
+- The destructor of the last `std::future` associated with a shared state _blocks_ until the shared state is ready
+- If you use `std::launch::deferred` (or the default policy which may choose deferred), the task might not even start until the future's destructor forces it
+- If the task throws an exception and you don't store the future, the exception is _re-thrown_ in the destructor when the temporary is destroyed, potentially causing `std::terminate` if uncaught
+- To truly fire-and-forget, you need:
+    - `std::jthread([] { /* work */ });` or 
+    - `std::thread([] { /* work */ }).detach();`
+- Best practice 
+    - Always store the `std::future` unless you have a very specific reason not to
+    - Call `fut.get()`, `fut.wait()` or `fut.wait_for() / fut.wait_until()`
+
+

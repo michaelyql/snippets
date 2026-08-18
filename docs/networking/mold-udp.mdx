@@ -4,6 +4,12 @@ MoldUDP64 is a lightweight, UDP-based transport protocol designed by Nasdaq. Its
 
 ## Core Concepts
 
+- MoldUDP64 addresses the unreliability of UDP by adding 
+    - **Message Ordering & Gap Detection**: Every data packet gets a 64-bit sequence number. Receivers can check these numbers to see if any packets are missing, which is essential for data that must be processed in the correct order
+    - **Retransmission of Lost Data**: The protocol defines a mechanism for receivers to request missing packets. When a receiver detects a gap in sequence numbers, it sends a unicast "Request Packet" to a Re-request Server, which then sends back the lost data
+    - **Session Managemen**: It uses a 10-byte "Session" identifier to group related messages (e.g., for a single trading day). This scopes the sequence numbers and allows for orderly start and end of data streams
+    - **Efficient 1-to-Many Distributio**: Data is sent via UDP multicast, meaning the server transmits each packet only once, regardless of the number of subscribers. This is vastly more efficient than TCP, which would require a separate connection for each use
+    - **Idle Period Management**: Heartbeat packets (with a message count of zero) are sent during idle times. This allows clients to confirm the feed is still active and to detect an outage if heartbeats stop arriving
 - The main data stream is sent over UDP multicast. This means a transmitter sends a single packet, and the network delivers it to all subscribed listeners. This scales efficiently to many clients because the transmitter only sends one copy of the data, regardless of how many listeners there are.
 - The messages are sequenced for gap detection. Every message in a session is assigned a strictly increasing 64-bit sequence number. Receivers use this to check for gaps in the data stream. If a receiver expects sequence number 5 but receives number 7, it knows it has missed packet(s) 5 and 6.
 - Messages are retransmitted for reliability. When a receiver detects a gap, it can send a Request Packet over UDP unicast to a dedicated "re-request server", specifying the session and the starting sequence number of the missing messages. The server then retransmits the requested messages, also via UDP unicast, to the client that requested them.
