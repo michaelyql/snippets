@@ -58,6 +58,12 @@ public:
 };
 ```
 
+Notes:
+- Instead of storing `T data`, we store a shared pointer to the element 
+    - This avoids exceptions being thrown during copying/moving the element, in which the element would be popped off the stack but not actually being returned, resulting in the element being lost 
+    - Returning a shared pointer circumvents this since the data is allocated and managed elsewhere on the heap
+- This still leaks nodes since allocated nodes aren't `delete`'d
+
 ## Reclaiming nodes
 
 - To fix the issue of leaking nodes, we can try to reclaim the nodes (free memory) on pop

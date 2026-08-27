@@ -1,0 +1,49 @@
+# Memory Reclamation
+
+Main reference: [Effective Memory Reclamation for Lock-Free Data Structures in C++ - Manuel Pöter](https://repositum.tuwien.at/retrieve/8679)
+
+## Introduction 
+
+Memory reclamation is essential in data structures to enable dynamic insertion and deletion of elements. Memory reclamation itself is a complex topic - determining when a region of memory has no threads referring to it and is safe to be freed. Languages like Java that have built-in automatic garbage collection help to ensure the progress of the program, but does not guarantee the progress of the garbage collector itself.
+
+## Reclamation Schemes 
+
+### Lock-free Reference Counting (LFRC)
+
+Each node has a count of how many references are there to the node.
+
+### Wait-free Reference Counting 
+
+### Hazard Pointers 
+
+### Pass the Buck
+
+### Beware & Cleanup 
+
+### Quiescent state based reclamation (QSBR)
+
+- Typically used to implement RCU (read-copy-update) schemes
+- Based on concept of a _grace period_
+- A _grace period_ is a time interval $[a,b]$ such that after $b$, all nodes removed before $a$ can be safely reclaimed
+- QSBR uses _quiscent states_ to detect grace periods 
+- A _quiscent state_ for some thread T is a state in which T holds no references to shared nodes 
+- A _grace period_ is any time interval in which every thread has passed through at least one quiscent state 
+
+### Epoch based Reclamation (EBR)
+
+### Drop the Anchor (DTA)
+
+### StackTrack 
+
+- Relies on _hardware transactional memory_ (HTM)
+
+### ThreadScan
+
+### Optimistic Access
+
+### DEBRA (Distributed EBR)
+
+### QSense 
+
+### Stamp-it
+

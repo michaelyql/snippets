@@ -1,0 +1,874 @@
+# Little Book of Semaphores 
+
+https://greenteapress.com/semaphores/LittleBookOfSemaphores.pdf
+
+## Basic Synchronization Patterns 
+
+### Mutex 
+
+```
+mutex = semaphore(1)
+mutex.wait()
+    critical section
+mutex.signal()
+```
+
+### Multiplex
+
+```
+multiplex = semaphore(n)
+multiplex.wait()
+    critical section
+multiplex.signal()
+```
+
+### Barrier / Turnstile
+```
+rendezvous 
+
+mutex.wait()
+    count = count + 1
+mutex.signal()
+
+if count == n: barrier.signal()
+
+barrier.wait()
+barrier.signal() // Turnstile
+
+critical section
+```
+
+Deadlocked barrier (wrong implementation)
+```
+rendezvous 
+
+mutex.wait()
+    count = count + 1
+    if count == n: barrier.signal()
+    barrier.wait() // deadlock here
+    barrier.signal()
+mutex.signal() // doesn't release mutex
+
+critical section
+```
+
+Reusable barrier (assuming multiple threads run this logic in an infinite loop) but wrong implementation
+```
+rendezvous 
+
+mutex.wait()
+    count = count + 1
+mutex.signal()
+
+if count == n: barrier.signal() 
+// Eager thread may enter the next iteration already 
+// and 'steal' the spot of the nth thread in the current iteration
+
+barrier.wait()
+barrier.signal() // Turnstile
+
+mutex.wait()
+    count = count - 1
+mutex.signal()
+
+if count == 0: barrier.wait() // This can deadlock
+```
+
+Reusable barrier using two turnstiles to prevent any single thread from getting ahead of others a.k.a *two phase barrier*
+```
+turnstile1 = semaphore(0)
+turnstile2 = semaphore(1)
+mutex = semaphore(1)
+
+// thread code 
+mutex.wait()
+    count = count + 1
+    if count == n:
+        turnstile2.wait() // lock turnstile 2
+        turnstile1.signal()
+mutex.signal()
+
+turnstile1.wait()
+turnstile1.signal()
+
+critical section 
+
+mutex.wait()
+    count = count - 1
+    if count == 0:
+        turnstile1.wait() // lock turnstile 1 to prevent 
+        // eager thread from starting next iteration
+
+        turnstile2.signal()
+mutex.signal()
+
+turnstile2.wait()
+turnstile2.signal()
+```
+
+Reusable barrier with preloaded turnstile 
+```
+mutex.wait()
+    count = count + 1
+    if count == n:
+        turnstile1.signal(n) // signal n times
+mutex.signal() 
+
+turnstile1.wait() // notice only wait, no signal
+
+critical section 
+
+mutex.wait()
+    count = count - 1
+    if count == 0:
+        turnstile2.signal(n)
+mutex.signal()
+
+turnstile2.wait()
+```
+
+Barrier class 
+```python
+class Barrier:
+    def __init__(self, n):
+        self.n = n
+        self.count = 0
+        self.mutex = Semaphore(1)
+        self.turnstile1 = Semaphore(0)
+        self.turnstile2 = Semaphore(0)
+
+    def phase1(self):
+        self.mutex.wait()
+            self.count += 1
+            if self.count == self.n:
+                self.turnstile1.signal(self.n)
+        self.mutex.signal()
+        self.turnstile1.wait()
+        
+    def phase2(self):
+        self.mutex.wait()
+            self.count += 1
+            if self.count == self.n:
+                self.turnstile2.signal(self.n)
+        self.mutex.signal()
+        self.turnstile2.wait()
+
+    def wait(self):
+        self.phase1()
+        self.phase2()
+
+# can also call phase1() and phase2() separately
+```
+
+### Queue (Leader/Follower)
+
+```
+// leader
+followerQueue.signal()
+leaderQueue.wait()
+dance()
+
+// follower 
+leaderQueue.signal()
+followerQueue.wait()
+dance()
+
+// But more than one leader can be dancing with a single follower
+```
+
+Exclusive Queue (each leader paired with exactly one follower)
+```
+leaders = followers = 0
+mutex = semaphore(1)
+leaderQueue = semaphore(0)
+followerQueue = semaphore(0)
+rendezvous = semaphore(0)
+
+// leader 
+mutex.wait()
+    if followers > 0:
+        followers--
+        mutex.signal()
+        followerQueue.signal()
+    else:
+        leader++
+        mutex.signal()
+        leaderQueue.wait()
+dance()
+rendezvous.wait()
+
+// follower
+mutex.wait()
+    if leader > 0:
+        leader--
+        mutex.signal()
+        leaderQueue.signal()
+    else:
+        follower++
+        mutex.signal()
+        followerQueue.wait()
+dance()
+rendezvous.signal()
+```
+
+## Classic Synchronization Problems 
+
+### Producer-Consumer 
+
+```
+// Producer
+event = waitForEvent()
+mutex.wait()
+    buffer.add(event)
+mutex.signal()
+items.signal()
+
+// Consumer 
+items.wait()
+mutex.wait()
+    event = buffer.get()
+mutex.signal()
+event.process()
+
+// Broken consumer 
+mutex.wait()
+    items.wait() // deadlock here 
+    ...
+```
+
+Finite buffer 
+```
+mutex = Semaphore(1)
+items = Semaphore(0)
+spaces = Semaphore(buffer.size())
+
+// producer 
+event = waitForevent()
+
+spaces.wait()
+mutex.wait()
+    buffer.add(event)
+mutex.signal()
+items.signal()
+
+// consumer 
+items.wait()
+mutex.wait()
+    event = buffer.get()
+mutex.signal()
+spaces.signal() 
+
+event.process()
+```
+
+### Readers-Writers 
+
+When a data structure is being read and written to by multiple threads
+
+```
+// Allow multiple reader and single writer 
+int readers = 0
+mutex = Semaphore(1)
+roomEmpty = Semaphore(1)
+
+// reader 
+mutex.wait()
+    readers += 1
+    if readers == 1:
+        roomEmpty.wait()
+mutex.signal()
+
+read()
+
+mutex.wait()
+    readers -= 1
+    if readers == 0:
+        roomEmpty.signal()
+mutex.signal()
+    
+// writer
+roomEmpty.wait()
+write()
+roomEmpty.signal()
+```
+
+Pattern: first thread into a section locks a semaphore, and the last one out unlocks it. This is called a **Lightswitch**
+
+```python 
+class Lightswitch:
+    def __init__(self):
+        self.counter = 0
+        self.mutex = Semaphore(1)
+
+    def lock(self, semaphore):
+        self.mutex.wait()
+            self.counter += 1
+            if self.counter == 1:
+                semaphore.wait()
+        self.mutex.signal()
+    
+    def unlock(self, semaphore):
+        self.mutex.wait()
+            self.counter -= 1
+            if self.counter == 0:
+                semaphore.signal()
+        self.mutex.signal()
+```
+
+Reader-writer using lightswitch 
+```
+readLightSwitch = lightswitch()
+roomEmpty = Semaphore(1)
+
+// reader 
+readLightSwitch.lock(roomEmpty)
+read()
+readLightSwitch.unlock(roomEmpty)
+
+// writer 
+roomEmpty.wait()
+write()
+roomEmpty.signal()
+
+// but writers may starve
+```
+
+No-starve readers-writers: ensure writers don't starve by making them share a turnstile together with readers. When a writer passes the turnstile, it is it's 'turn' to write and readers are blocked
+
+```
+readSwitch = Lightswitch()
+roomEmpty = Semaphore(1) // 1 if no readers 
+turnstile = Semaphore(1) // mutex for writers, turnstile for readers
+
+// reader 
+turnstile.wait()
+turnstile.signal()
+
+readSwitch.lock(roomEmpty)
+read()
+readSwitch.unlock(roomEmpty)
+
+// writer 
+turnstile.wait()
+    roomEmpty.wait()
+    write()
+turnstile.signal()
+
+roomEmpty.signal()
+```
+
+Writer-priority readers-writers: writers are 'prioritized', readers are blocked from entering as long as one or more writers are waiting. Use two lightswitches. 
+
+```
+readSwitch = Lightswitch()
+writeSwitch = Lightswitch()
+noReaders = Semaphore(1)
+noWriters = Semaphore(1)
+
+// reader 
+noReaders.wait()
+    readSwitch.lock(noWriters)
+noReaders.signal()
+read()
+readSwitch.unlock(noWriters)
+
+// writer 
+writeSwitch.lock(noReaders)
+    noWriters.wait()
+    write()
+    noWriters.signal()
+writeSwitch.unlock(noReaders)
+
+// But now readers may face long delays
+// Sometimes it may be better to get obsolete data
+// with predictable turnaround time
+```
+
+### No-starve Mutex
+
+```
+room1 = room2 = 0
+mutex = Semaphore(1)
+t1 = Semaphore(1)
+t2 = Semaphore(0)
+
+// Morris's algorithm
+mutex.wait()
+    room1 += 1
+mutex.signal()
+
+// first turnstile open, second turnstile closed
+// threads accumulate at t2
+t1.wait()
+    room2 += 1
+    mutex.wait()
+    room1 -= 1
+    if room1 == 0: // last to leave room 1 signals turnstile 2
+        mutex.signal()
+        t2.signal()
+    else:
+        mutex.signal()
+        t1.signal() // allow new threads to enter, keep accumulating at turnstile 2
+
+// second phase, first turnstile is closed, second is open
+// no new threads can enter, existing threads can get to critical section
+t2.wait()
+    room2 -= 1
+    #critical section
+    if room2 == 0:
+        t1.signal()
+    else:
+        t2.signal()
+```
+
+### Dining Philosophers 
+
+Basic philosopher loop 
+```python
+# setup
+def left(i): 
+    return i
+
+def right(i): 
+    return (i+1) % 5
+
+forks = [Semaphore(1) for i in range(5)]
+
+def get_forks():
+    fork[right(i)].wait() # will deadlock
+    fork[left(i)].wait()
+
+def put_forks():
+    fork[right(i)].signal()
+    fork[left(i)].signal()
+
+while True:
+    think()
+    get_forks()
+    eat()
+    put_forks()
+```
+
+Tanenbraum's Solution (not starvation free)
+```
+state = ['Thinking'] * 5
+sem = [Semaphore(0) for i in range(5)]
+mutex = Semaphore(1)
+
+def get_fork(i):
+    mutex.wait()
+    state[i] = 'hungry'
+    test(i) # give yourself the go signal 
+    mutex.signal()
+    sem[i].wait()
+
+def put_fork(i):
+    mutex.wait()
+    state[i] = 'thinking'
+    test(right(i)) # give right neighbour the go signal
+    test(left(i)) # give left neighbour the go signal
+    mutex.signal()
+
+def test(i):
+    if state[i] == 'hungry' and state[left(i)] != eating
+        and state[right(i)] != 'eating':
+        state[i] = 'eating'
+        sem[i].signal() 
+```
+
+### Cigarette Smokers
+
+Four threads, one agent and three smokers. Each smoker has an infinite amount of one resource, tobacco, paper and matches. All three are needed to smoke. The agent puts down two resources on the table. The smoker that has the missing resource gets to smoke.
+
+The trivial version has the agent knowing which smoker to signal based on the resources put down. The interesting version is when only the agent code can't be modified, but the smoker code can. 
+
+```
+# Broken agent-smoker code 
+
+# agent A
+agentSem.wait() 
+tobacco.signal()
+paper.signal()
+
+# agent B
+agentSem.wait() 
+paper.signal()
+match.signal()
+
+# agent C
+agentSem.wait() 
+tobacco.signal()
+match.signal()
+
+# smoker with matches
+tobacco.wait()
+paper.wait()
+agentSem.signal()
+
+# smoker with tobacci
+paper.wait()
+match.wait()
+agentSem.signal()
+
+# smoker with paper
+tobacco.wait()
+match.wait()
+agentSem.signal()
+```
+
+This deadlocks because e.g. agent A is the one that gets the semaphore, it signals tobacco which there are two smokers waiting on, but only the smoker with matches should be the one acquiring the signal. If the smoker with paper gets the signal, they will be deadlocked.
+
+```
+isTobacco = isPaper = isMatch = false
+tobaccoSem = Semaphore(0)
+matchSem = Semaphore(0)
+paperSem = Semaphore(0)
+
+# agent A
+tobaccoSem.wait()
+mutex.wait()
+    if isPaper:
+        isPaper = false
+        matchSem.signal()
+    elif isMatch:
+        isMatch = false
+        paperSem.signal()
+    else:
+        isTobacco = true;
+mutex.signal()
+
+# smoker with tobacco 
+tobaccoSem.wait()
+makeCigarette()
+agentSem.signal()
+smoke()
+```
+
+Generalized smoker's problem: there may be multiple instances of an ingredient on the table. When an agent runs, it creates two pushers, gives each of them ingredients, and puts them in a room with all the other pushers. The pushers file into a room where there are three sleeping smokers and a table. 
+
+One at a time, each pusher checks the ingredients on the table. If it can assemble a complete set, he takes them off the table and wakes up the corresponding smoker. If not, he leaves them on the table and leaves without waking anyone. T
+
+This pattern is called **Scoreboard**.
+
+```
+numTobacco = numPaper = numMatch = 0
+
+# agent A
+tobaccoSem.wait()
+mutex.wait()
+    if numPaper:
+        numPaper -= 1
+        matchSem.signal()
+    elif numMatch:
+        numMatch -= 1
+        paperSem.signal()
+    else:
+        numTobacco += 1
+mutex.signal()
+```
+
+## Less Classic Synchronization Problems
+
+### Dining Savages 
+
+There are n savages eating from a pot that can hold M servings. If the pot is not empty, the savage takes a serving. Otherwise he calls the cook to refill the pot before taking a serving.
+
+```
+servings = M
+mutex = Semaphore(1)
+potEmpty = Semaphore(0)
+potFull = Semaphore(0)
+
+# cook 
+while True:
+    potEmpty.wait()
+    refill_pot(M)
+    potFull.signal()
+
+# savage 
+while True 
+    mutex.wait()
+        if servings == 0:
+            potEmpty.signal()
+            potFull.wait()
+            servings = M 
+        servings -= 1
+        get_serving()
+    mutex.signal()
+    eat()
+```
+
+### Barbershop problem
+
+Customers come to the barbershop. If the barbershop is full they leave, otherwise they sit on a chair to wait. The barber waits until a customer arrives then cuts their hair.
+
+```
+n = 4
+customers = 0
+mutex = Semaphore(1)
+customer = Semaphore(0) # are there customers
+barber = Semaphore(0) # is barber ready
+customerDone = Semaphore(0)
+barberDone = Semaphore(0)
+
+# customer 
+mutex.wait()
+    if customers == n:
+        mutex.signal()
+        balk() # leave
+    customers += 1
+mutex.signal()
+
+customer.signal() # signal arrive 
+barber.wait() # wait for barber free 
+
+get_haircut()
+
+customerDone.signal()
+barberDone.wait() # rendezvous with barber
+ 
+mutex.wait()
+    customers -= 1
+mutex.signal()
+
+# barber 
+customer.wait()
+barber.signal()
+
+cut_hair()
+
+customerDone.wait() # rendezvous with customer
+barberDone.signal()
+```
+
+### FIFO Barbershop
+
+Customers are served in the order they pass through the turnstile. When a thread reaches the turnstile it pushes its semaphore onto the queue. Each thread waits on its own semaphore. 
+
+```
+n = 4
+customers = 0
+mutex = Semaphore(1)
+customer = Semaphore(0)
+customerDone = Semaphore(0)
+barberDone = Semaphore(0)
+queue = []
+
+# customer
+self.sem = Semaphore(0)
+mutex.wait()
+    if customers == n:
+        mutex.signal()
+        balk()
+    customers += 1
+    queue.append(self.sem)
+mutex.signal()
+
+customer.signal()
+self.sem.wait()
+
+get_haircut()
+
+customerDone.signal()
+barberDone.wait()
+
+mutex.wait()
+    customers -= 1
+mutex.signal()
+
+# barber 
+customer.wait()
+mutex.wait()
+    customers -= 1
+    sem = queue.pop(0)
+mutex.signal()
+
+cut_hair()
+customerDone.wait()
+barberDone.signal()
+```
+
+### Hilzer's Barbershop
+
+There are multiple barbers. Barbers handle cutting hair and managing payment. There is only one register so only one customer can pay at a time. There is a sofa in which customers can sit on, otherwise if there is no space on the sofa, the customers must stand. The longest sitting customer gets a haircut next and the longest standing person gets to sit on the sofa when a space frees up.
+
+We use two queues, one for the chairs to get a haircut, one for the sofa to sit down. We use two more semaphores `payment` and `receipt`
+
+```
+n = 20 # max capacity 
+customers = 0
+mutex = Semaphore(1)
+sofa = Semaphore(4)
+customer1 = Semaphore(0)
+customer2 = Semaphore(0)
+barber = Semaphore(0)
+payment = Semaphore(0)
+receipt = Semaphore(0)
+queue1 = [] # for seat on sofa 
+queue2 = [] # for haircut
+
+# customer 
+self.sem1 = Semaphore(0)
+self.sem2 = Semaphore(0)
+
+mutex.wait()
+    if customers == n:
+        mutex.signal()
+        balk()
+    customers += 1
+    queue1.append(self.sem1)
+mutex.signal()
+
+# enter shop 
+customer1.signal() # customer arrived in queue1 
+self.sem1.wait()
+
+sofa.wait()
+    # sit on sofa 
+    self.sem1.signal()
+    mutex.wait()
+        queue2.append(self.sem)
+    mutex.signal()
+    customer2.signal()
+    self.sem2.wait()
+sofa.signal()
+
+# sit in barber chair 
+
+# pay 
+payment.signal()
+receipt.wait()
+
+mutex.wait()
+    customers -= 1
+mutex.signal()
+
+
+# barber 
+customer1.wait()
+mutex.wait()
+    sem = queue1.pop(0)
+    sems.signal()
+    sem.wait
+mutex.signal()
+sem.signal()
+
+customer2.wait()
+mutex.wait()
+    sem = queue2.pop(0)
+mutex.signal()
+sem.signal()
+
+barber.signal()
+# cut hair
+
+payment.wait()
+# accept payment 
+receipt.signal()
+```
+
+### Santa Claus Problem
+
+### H2O Problem
+
+O and H atoms arrive at different times. exactly 2 H and 1 O required to bond, in that time no other atoms can bond. When it is done, a new set of H2O atoms can enter the chamber to bond
+
+Using barrier - can't ensure the right type of atoms bond. E.g. could have 3 O atoms reach the barrier and proceed
+```cpp
+struct WaterFactory1 {
+  std::barrier<> barrier;
+
+  WaterFactory1() :
+    barrier{3} {}
+
+  void oxygen(void (*bond)()) {
+    barrier.arrive_and_wait();
+    bond();
+  }
+
+  void hydrogen(void (*bond)()) {
+    barrier.arrive_and_wait();
+    bond();
+  }
+};
+```
+
+Using counting semaphore - can't ensure that exactly 2 H and 1 O atoms bond, e.g. 1 O atom bonding by itself is possible
+```cpp
+struct WaterFactory2 {
+  std::counting_semaphore<> oxygenSem;
+  std::counting_semaphore<> hydrogenSem;
+
+  WaterFactory2() :
+    oxygenSem{1}, hydrogenSem{2} {}
+
+  void oxygen(void (*bond)()) {
+    oxygenSem.acquire();
+    bond();
+    oxygenSem.release();
+  }
+
+  void hydrogen(void (*bond)()) {
+    hydrogenSem.acquire();
+    bond();
+    hydrogenSem.release();
+  }
+};
+```
+
+Combining barrier + counting semaphore (correct version): semaphore limits the number of each atom in the critical section, barrier ensures the correct number of atoms are present before proceeding
+```cpp
+struct WaterFactory3 {
+  std::counting_semaphore<> oxygenSem;
+  std::counting_semaphore<> hydrogenSem;
+  std::barrier<> barrier;
+
+  WaterFactory3() : oxygenSem{1}, hydrogenSem{2}, barrier{3} {}
+
+  void oxygen(void (*bond)()) {
+    oxygenSem.acquire();       // Lets at most one oxygen through
+    barrier.arrive_and_wait(); // Wait for all atoms to arrive
+    bond();
+    oxygenSem.release();       // Done, let the next oxygen in
+  }
+
+  void hydrogen(void (*bond)()) {
+    hydrogenSem.acquire();     // Lets at most two hydrogen through
+    barrier.arrive_and_wait(); // Wait for all atoms to arrive
+    bond();
+    hydrogenSem.release();     // Done, let the next hydrogen in
+  }
+};
+```
+
+### River Crossing
+
+### Roller Coaster Problem
+
+### Multi-car Roller Coaster
+
+## Not-so-classical problems 
+
+### Search-Insert-Delete
+
+### Unisex Bathroom
+
+### Modus Hall Problem
+
+## Not remotely classical problems 
+
+### Sushi Bar Problem
+
+### Child Care Problem
+
+### Room Party Problem
+
+### Senate Bus Problem
+
+### Faneuil Hall Problem
+
+### Dining Hall Problem
+
+## Synchronization in C
+
+

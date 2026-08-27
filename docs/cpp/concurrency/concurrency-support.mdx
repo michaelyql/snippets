@@ -197,4 +197,80 @@ t.join();
     - Always store the `std::future` unless you have a very specific reason not to
     - Call `fut.get()`, `fut.wait()` or `fut.wait_for() / fut.wait_until()`
 
+## `std::latch` / `std::barrier`
 
+- In `<latch>` / `<barrier>` (C++20)
+
+```cpp
+// ===== Latch =====
+std::latch work_done{static_cast<std::ptrdiff_t>(5)};
+std::latch clean_up{1};
+
+std::vector<std::jthread> workers;
+for (int i = 0; i < 5; i++) {
+    workers.push_back(std::jthread([&, i]{
+        // do work
+        std::osyncstream(std::cout) << "worker " << i << " arrived" << std::endl;
+        work_done.count_down();
+
+        // wait for clean up signal
+        clean_up.wait();
+    }));
+}
+
+work_done.wait();
+clean_up.count_down();
+std::osyncstream(std::cout) << "cleaned up" << std::endl;
+```
+- Latch
+    - One time use
+    - `wait()` blocks until counter is 0
+    - `try_wait()` tests if counter is 0 
+    - `arrive_and_wait()` decrements the counter and waits
+    - `count_down()` decrements counter only
+
+```cpp
+// ===== Barrier =====
+// std::barrier<T> takes in a completion function to call as a template parameter 
+
+std::function<void()> on_completion = []() noexcept {
+    std::osyncstream(std::cout) << "=== barrier completion ===" << std::endl;
+};
+
+std::barrier b {static_cast<std::ptrdiff_t>(5), on_completion}; // deduce T
+// important: create barrier before workers, as local variables are destroyed
+// in reverse order of their declaration
+// if b is declared after workers, threads may still be running when b is destroyed 
+
+std::vector<std::jthread> workers;
+
+for (int i = 0; i < 5; i++) {
+    workers.emplace_back([&, i]{
+        std::osyncstream(std::cout) << "worker " << i << " arrived\n";
+        
+        b.arrive_and_wait();  
+
+        std::osyncstream(std::cout) << "worker " << i << " passed barrier\n";
+    });
+}
+```
+
+- Barrier
+    - Reusable
+    - `arrive_and_wait()` decrements the counter and blocks until the phase is complete
+    - `arrive()` only decrements the count 
+    - `wait()` only blocks until the phase is complete
+    - `arrive_and_drop()` decrements the counter for the current phase and for future phases 
+    - Once the counter drops to 0, the counter is reset to the initial value, less the number of calls to `arrive_and_drop`. Then the next phase begins
+    - Exactly _once_ after the expected count drops to 0, a thread executes the completion step during its call to `arrive`, `arrive_and_drop` or `wait`
+        - It is implementation defined whether or not the step executes if no thread calls `wait()`
+
+## `std::semaphore` 
+
+- In `<semaphore>` (C++20)
+
+## Safe Reclamation (C++26)
+
+### Read Copy Update `<rcu>`
+
+### Hazard Pointers `<hazard_pointer>`

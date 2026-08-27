@@ -99,3 +99,189 @@ public:
 - `this` needs to be captured in the constructor, since the spawned threads reference the instance variables `mtx`, the queue `q`, the conditional variable `cv`, and the `stopping` variable
 - A lambda's `operator()` is **const by default**
     - The lambda wants to move from its captured variables (`args...`), and **moving from a const object is generally not allowed for move-only types** and would not invoke the move constructor.
+
+## Work-stealing Threadpools 
+
+- Each thread maintains its own deque of tasks to do
+- Each thread pops from the back of its own deque to keep caches hot and process most recently added data 
+- Thief threads pop from the front of a thread's queue to complete older tasks 
+
+```cpp 
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <future>
+#include <functional>
+#include <atomic>
+#include <chrono>
+
+class WorkStealingThreadPool {
+private:
+    // A thread-safe deque designed for one owner and multiple potential thieves
+    class WorkStealingQueue {
+    mutable std::mutex mtx;
+    std::deque<std::move_only_function<void()>> deque;
+
+    public:
+        WorkStealingQueue() = default;
+
+        // Owner pushes to the back
+        void push(std::move_only_function<void()> task) {
+            std::lock_guard<std::mutex> lock(mtx);
+            deque.push_back(std::move(task));
+        }
+
+        // Owner pops from the back (LIFO for cache locality)
+        bool pop(std::move_only_function<void()>& task) {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (deque.empty()) return false;
+            task = std::move(deque.back());
+            deque.pop_back();
+            return true;
+        }
+
+        // Thieves steal from the front (FIFO to take older/larger work chunks)
+        bool steal(std::move_only_function<void()>& task) {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (deque.empty()) return false;
+            task = std::move(deque.front());
+            deque.pop_front();
+            return true;
+        }
+
+        bool empty() const {
+            std::lock_guard<std::mutex> lock(mtx);
+            return deque.empty();
+        }
+    };
+
+    std::vector<std::thread> workers;
+    std::vector<std::unique_ptr<WorkStealingQueue>> local_queues;
+    std::atomic<bool> stop{false};
+    std::atomic<size_t> total_tasks{0};
+    
+    // Thread-local pointer so each thread can easily identify its own queue
+    static inline thread_local WorkStealingQueue* my_queue = nullptr;
+    static inline thread_local size_t my_index = 0;
+
+    void worker_loop(size_t index) {
+        my_index = index;
+        my_queue = local_queues[index].get();
+        size_t num_queues = local_queues.size();
+
+        while (!stop) {
+            std::move_only_function<void()> task;
+
+            // 1. Try to pull a task from the local queue
+            if (my_queue->pop(task)) {
+                task();
+                total_tasks--;
+                continue;
+            }
+
+            // 2. Local queue is empty, attempt to steal from other threads
+            bool stolen = false;
+            for (size_t i = 0; i < num_queues; ++i) {
+                size_t target_index = (index + i + 1) % num_queues;
+                if (local_queues[target_index]->steal(task)) {
+                    stolen = true;
+                    break;
+                }
+            }
+
+            if (stolen) {
+                task();
+                total_tasks--;
+            } else {
+                // 3. No work anywhere; yield the CPU briefly to prevent spinning hot
+                std::this_thread::yield();
+            }
+        }
+    }
+
+public:
+    explicit WorkStealingThreadPool(size_t num_threads = std::thread::hardware_concurrency()) {
+        for (size_t i = 0; i < num_threads; ++i) {
+            local_queues.push_back(std::make_unique<WorkStealingQueue>());
+        }
+        for (size_t i = 0; i < num_threads; ++i) {
+            workers.emplace_back(&WorkStealingThreadPool::worker_loop, this, i);
+        }
+    }
+
+    ~WorkStealingThreadPool() {
+        stop = true;
+        for (std::thread& worker : workers) {
+            if (worker.joinable()) {
+                worker.join();
+            }
+        }
+    }
+
+    // Submit work to the pool
+    template <typename F, typename... Args>
+    auto submit(F&& f, Args&&... args) {
+        using ReturnType = std::invoke_result_t<F, Args...>;
+
+        auto task = std::make_shared<std::packaged_task<ReturnType()>>(
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+        );
+
+        std::future<ReturnType> res = task->get_future();
+        total_tasks++;
+
+        // If called from inside a worker thread, push to its own queue.
+        // Otherwise, round-robin push to a queue to distribute external work.
+        if (my_queue) {
+            my_queue->push([task]() { (*task)(); });
+        } else {
+            static std::atomic<size_t> external_counter{0};
+            size_t target = external_counter.fetch_add(1, std::memory_order_relaxed) % local_queues.size();
+            local_queues[target]->push([task]() { (*task)(); });
+        }
+
+        return res;
+    }
+
+    void wait_until_empty() const {
+        while (total_tasks > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+};
+
+// Example usage code
+int main() {
+    WorkStealingThreadPool pool(4);
+
+    auto f1 = pool.submit([]() {
+        std::cout << "Task 1 running on thread " << std::this_thread::get_id() << std::endl;
+        return 42;
+    });
+
+    // Submit a chain of tasks that generate more tasks (where work-stealing shines)
+    auto f2 = pool.submit([&pool]() {
+        std::cout << "Task 2 (Parent) running on thread " << std::this_thread::get_id() << "\n";
+        
+        auto subtask = pool.submit([]() {
+            return "Child task completed!";
+        });
+        
+        return subtask.get();
+    });
+
+    std::cout << "Result 1: " << f1.get() << std::endl;
+    std::cout << "Result 2: " << f2.get() << std::endl;
+
+    pool.wait_until_empty();
+    return 0;
+}
+```
+Notes 
+- `std::move_only_function` is only available from C++23
+- The pool uses a `thread_local` pointer to bypass expensive pool-lookup maps
+    - When an executing task uses `pool.submit()`, it bypasses the main entry lock entirely and puts the job directly onto its own sub-queue.
+- Instead of `std::this_thread::yield()`, optimized threadpools utilize specialized back-off strategies (exponentially increasing spin loops using `_mm_pause()`) paired with `std::atomic::wait` or low-contention semaphores to gracefully sleep when the system goes completely idle

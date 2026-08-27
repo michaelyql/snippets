@@ -13,6 +13,102 @@ description: Concurrent Hashmaps
 - To handle resizing:
     - (Naive method) Use a global lock / have one thread lock all mutexes, create new hash table of bigger size, copy data over, then unlock all mutexes / global lock
 
+## Lock-free Hash Map
+
+```cpp
+struct Entry
+{
+    mint_atomic32_t key;
+    mint_atomic32_t value;
+};
+Entry *m_entries;
+
+inline static uint32_t integerHash(uint32_t h)
+{
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+    return h;
+}
+
+void HashTable1::SetItem(uint32_t key, uint32_t value)
+{
+    for (uint32_t idx = integerHash(key);; idx++)
+    {
+        idx &= m_arraySize - 1;
+
+        uint32_t prevKey = 
+            mint_compare_exchange_strong_32_relaxed(&m_entries[idx].key, 0, key);
+        if ((prevKey == 0) || (prevKey == key))
+        {
+            mint_store_32_relaxed(&m_entries[idx].value, value);
+            return;
+        }
+    }
+}
+
+uint32_t HashTable1::GetItem(uint32_t key)
+{
+    for (uint32_t idx = integerHash(key);; idx++)
+    {
+        idx &= m_arraySize - 1;
+
+        uint32_t probedKey = mint_load_32_relaxed(&m_entries[idx].key);
+        if (probedKey == key)
+            return mint_load_32_relaxed(&m_entries[idx].value);
+        if (probedKey == 0)
+            return 0;          
+    }
+}
+
+void HashTable1::SetItem(uint32_t key, uint32_t value)
+{
+    for (uint32_t idx = integerHash(key);; idx++)
+    {
+        idx &= m_arraySize - 1;
+
+        // Load the key that was there.
+        uint32_t probedKey = mint_load_32_relaxed(&m_entries[idx].key);
+        if (probedKey != key)
+        {
+            // The entry was either free, or contains another key.
+            if (probedKey != 0)
+                continue;           // Usually, it contains another key. Keep probing.
+                
+            // The entry was free. Now let's try to take it using a CAS.
+            uint32_t prevKey = 
+                mint_compare_exchange_strong_32_relaxed(&m_entries[idx].key, 0, key);
+            if ((prevKey != 0) && (prevKey != key))
+                continue;       // Another thread just stole it from underneath us.
+
+            // Either we just added the key, or another thread did.
+        }
+        
+        // Store the value in this array entry.
+        mint_store_32_relaxed(&m_entries[idx].value, value);
+        return;
+    }
+}
+
+// Shared variables
+char message[256];
+HashTable1 collection;
+
+void PublishMessage()
+{
+    // Write to shared memory non-atomically.
+    strcpy(message, "I pity the fool!");
+    
+    // Release fence: The only way to safely pass non-atomic data between threads using Mintomic.
+    mint_thread_fence_release();
+    
+    // Set a flag to indicate to other threads that the message is ready.
+    collection.SetItem(SHARED_FLAG_KEY, 1)
+}
+```
+
 ## Java ConcurrentHashMap
 
 - Pre Java 8, the map was split into smaller chunks (segments) each with its own lock

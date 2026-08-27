@@ -451,7 +451,43 @@ auto add(int a, int b) {
 
 ## Curiously Recurring Template Pattern (CRTP)
 
-- compile time / static polymorphism
+A.k.a compile time / static polymorphism. The compiler resolves which function or class implementation to use at compile time, rather than waiting until the program runs
+
+```cpp
+// Base class template
+template <typename Derived>
+class Shape {
+public:
+    void draw() {
+        // Static dispatch: resolves the correct function at compile time
+        static_cast<Derived*>(this)->draw_impl();
+    }
+};
+
+// Derived classes passing themselves to the template
+class Circle : public Shape<Circle> {
+public:
+    void draw_impl() { std::cout << "Drawing a Circle...\n"; }
+};
+
+class Square : public Shape<Square> {
+public:
+    void draw_impl() { std::cout << "Drawing a Square...\n"; }
+};
+
+template <typename T>
+void renderShape(Shape<T>& shape) {
+    shape.draw(); 
+}
+
+int main() {
+    Circle c;
+    Square s;
+    
+    renderShape(c); // Resolves to Circle::draw_impl
+    renderShape(s); // Resolves to Square::draw_impl
+}
+```
 
 ## Template Definition
 ```cpp
