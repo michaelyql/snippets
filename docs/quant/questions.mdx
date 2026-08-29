@@ -1,0 +1,38 @@
+# Questions
+
+## Easy
+
+Q: Two fair three-sided dice (faces 1, 2, 3) are rolled and their sum $S$ taken. Before the roll you choose a number $k$ from 1 to 6. If $k\leq S$ you are paid $k$; otherwise nothing. Which $k$ maximizes your expected payout, and what is that value? Enter the maximal expected payout as a reduced fraction.
+
+A: $k=3$ and $k=4$ tie, each with expected value $\frac{8}{3}\approx2.67$. Choosing $k$ pays when $S\geq k$ and nothing otherwise, so its expected payout is $k\cdot P(S\geq k)$. The two dice give $3\cdot 3=9$ equally likely rolls. Counted by sum: 2 in 1 way, 3 in 2 ways, 4 in 3 ways, 5 in 2 ways, 6 in 1 way. Adding these counts from the top down gives the tail probabilities $P(S\geq 2)=1$, $P(S\geq 3)=\frac{8}{9}$, $P(S\geq 4)=\frac{6}{9}$, $P(S\geq 5)=\frac{3}{9}$, $P(S\geq 6)=\frac{1}{9}$. Multiplying by $k$, the six choices are worth $1\cdot 1=1$, $2\cdot 1=2$, $3\cdot \frac{8}{9}=\frac{8}{3}$, $4\cdot \frac{6}{9}=\frac{8}{3}$, $5\cdot \frac{3}{9}=\frac{5}{3}$, $6\cdot \frac{1}{9}=\frac{2}{3}$ ,  so the maximum $\frac{8}{3}$ is reached at both $k=3$ and $k=4$.
+
+---
+
+Q: A venue prints trades as a Poisson process at 6 per hour. You connect at a uniformly random instant. What is your expected wait until the next print?
+
+A: 10 minutes. By memorylessness, the wait from any fixed instant to the next arrival is $Expo(\lambda)$ with $\lambda=6$ per hour, so the expected wait is $\frac{1}{\lambda}$ hours, which is 10 minutes.
+
+---
+
+
+
+## Medium
+
+## Hard
+
+Q: You have an unlimited supply of 20-sided dice numbered 1 to 20 and must choose a number $n$ of them to roll simultaneously, winning if the throw shows exactly one or exactly two 1s. What $n$ maximizes your probability of winning?
+
+A: $n=28$. Each die shows a 1 with probability $\frac{1}{20}$, independently, so the number of 1s among the $n$ dice is Binomial with $n$ trials and success probability $\frac{1}{20}$, and the win probability is the sum of its exactly-one and exactly-two terms: $a_n=n\cdot \frac{1}{20}(\frac{19}{20})^{n-1}+{n\choose 2}\frac{1}{20^2}(\frac{19}{20} )^{n-2}$ . To compare terms across $n$, pull out a common factor from both summands. For the first,
+$=n\cdot \frac{1}{20}\cdot \frac{20}{19}(\frac{19}{20})^n = \frac{n}{19}(\frac{19}{20})^n$ 
+
+<!-- and for the second, with ,
+
+Putting both over the denominator 722, using ,
+
+The polynomial factor grows while the geometric factor decays, so the sequence rises and then falls; the maximum sits where consecutive terms cross. Dividing consecutive terms, the constant 722 cancels and one power of survives:
+
+The sequence decreases at when this ratio is below 1, that is, when
+
+Expand both sides: , so the left side is , while the right side is . Moving everything to the right,
+
+The quadratic has positive root . So the inequality fails for (there , the sequence is still rising) and holds for (from there , the sequence is falling). The sequence therefore strictly increases up to and strictly decreases from there, and the optimum is , with win probability . -->

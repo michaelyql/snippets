@@ -1,0 +1,167 @@
+# Combinatorial Optimization
+
+## Overview
+
+**Combinatorial optimization** can be thought of as finding the best combination of a set of choices to maximize or minimize some outcome.
+
+Many of these problems are NP-hard and don't have an exact, efficient solution unless P=NP, so we have to sacrifice (_relax_) one of optimality (finding the best solution), generality (works for all instances) or efficiency (computable in polynomial time). 
+
+### Definitions
+
+An **$\alpha$-approximation** algorithm for an optimization problem is a polynomial time algorithm that, for all instances of the problem, produces a solution whose value is within a factor of $\alpha$ of the value of an optimal solution. 
+
+$\alpha$ is also called the _performance guarantee_, the _approximation ratio_ or _approximation factor_. A convention is that $\alpha>1$ for minimization problems, and $\alpha<1$ for maximization problems. 
+
+E.g. a $\frac{1}{2}$-approximation algorithm for a maximization problem is a polynomial-time algorithm that always returns a solution whose value is at least half the optimal value.
+
+A **polynomial-time approximation scheme (PTAS)** is a family of algorithms ${A_\epsilon}$, where there is an algorithm for each $\epsilon > 0$, such that $A_\epsilon$ is a $(1 + \epsilon)$-approximation algorithm (for minimization problems) or a $(1 − \epsilon)$-approximation algorithm (for maximization problems).
+
+Some problems are very hard and do not have a PTAS unless P=NP. Max-clique is one such problem. It tries to find $S\subseteq V$ that maximizes $|S|$ s.t. for each $i,j\in S$, $(i,j)\in E$. 
+
+## Linear Programming
+
+Linear Programming (LP) can be used to solve combinatorial optimization problems. Most of these problems only allow integer solutions and not fractional ones, so common strategies are to 'relax' an integer program (IP) into a LP which can be solved in polynomial time, and then rounding the values to obtain an integer solution within a certain factor of the optimal solution.
+
+Each linear program or integer program is formulated in terms of some number of **decision variables** that represent some sort of decision that needs to be made. The variables are constrained by a number of linear inequalities and equalities called **constraints**. Any assignment of real numbers to the variables such that all of the constraints are satisfied is called a **feasible solution**.
+
+In addition to the constraints, linear and integer programs are defined by a linear function of the decision variables called the **objective function**. The linear or integer program seeks to find a feasible solution that either maximizes or minimizes this objective function. Such a solution is called an **optimal solution**. 
+
+The value of the objective function for a particular feasible solution is called the **value** of that solution. The value of the objective function for an optimal solution is called the **value** of the linear (or integer) program. We say we s**olve** the linear program if we find an optimal solution
+
+Linear programs do not require that decision variables are integers, and are polynomial-time solvable.
+
+### LP Duality - Primal & Dual
+
+The dual of a linear program is the 'mirror image' of the original problem (the _primal_). Every LP has a corresponding dual LP. 
+
+The dual provides a different perspective: while the primal looks for the optimal **allocation** of resources, the dual looks for the optimal **valuation** of those resources.
+
+Imagine you are a factory owner (the primal). You want to maximize profit by deciding how many products to make, given limited materials (labor, steel, electricity).
+
+The dual asks a different question: "If a competitor wanted to buy all your raw materials instead, what is the minimum price you should charge per unit of each material to ensure you make at least as much money as you would by manufacturing the products?"
+
+The variables in the dual represent the _shadow prices_ (or marginal values) of each resource constraint in the primal.
+
+To take the dual, you must first write the primal in a **standard inequality form**.
+
+Primal (Standard Maximization Form):
+- Objective: Maximize $c^Tx$
+- Constraints: $Ax\leq b$
+- Variables: $x\geq 0$
+
+Dual (Standard Minimization Form):
+- Objective: Minimize $b^Ty$
+- Constraints: $A^Ty\geq c$
+- Variables: $y\geq 0$
+
+(Note: If the primal is a minimization problem with $\geq$ constraints, the dual becomes a maximization problem with $\leq$ constraints.)
+
+The general rule for conversion: a primal constraint becomes a dual variable, and a primal variable becomes a dual constraint.
+
+### Strong Duality Theorem
+
+## Set Cover
+
+Given a ground set of elements $E=\{e_1,\dots,e_n\}$ and some subsets of those elements $S_1,\dots,S_m$ where each $S_j\subseteq E$, and a non-negative weight $w_j\geq 0$ for each subset $S_j$, find a minimum-weight collection that covers all of $E$. 
+
+That is, find an $I\subseteq\{1,\dots,m\}$ that minimizes $\sum_{j\in I}w_j$ subject to $\bigcup_{j\in I}S_j = E$
+
+Create a decision variable $x_j \in \{0,1\}$ to indicate take/don't take set $S_j$. To ensure every element is covered, we need $\sum_{j:e_i\in S_j}x_j\geq 0$ for each element $i=1,\dots,n$, i.e. at least one set in which $e_i$ belongs to is included in the solution.
+
+The weight of a set cover is $\sum_{j=1}^m w_jx_j$ and this is the objective function to minimize.
+
+In summary,
+
+$$
+\begin{align*}
+&\text{minimize } \sum_{j=1}^m w_jx_j \\
+& \text{subject to } \sum_{j:e_i\in S_j} x_j\geq 1 \text{ for } i=1,\dots,n \\
+&\hspace{2.5cm} x_j\in \{0,1\} \text{ for } i=1,\dots,m
+\end{align*}
+$$
+
+Let $Z^*_{IP}$ denote the optimum value of this integer program for a given instance of the set cover problem. Since the integer program exactly models the problem, we have $Z^*_{IP} = OPT$, where $OPT$ is the value of an optimum solution to the set cover problem.
+
+Using a LP approach, we can replace the constraint $x_j\in\{0,1\}$ with $x_j\geq 0$ to allow fractional values. This is a _relaxation_ of the original IP. This means that (1) every feasible solution for the original IP is feasible for the LP, and (2) the value of any feasible solution for the IP has the same value in the LP.
+
+Let $Z^*_{LP}$ denote the optimum value of this linear program. Any optimal solution to the integer program is feasible for the linear program and has value $Z^*_{IP}$ . Thus, any optimal solution to the linear program will have value $Z^*_{LP} \leq Z^*_{IP} = OPT$, since this minimization linear program finds a feasible solution of lowest possible value
+
+### Deterministic Rounding
+
+This is a deterministic rounding algorithm which is an $f$-approximation of the set cover problem.
+
+Suppose that we solve the linear programming relaxation of the set cover problem. Let $x^*$ denote an optimal solution to the LP. We include subset $S_j$ iff $x_j^*\geq 1/f$, where $f$ is the maximum number of sets in which any element appears. More formally, let $f_i=|\{j:e_i\in S_j\}|$ be the number of sets in which element $e_i$ appears. Then $f=\max_{i=1}^n f_i$. 
+
+Let $I$ be the indices $j$ of the subsets in this solution. We round the fractional solution $x^*$ to an integer solution $\hat{x}$ by setting $\hat{x}_j=1$ if $x_j^*\geq 1/f$, and $\hat{x}_j=0$ otherwise. Then $\hat{x}$ provides a feasible solution to the IP, and $I$ is a set cover.
+
+Proof: The optimal solution $x^*$ is a feasible solution to the LP, and $\sum_{j:e_i\in S_j}x_j^* \geq 1$ for element $e_i$. By the definition of $f_i$ and $f$, there are $f_i\leq f$ terms in the sum, so at least one term must be at least $1/f$. Thus for some $j$ such that $e_i\in S_j$, $x_j^*\geq 1/f$. Thus, $j\in I$ and element $e_i$ is covered. 
+
+### Dual 
+
+### Greedy Algorithm
+
+### Randomized Rounding
+
+## Vertex Cover
+
+Given an undirected graph $G=(V,E)$ and non-negative weight $w_i\geq 0$ for each $i\in V$, find a minimum-weight subset $C\subseteq V$ such that for each edge $(i,j)\in E$, either $i\in C$ or $j\in C (or both).If $w_i=1$ for each $i$, the problem is an unweighted vertex cover problem.
+
+Vertex cover can be thought of as a special case of set cover. For each edge $(i,j) \in E$, create a corresponding element in the SC instance to be covered, and add that element to $S_i$ and $S_j$. Each vertex represents a set which covers the edges adjacent to that vertex.
+
+### 2-approximation
+
+$f=\max f_i=2$ for all edges since each edge has exactly two endpoints and so is a part of exactly two subsets, so we can obtain a 2-approximation. 
+
+## Steiner Tree
+
+## Travelling Salesperson (TSP)
+
+### Euclidean TSP
+
+## Job Scheduling / Minimum Makespan
+
+## k-center
+
+## Flow
+
+### Edmonds-Karp 
+
+### Max-Flow Min-Cut
+
+### Push-Relabel
+
+## Cuts and Metrics
+
+### Multiway cut 
+
+### k-Cut
+
+### Sparsest Cut
+
+### Multicommodity Flows
+
+## Rounding 
+
+## Feedback Vertex Set 
+
+## Shortest Superstring
+
+## Bin Packing 
+
+## Knapsack
+
+## Satisfiability
+
+## Facility Location
+
+## Semidefinite Programming
+
+## k-Median
+
+
+
+## References 
+
+- [The Design of Approximation Algorithms - David P. Williamson, David Shmoys](https://www.designofapproxalgs.com/book.pdf)
+- [Combinatorial Optimization: Exact and Approximate Algorithms - Luca Trevisan](https://theory.stanford.edu/~trevisan/books/cs261.pdf)
+- [Approximation Algorithms - Vijay V. Vazirani, Georgia Institute of Technology](https://ics.uci.edu/~vazirani/book.pdf)
