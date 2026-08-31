@@ -25,14 +25,3 @@ Q: You have an unlimited supply of 20-sided dice numbered 1 to 20 and must choos
 A: $n=28$. Each die shows a 1 with probability $\frac{1}{20}$, independently, so the number of 1s among the $n$ dice is Binomial with $n$ trials and success probability $\frac{1}{20}$, and the win probability is the sum of its exactly-one and exactly-two terms: $a_n=n\cdot \frac{1}{20}(\frac{19}{20})^{n-1}+{n\choose 2}\frac{1}{20^2}(\frac{19}{20} )^{n-2}$ . To compare terms across $n$, pull out a common factor from both summands. For the first,
 $=n\cdot \frac{1}{20}\cdot \frac{20}{19}(\frac{19}{20})^n = \frac{n}{19}(\frac{19}{20})^n$ 
 
-<!-- and for the second, with ,
-
-Putting both over the denominator 722, using ,
-
-The polynomial factor grows while the geometric factor decays, so the sequence rises and then falls; the maximum sits where consecutive terms cross. Dividing consecutive terms, the constant 722 cancels and one power of survives:
-
-The sequence decreases at when this ratio is below 1, that is, when
-
-Expand both sides: , so the left side is , while the right side is . Moving everything to the right,
-
-The quadratic has positive root . So the inequality fails for (there , the sequence is still rising) and holds for (from there , the sequence is falling). The sequence therefore strictly increases up to and strictly decreases from there, and the optimum is , with win probability . -->

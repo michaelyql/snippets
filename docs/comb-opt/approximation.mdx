@@ -60,6 +60,10 @@ The general rule for conversion: a primal constraint becomes a dual variable, an
 
 ### Strong Duality Theorem
 
+## Greedy Algorithm & Local Search
+
+## Rounding and Dynamic Programming
+
 ## Set Cover
 
 Given a ground set of elements $E=\{e_1,\dots,e_n\}$ and some subsets of those elements $S_1,\dots,S_m$ where each $S_j\subseteq E$, and a non-negative weight $w_j\geq 0$ for each subset $S_j$, find a minimum-weight collection that covers all of $E$. 
@@ -84,7 +88,7 @@ Let $Z^*_{IP}$ denote the optimum value of this integer program for a given inst
 
 Using a LP approach, we can replace the constraint $x_j\in\{0,1\}$ with $x_j\geq 0$ to allow fractional values. This is a _relaxation_ of the original IP. This means that (1) every feasible solution for the original IP is feasible for the LP, and (2) the value of any feasible solution for the IP has the same value in the LP.
 
-Let $Z^*_{LP}$ denote the optimum value of this linear program. Any optimal solution to the integer program is feasible for the linear program and has value $Z^*_{IP}$ . Thus, any optimal solution to the linear program will have value $Z^*_{LP} \leq Z^*_{IP} = OPT$, since this minimization linear program finds a feasible solution of lowest possible value
+Let $Z^*_{LP}$ denote the optimum value of this linear program. Any optimal solution to the integer program is feasible for the linear program and has value $Z^*_{IP}$ . Thus, any optimal solution to the linear program will have value $Z^*_{LP} \leq Z^*_{IP} = OPT$, since this minimization linear program finds a feasible solution of lowest possible value.
 
 ### Deterministic Rounding
 
@@ -96,21 +100,85 @@ Let $I$ be the indices $j$ of the subsets in this solution. We round the fractio
 
 Proof: The optimal solution $x^*$ is a feasible solution to the LP, and $\sum_{j:e_i\in S_j}x_j^* \geq 1$ for element $e_i$. By the definition of $f_i$ and $f$, there are $f_i\leq f$ terms in the sum, so at least one term must be at least $1/f$. Thus for some $j$ such that $e_i\in S_j$, $x_j^*\geq 1/f$. Thus, $j\in I$ and element $e_i$ is covered. 
 
+This rounding procedure yields an $f$-approximation algorithm. By construction, $1\leq f\cdot x^*_j$ for each $j\in I$. Since each term $fw_jx^*_j$ is non-negative for $j=1,\dots,m$, we get 
+$$
+\begin{align*}
+\sum_{j\in I}w_j &\leq \sum_{j=1}^m w_j\cdot(f\cdot x_j^*) \\
+&= f\sum_{j=1}^m w_jx_j^* \\
+&= f\cdot Z_{LP}^* \\
+&\leq f\cdot OPT 
+\end{align*}
+$$
+
 ### Dual 
+
+Consider the dual of the LP relaxation. Suppose that each element $e_i$ is charged some nonnegative price $y_i\geq 0$ for its coverage by a set. Some elements may be covered by low-weight subsets while others require high-weight subsets.
+
+In order for the prices to be reasonable, the sum of the prices of elements in a subset $S_j$ cannot be more than the weight of the set, since we are able to cover all of those elements by paying weight $w_j$ . Thus, for each subset $S_j$ we have 
+$$
+\sum_{i:e_i\in S_j} y_i\leq w_j
+$$
+
+The highest total price that the elements can be charged can thus be found by the following linear program:
+
+$$
+\begin{align*}
+&\text{maximize } \sum_{j=1}^n y_i \\
+& \text{subject to } \sum_{i:e_i\in S_j} y_i\leq w_j \text{ for } j=1,\dots,m \\
+&\hspace{2.5cm} y_i\geq 0 \text{ for } i=1,\dots,n
+\end{align*}
+$$
 
 ### Greedy Algorithm
 
 ### Randomized Rounding
 
+Let $x^*$ be an optimal solution to the LP relaxation. We would like to round fractional values of $x^*$ to either 0 or 1 in such a way that we obtain a solution $\hat{x}$ to the integer programming formulation of the set cover problem without increasing the cost too much.
+
+The central idea of randomized rounding is that we interpret the fractional value $x^*_j$ as the probability that $\hat{x}_j$ should be set to 1. Thus, each subset $S_j$ is included in our solution with probability $x^*_j$ , where these $m$ events (that $S_j$ is included in our solution) are independent random events.
+
+Let $X_j$ be a random variable that is 1 if subset $S_j$ is included in the solution, and 0 otherwise. Then the expected value of the solution is
+$$
+E\left[ \sum_{j=1}^m w_jX_j\right]=\sum_{j=1}^m w_j \Pr[X_j=1]=\sum_{j=1}^m w_jx_j^* = Z_{LP}^*
+$$
+which is just the value of the LP relaxation (but it is quite likely the solution is not a set cover).
+
+To calculate the probability that a given element $e_i$ is not covered, this is the probability that none of the subsets containing $e_i$ are included in the solution, 
+$$
+\Pi_{j:e_i\in S_j}(1-x_j^*)
+$$
+We can bound this probability by using the fact that $ 1 - x \leq e^{−x}$ for any $x$, where $e$ is the base of the natural logarithm. Then
+$$
+\begin{align*}
+\Pr[e_i\text{ not covered}] &= \Pi_{j:e_i\in S_j}(1-x_j^*) \\
+&\leq \Pi_{j:e_i\in S_j} e^{-x_j^*}\\
+&= e^{-\sum_{j:e_i\in S_j} x_j^*}\\
+&\leq e^{-1}
+\end{align*}
+$$
+where the final inequality follows from the LP constraint that $\sum_{j:e_i\in S_j}x_j^*\geq 1$. 
+
+(... a lot of math)
+
+This is an $O(\ln n)$-approximation algorithm that produces a set cover with high probability. 
+
+(more math and proof...)
+
+While in this case there is a simpler and faster approximation algorithm that achieves a better performance guarantee, sometimes randomized algorithms are simpler to describe and analyze than deterministic algorithms. 
+
+In fact, most of the randomized algorithms we present in this book can be derandomized: that is, a deterministic variant of them can be created that achieves the expected performance guarantee of the randomized algorithm. 
+
+However, these deterministic algorithms are sometimes more complicated to describe. In addition, there are some cases in which the deterministic variant is easy to state, but the only way in which we know how to analyze the algorithm is by analyzing a corresponding randomized algorithm
+
 ## Vertex Cover
 
-Given an undirected graph $G=(V,E)$ and non-negative weight $w_i\geq 0$ for each $i\in V$, find a minimum-weight subset $C\subseteq V$ such that for each edge $(i,j)\in E$, either $i\in C$ or $j\in C (or both).If $w_i=1$ for each $i$, the problem is an unweighted vertex cover problem.
+Given an undirected graph $G=(V,E)$ and non-negative weight $w_i\geq 0$ for each $i\in V$, find a minimum-weight subset $C\subseteq V$ such that for each edge $(i,j)\in E$, either $i\in C$ or $j\in C$ (or both). If $w_i=1$ for each $i$, the problem is an unweighted vertex cover problem.
 
-Vertex cover can be thought of as a special case of set cover. For each edge $(i,j) \in E$, create a corresponding element in the SC instance to be covered, and add that element to $S_i$ and $S_j$. Each vertex represents a set which covers the edges adjacent to that vertex.
+Vertex cover can be thought of as a special case of set cover. For each edge $(i,j) \in E$, create an element to be covered, and add that element to $S_i$ and $S_j$. Each vertex represents a set which covers the edges adjacent to that vertex.
 
 ### 2-approximation
 
-$f=\max f_i=2$ for all edges since each edge has exactly two endpoints and so is a part of exactly two subsets, so we can obtain a 2-approximation. 
+$f=\max_{i} \{f_i\}=2$ for all edges, since each edge has exactly two endpoints and is a part of exactly two subsets, so we can obtain a 2-approximation. 
 
 ## Steiner Tree
 
