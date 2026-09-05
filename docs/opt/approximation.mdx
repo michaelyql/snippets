@@ -20,15 +20,30 @@ Some problems are very hard and do not have a PTAS unless P=NP. Max-clique is on
 
 ## Linear Programming
 
-Linear Programming (LP) can be used to solve combinatorial optimization problems. Most of these problems only allow integer solutions and not fractional ones, so common strategies are to 'relax' an integer program (IP) into a LP which can be solved in polynomial time, and then rounding the values to obtain an integer solution within a certain factor of the optimal solution.
+**Linear Programming (LP)** can be used to solve combinatorial optimization problems. Most of these problems only allow integer solutions and not fractional ones, so common strategies are to *relax* an **integer linear program (ILP)** into a LP which can be solved in polynomial time, and then rounding the values to obtain an integer solution within a certain factor of the optimal solution.
 
 Each linear program or integer program is formulated in terms of some number of **decision variables** that represent some sort of decision that needs to be made. The variables are constrained by a number of linear inequalities and equalities called **constraints**. Any assignment of real numbers to the variables such that all of the constraints are satisfied is called a **feasible solution**.
 
 In addition to the constraints, linear and integer programs are defined by a linear function of the decision variables called the **objective function**. The linear or integer program seeks to find a feasible solution that either maximizes or minimizes this objective function. Such a solution is called an **optimal solution**. 
 
-The value of the objective function for a particular feasible solution is called the **value** of that solution. The value of the objective function for an optimal solution is called the **value** of the linear (or integer) program. We say we s**olve** the linear program if we find an optimal solution
+The value of the objective function for a particular feasible solution is called the **value** of that solution. The value of the objective function for an optimal solution is called the **value** of the linear (or integer) program. We say we **solve** the linear program if we find an optimal solution
 
-Linear programs do not require that decision variables are integers, and are polynomial-time solvable.
+Linear programs do not require that decision variables are integers, and are polynomial-time solvable. 
+
+An ILP optimizes a linear objective with integer decisions
+- The variables $x\in \mathbb{Z}^N$ are often binary, $x_j\in \{0,1\}$
+- The objective is either maximize or minimize $c^Tx$
+- The constraints are $Ax\leq b$, where every expression is linear
+
+The **integrality gap** (relaxation gap) is the ratio between the optimal objective value of an ILP and the optimal value of its LP relaxation.
+
+LP relaxation follows a four-stage recipe.
+1. **Model** the problem as an ILP
+2. **Relax** integrality to obtain an LP
+3. **Solve** the LP in polynomial time
+4. **Round** the fractional solution
+
+The analysis compares the rounded solution with the LP upper bound.
 
 ### LP Duality - Primal & Dual
 
@@ -59,6 +74,12 @@ Dual (Standard Minimization Form):
 The general rule for conversion: a primal constraint becomes a dual variable, and a primal variable becomes a dual constraint.
 
 ### Strong Duality Theorem
+
+The **strong duality theorem** states that if a primal optimization problem has a finite optimal solution, its dual problem also has a finite optimal solution, and their optimal objective values are equal. 
+
+On the other hand, the **weak duality theorem** states that for any feasible solution in a minimization primal problem, the objective value is always greater than or equal to the objective value of any feasible solution in the corresponding dual maximization problem. 
+
+The **duality gap** is the difference between the primal and dual optimal values, which is $\geq 0$ under weak duality. Under strong duality, the duality gap is exactly 0.
 
 ## Greedy Algorithm & Local Search
 
@@ -145,13 +166,13 @@ which is just the value of the LP relaxation (but it is quite likely the solutio
 
 To calculate the probability that a given element $e_i$ is not covered, this is the probability that none of the subsets containing $e_i$ are included in the solution, 
 $$
-\Pi_{j:e_i\in S_j}(1-x_j^*)
+\prod_{j:e_i\in S_j}(1-x_j^*)
 $$
 We can bound this probability by using the fact that $ 1 - x \leq e^{−x}$ for any $x$, where $e$ is the base of the natural logarithm. Then
 $$
 \begin{align*}
-\Pr[e_i\text{ not covered}] &= \Pi_{j:e_i\in S_j}(1-x_j^*) \\
-&\leq \Pi_{j:e_i\in S_j} e^{-x_j^*}\\
+\Pr[e_i\text{ not covered}] &= \prod_{j:e_i\in S_j}(1-x_j^*) \\
+&\leq \prod_{j:e_i\in S_j} e^{-x_j^*}\\
 &= e^{-\sum_{j:e_i\in S_j} x_j^*}\\
 &\leq e^{-1}
 \end{align*}
@@ -176,13 +197,29 @@ Given an undirected graph $G=(V,E)$ and non-negative weight $w_i\geq 0$ for each
 
 Vertex cover can be thought of as a special case of set cover. For each edge $(i,j) \in E$, create an element to be covered, and add that element to $S_i$ and $S_j$. Each vertex represents a set which covers the edges adjacent to that vertex.
 
+Formulated as an ILP,
+- Variables: $x_v\in\{0,1\}$ for $v\in V$
+- Objective: minimize $\sum_v x_v$
+- Constraints: $x_u+x_v\geq 1$ for every $(u,v)\in E$
+- $x_v=1$ selects $v$; each edge requires at least one selected endpoint
+
 ### 2-approximation
 
 $f=\max_{i} \{f_i\}=2$ for all edges, since each edge has exactly two endpoints and is a part of exactly two subsets, so we can obtain a 2-approximation. 
 
+For each $x^*_v\geq \frac{1}{2}$ we round it to 1, otherwise round to 0, for some optimal solution $x^*$ found by the LP. Then $|C| = \sum_{v\in V} x_v \leq 2\sum_v x^*_v = 2\cdot OPT_{LP} \leq 2\cdot OPT_{ILP}$.
+
 ## Steiner Tree
 
 ## Travelling Salesperson (TSP)
+
+Let $G=(V,E)$ be a complete weighted graph on $n$ vertices with edge cost $c(u,v)$. A travelling salesperson tour is a minimum-cost Hamiltonian cycle.
+
+### Dynamic Programming
+
+Iterate over all $2^n$ subsets of vertices. Vertices in the subset are considered already visited. For each vertex $u$ in the current subset $S$, assume it was the last vertex visited in the current Hamiltonian path. Iterate over all unvisited vertices $v$ as the next possible vertex to visit. Each state is computed as $dp[S\cup \{v\}][v] = \min_{v\in n(u)} \{dp[S][u] + c(u,v) \}$
+
+Time complexity: $O(2^n\cdot n^2)$
 
 ### Euclidean TSP
 
@@ -190,21 +227,72 @@ $f=\max_{i} \{f_i\}=2$ for all edges, since each edge has exactly two endpoints 
 
 ## k-center
 
-## Flow
+## Satisfiability
 
-### Edmonds-Karp 
+### Max-SAT
+- Definitions
+    - Literal: A boolean variable $x_j$ or its negation $\neg x_j$
+    - Clause: An OR of literals, e.g. $C_i = x_1\vee \neg x_2 \vee x_4$
+    - CNF: An AND of clauses: $\Phi = C_1\wedge C_2 \wedge \dots \wedge C_m $
+- SAT asks whether **all** clauses can be satisfied
+- Max-SAT tries to find the **maximum** number of clauses that can be made true. Note that it does not try to satisfy *every* clause, it just tries to maximize the number of satisfied clauses
+    - Max-E2SAT is a version where every clause has exactly two literals
+    - If every variable is independently assigned true with probability $1/2$, the probability that a single clause evaluates to true is $1 - \frac{1}{2} \cdot \frac{1}{2}=\frac{3}{4} $ since the only case it evaluates to false is if both variables are assigned false. Thus $\Pr[\text{clause satisfied}]=\frac{3}{4}$
+    - Thus $E[\text{\# clauses satisfied}]=\frac{3}{4}m \geq \frac{3}{4}\cdot OPT$ since $OPT\leq m$
+    - Thus random assignment is a $\frac{4}{3}$-approximation for Max-E2SAT
+- Weighted Max-SAT assigns a non-negative weight $w_i$ to each clause $C_i$
+    - Let $\tau(C_i)$ be an indicator random variable with value 1 if the assignment satisfies $C_i$ else 0
+    - Objective Function: $\text{cost}(\tau)=\sum_{i=1}^m w_i\tau(C_i)$
+    - Goal: Choose $\tau$ maximizing $\text{cost}(\tau)$
+    - Let $y_i\in\{0,1\}$ represent whether clause $C_i$ is satisfied. The objective becomes to maximize $\sum_i w_iy_i$
+    - Consider a clause $C_i$. We need $\sum_{j:x_j\in C_i} x_j + \sum_{j:\tilde{x_j}\in C_i} (1-x_j) \geq y_i$. Together with $x_j,y_i\in \{0,1\}$, $y_i$ can be 1 only if at least one literal is true.
+    - Relaxation: Let $x_j,y_i\in [0,1]$. Solve the LP to get $x^*$ and $y^*$. Set $x_j=\text{true}$ independently with probability $x_j^*$. Compare the rounded value with $OPT_{LP}=\sum_{i=1}^m w_iy_i\geq OPT_{ILP}$
+    - $C_i$ is not satisfied iff every $x_j\in C_i$ (after rounding) is 0
+    - Thus $\Pr[C_i\text{ not satisfied}]=\prod_{j:x_j\in C_i} (1-x_j^*)\cdot \prod_{j:\bar{x_j}\in C_i} x_j^*$. 
+    - We want to compare $\sum w_i E[\tau{(C_i)}]$ with $\sum w_iy_i^*$
+    - AM-GM Inequality: For non-negative $a_1,\dots,a_k$, 
+    $$
+    \left(\prod_i a_i \right)^{1/k} \leq \frac{1}{k} \sum_i a_i
+    $$
+    - $E[\tau{(C_i)}]=1-\Pr[C_i\text{ not satisfied}]\geq 1 - ()$
 
-### Max-Flow Min-Cut
-
-### Push-Relabel
 
 ## Cuts and Metrics
+
+### Max Cut
+
+- Given an undirected graph $G=(V,E)$, partition the graph into $V=S\cup \{V\setminus S\}$ such that the sum of edge weights crossing the cut is maximized
+- Max-Cut is a canonical randomized-approximation problem.
+- For each edge $(u,v)\in E$, place each endpoint of the edge in either $S$ or $V\setminus S$ with $1/2$ probability
+- Let $X_e$ be an indicator variable with a value 1 if the edge $e$ crosses the cut, and 0 otherwise. The expected value of $X_e$ is given by $E[X_e]=1/4+1/4=1/2$, since for $e$ to be in the cut, either $u\in S$ and $v\in V\setminus S$, or $u\in V\setminus S$ and $v\in S$
+- Thus the expected max cut is $\sum_{e\in E} w(e)\cdot E[X_e]=\frac{1}{2}\sum_{e\in E} w(e)$
+- Since $OPT$ is at most the sum of all edge weights, i.e. $OPT\leq \sum_{e\in E}w(e)$, therefore $E[w(\text{cut})]\geq \frac{1}{2} \cdot OPT$
 
 ### Multiway cut 
 
 ### k-Cut
 
 ### Sparsest Cut
+
+## Flow
+
+- The **flow** along an edge can be thought of as the rate per unit time at which the commodity is being transported along the edge. 
+- The **capacity** of an edge can be thought of as the maximum rate at which the commodity can be transported along the edge
+- **Capacity constraint**: the flow along an edge cannot exceed its capacity. 
+- **Conservation constraint**: flow entering a node = flow leaving a node
+- Formal definition: 
+    - For a directed graph $G=(V,E)$ 
+    - source $s$, sink $t$
+    - a capacity function $c: E\rightarrow \mathbb{R}^+$ which maps each edge $(x,y)$ to a capacity $c(x,y)$
+    - The capacity constraint states that the flow $f:E\rightarrow \mathbb{R}^+$ through each edge $(x,y)\in E$ is such that $f(x,y)\leq c(x,y)$, and
+    - The conservation constraint states that for each vertex $v\in V\setminus \{s,t\}$, $\sum_{(u,v)\in E} f(u,v)=\sum_{(v,z)\in E} f(v,z)$
+- The Max-Flow problem aims to find a feasible flow that maximizes the flow from $s$ to $t$
+
+### Edmonds-Karp 
+
+### Max-Flow Min-Cut
+
+### Push-Relabel
 
 ### Multicommodity Flows
 
@@ -218,7 +306,6 @@ $f=\max_{i} \{f_i\}=2$ for all edges, since each edge has exactly two endpoints 
 
 ## Knapsack
 
-## Satisfiability
 
 ## Facility Location
 

@@ -1,2 +1,75 @@
 # Combinatorics 
 
+## PIE
+
+[CF1400G](https://codeforces.com/contest/1400/problem/G) - Mercenaries 
+
+Given $n$ people and their intervals $[l_i, r_i]$ (inclusive) and $m$ constraints $(i,j)$ for $1\leq i < j\leq n$ meaning that person $i$ and $j$ cannot be in the same subset together, count the number of distinct subsets of people such that the size of the subset is within everyone's interval who are in the subset, and no two people in the subset have a conflict.
+
+Constraints: 
+- $1\leq n\leq 3\cdot 10^5$
+- $1\leq l_i \leq r_i\leq n$
+- $0\leq m\leq \min(20, \frac{n(n-1)}{2})$ 
+
+Solution ([link](https://github.com/michaelyql/cp/blob/main/cf/combinatorics/1400g.cpp)):
+- First find $\sum_{i=1}^n {cnt[i]\choose i}$ which includes all possible ways to form a group of $i$ people, ignoring constraints
+    - This includes some subsets in which people in those subsets have conflicts with each other, which we must subtract
+- Iterate over all bitmask of constraints which are violated
+    - Use PIE to add/subtract the appropriate contributions
+    - For a bitmask with $k$ distinct people in the subset, let $L$ and $R$ be the intersection of their intervals
+    - If $L>R$ (intersection is empty), do nothing (no such subset exists)
+    - Otherwise, for each $s\in[L,R]$, since the $k$ distinct people are already forced, the remaining $s-k$ people need to be chosen from the $cnt[s]-k$ available people. Thus we need $\sum_{s=L}^R {{cnt[s]-k} \choose {s-k}}$
+    - Since $m$ is at most 20, $k$ is at most 40. Thus we can precompute ${{cnt[s]-k}\choose s-k}$ for all $k=2,\dots m$ and for all $s=k,\dots,n$ and use prefix sums to compute $\sum_{s=L}^R {{cnt[s]-k} \choose {s-k}}$ in $O(1)$
+
+
+## Permutations
+
+[CF1569C](https://codeforces.com/problemset/problem/1569/C) - Jury Meeting 
+
+Given an array $a$ of positive integers, consider the following sequence of operations on a permutation $p$ of $a$: for each $i=1,\dots,n$ such that $a_i\geq 1$, decrement $a_i$ by 1 and move on to the next index. If no index decrements twice or more in a row before the process ends, the permutation is *valid*. Count the number of valid permutations. 
+
+Constraints:
+- $1\leq n\leq 3\cdot 10^5$
+- $1\leq a_i\leq 10^9$
+
+Solution ([link](https://github.com/michaelyql/cp/blob/main/cf/combinatorics/1569c.cpp)):
+- Only the largest (call it $x$) and second largest (call it $y$) and their frequencies matter
+- If $cnt_x>1$, all permutations are valid
+- If $cnt_x == 1$, 
+    - If $x-y>1$, eventually $x$ would be forced to decrement twice in a row, hence no valid permutation exists
+    - Otherwise, as long as there exists one $y$ that comes after $x$ in the permutation, the permutation is valid
+    - Iterate over the possible positions $i$ of the last $y$ in the permutation. For each $i$, there are ${i-1}\choose {cnt_y-1}$ ways to choose where to insert the remaining $y$ before the last $y$, and $(cnt_y)!$ ways to permute them. Then, insert $x$ at any index before $i$
+    - All unused values can be permuted freely in the remaining spaces
+
+---
+
+[CF2234E](https://codeforces.com/problemset/problem/2234/E) - Vlad, Misha and Two Arrays 
+
+For a hidden permutation $p$, let $a_i$ be the number of subarrays $p[l\dots r]$ such that $p_i$ is the minimum in the subarray. Count the number of permutations $p$ that satisfy the given array $a$. 
+
+Constraints:
+- $1\leq n\leq 5\cdot 10^5$
+- $1\leq a_i\leq 10^{12}$
+
+Solution ([link](https://github.com/michaelyql/cp/blob/main/cf/combinatorics/2234e.cpp)):
+- Observations
+    - For a fixed $p_i$, consider the nearest $p_j$ to its left that is smaller than it, and the nearest $p_k$ to its right that is smaller than it
+    - Then $p_i$ would be the minimum in all subarrays of $p[j\dots k]$. Then the value of $a_i$ must be equal to $(i-j+1)\cdot (k-i+1)$
+- Start by choosing the position $i$ for 1. Then the permutation is split into $p[0\dots i-1]$ and $p[i+1\dots n-1]$. There are ${n-1}\choose {i-1}$ ways to choose numbers to fill $p[0\dots i-1]$ with the leftover values going into $p[i+1\dots n-1]$
+- Keep recursing on the left and right subarrays. Base case $l==r$, $a_i$ must be equal to 1, otherwise there is no way to fill the permutation since the values to its left and right are strictly smaller than it
+
+See also [CCO 2026 P2](https://dmoj.ca/problem/cco26p2).
+
+## Basic Counting 
+
+[CF1795D](https://codeforces.com/problemset/problem/1795D) - Triangle Coloring 
+
+Given $n$ (a multiple of 6) vertices and the weight of $n$ edges, an edge contributes its weight if its two endpoints have different colours. Count the number of ways to colour the vertices red and blue that achieves the maximum sum of edge weights between opposite coloured vertices, and there are exactly $n/2$ red and $n/2$ blue vertices. The edges are given such that they form exactly $n$ triangles.
+
+Constraints: 
+- $6\leq n\leq 2\cdot 10^5$ 
+
+Solution ([link](https://github.com/michaelyql/cp/blob/main/cf/combinatorics/1795d.cpp))
+- Each triangle can be coloured independently, and we can always pair two triangles together as each other's 'complement'
+- For each triangle there are either 1, 2 or 3 ways to choose the two edges which add to the maximum that the triangle can achieve. Let this be $c_i$, then we want to find $\prod_{i=1}^n c_i$
+- Assume this has a fixed initial colouring. Then we can choose the number of pairs of triangles to 'flip' their colouring. There are exactly $\sum_{i=0}^{n/2}{{n/2}\choose i}^2$ ways to do this
