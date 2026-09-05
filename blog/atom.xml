@@ -2,11 +2,65 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://michaelyql.github.io/snippets/blog</id>
     <title>Code Snippets Blog</title>
-    <updated>2026-07-08T00:00:00.000Z</updated>
+    <updated>2026-09-03T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://michaelyql.github.io/snippets/blog"/>
     <subtitle>Code Snippets Blog</subtitle>
     <icon>https://michaelyql.github.io/snippets/img/code4.svg</icon>
+    <entry>
+        <title type="html"><![CDATA[AI Stuff]]></title>
+        <id>https://michaelyql.github.io/snippets/blog/2026/09/03/</id>
+        <link href="https://michaelyql.github.io/snippets/blog/2026/09/03/"/>
+        <updated>2026-09-03T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[Concepts]]></summary>
+        <content type="html"><![CDATA[<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="concepts">Concepts<a href="https://michaelyql.github.io/snippets/blog/2026/09/03/#concepts" class="hash-link" aria-label="Direct link to Concepts" title="Direct link to Concepts" translate="no">​</a></h2>
+<ul>
+<li class="">A model is really just a file embedded with weights that predicts the next token given some input</li>
+<li class="">Open Weight<!-- -->
+<ul>
+<li class="">Weights are published online, you can freely download and run locally</li>
+<li class="">Closed model = AI lab hides its weights and implementation and only exposes an interface through its website</li>
+</ul>
+</li>
+<li class="">Token Compression<!-- -->
+<ul>
+<li class="">Reduce the number of input tokens to an LLM to lower costs and latency without hurting output quality</li>
+<li class="">It is the middleware between an app and LLM API to filter low value data before inference</li>
+</ul>
+</li>
+<li class="">Quantization<!-- -->
+<ul>
+<li class="">A compression technique that reduces the precision of a model's numerical parameters (such as weights and activations) from high-precision formats (like 32-bit floating point) to lower-precision formats (like 8-bit or 4-bit integers) to save memory and speed up processing.</li>
+<li class="">Maps high-precision continuous numbers to smaller, discrete values</li>
+<li class="">Lowers memory bandwidth limits, which often bottleneck AI inference</li>
+<li class="">Trade offs: decreases model size and hardware requirements while slightly increasing quantization error (loss of accuracy)</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="transformer-architecture">Transformer Architecture<a href="https://michaelyql.github.io/snippets/blog/2026/09/03/#transformer-architecture" class="hash-link" aria-label="Direct link to Transformer Architecture" title="Direct link to Transformer Architecture" translate="no">​</a></h2>
+<p>The transformer architecture is a deep learning neural network design that processes data sequences in parallel using self-attention mechanisms instead of step-by-step recurrence.</p>
+<p>Transformers changed deep learning by showing that sequence modeling could be built entirely around attention, without recurrence or convolution.</p>
+<p>Core Components:</p>
+<ul>
+<li class="">Tokenization: Breaks raw text or input data into smaller pieces called tokens, such as words or subwords.</li>
+<li class="">Embeddings: Converts each token into a dense numerical vector that captures its semantic meaning.</li>
+<li class="">Positional Encoding: Adds position signals to the vectors so the model knows the order of tokens in a sequence.</li>
+<li class="">Self-Attention: Lets every token in a sequence communicate directly with all other tokens, calculating relationships using queries, keys, and values.<!-- -->
+<ul>
+<li class="">scaled dot-product attention</li>
+<li class="">multi-head attention</li>
+</ul>
+</li>
+<li class="">Feed-Forward Networks: Processes the attention outputs through multi-layer perceptrons to refine the representation of each token</li>
+<li class="">Encoder: Reads the input sequence simultaneously and builds a context-aware, rich numerical representation</li>
+<li class="">Decoder: Generates output sequences step-by-step (autoregressively) by attending to both prior outputs and the encoder's context representation</li>
+</ul>]]></content>
+        <author>
+            <name>Michael Yang</name>
+            <uri>https://www.linkedin.com/in/michael-yang-68b670204/</uri>
+        </author>
+        <category label="ai" term="ai"/>
+    </entry>
     <entry>
         <title type="html"><![CDATA[C/C++ Stuff]]></title>
         <id>https://michaelyql.github.io/snippets/blog/2026/07/08/</id>
