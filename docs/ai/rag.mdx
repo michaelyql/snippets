@@ -1,0 +1,153 @@
+# Retrieval-Augmented Generation (RAG)
+
+## Pipeline 
+
+Documents -> parse / clean -> chunk -> embed -> vector DB
+
+User query -> query rewrite (optional) -> embed ->  retrieve top-k -> rerank -> select context -> LLM -> answer
+
+> Build a simple RAG pipeline.
+
+> Design a production RAG system for 10M documents.
+
+## Chunking strategies
+
+
+## Chunk size / overlap tradeoffs
+
+> How would you choose chunk size?
+
+> Implement chunking with overlap.
+
+## Semantic vs fixed-size chunking
+
+## Sparse retrieval
+
+**Sparse retrieval/lexical search** looks for matching words/tokens to determine a document's relevance. It is good for exact matches and keyword searches.
+
+### TF-IDF, BM25
+
+A simple lexical search engine may simply count the number of appearances of a word in a document. This has problems, e.g. extremely common words like "the", "and", "is" shouldn't contribute as much. TF-IDF and BM25 provide some solutions
+
+- **TF-IDF** = Term Frequency $\times$ Inverse Document Frequency
+    - Term frequency = How often does a word occur in this document?
+    - More occurrences suggest the document may be more relevant
+    - Inverse document frequency $IDF(q)=\log\frac{n}{df(q)}$ where $n$ = total number of documents, $df(q)$ = number of documents containing the term
+    - Thus exact technical terms, names, IDs, error codes, etc. work particularly well with lexical search.
+- **BM25** - essentially a more sophisticated lexical ranking function
+    - For each query term, it considers roughly: 
+        - How often does the term occur in this document? 
+        - How rare is the term across all documents? 
+        - How long is this document? 
+    - Rare words matter more and get higher weight
+    - Repeating a word helps, but with diminishing returns. BM25 effectively saturates term frequency. So the first few occurrences matter a lot, but occurrence 499 doesn't tell you much more
+    - Document length matters: If a 20-word paragraph contains "deadlock" three times, it's significant, but if a 100,000-word book contains "deadlock" three times, not as much. BM25 therefore normalizes based on document length.
+
+## Dense retrieval
+
+> When would you use BM25 instead of embeddings?
+
+## Hybrid retrieval
+
+> BM25 vs vector search vs hybrid search—when would you use each?
+
+How would you evaluate whether your retriever is good?
+
+## Metadata filtering
+
+## Vector databases
+
+## ANN search
+
+## Cosine similarity vs dot product vs Euclidean distance
+
+Cosine similarity: `dot(a,b) / |a||b| = cos θ` where `θ` is the angle between `a` and `b`
+
+- Cosine similarity measures the directional alignment between two non-zero vectors
+- It calculates the cosine of the angle between them, returning a score between -1 and 1 (where 1 means identical direction, 0 means orthogonal/no relation, and -1 means opposite directions)
+
+```python
+import numpy as np
+from numpy.linalg import norm
+
+a = np.array([1, 2, 3])
+b = np.array([1, 0, 1])
+
+similarity = np.dot(a, b) / (norm(a) * norm(b))
+
+print(f"NumPy Similarity: {similarity:.4f}")
+```
+
+## HNSW
+
+## Rerankers / cross-encoders
+
+> Why add a reranker after retrieval?
+
+- Retrieval needs to be fast, especially when there are up to millions of document chunks. 
+- The first stage retriever prioritizes speed and recall, finding a small set that most likely contains the correct information.
+- The reranker prioritizes precision, picking the best one out of a small set of candidates.
+
+> Why might increasing top-k make RAG performance worse? Increasing $k$ from 50 to 500 for example.
+
+
+
+## Query rewriting
+
+## Multi-query retrieval
+
+## Context assembly
+
+## Lost-in-the-middle problems
+
+## Evaluation
+
+### Retrieval
+
+- Recall@k
+- Precision@k
+- MRR
+- NDCG
+
+> Given retrieval results and expected relevant documents, calculate Recall@k.
+
+### Generation
+
+- correctness
+- faithfulness
+- relevance
+- citation accuracy
+- task completion
+
+### Approaches
+
+- Human evaluation
+- LLM-as-a-judge
+- Golden datasets
+- Pairwise evaluation
+- Offline vs online evaluation
+- A/B testing
+- Regression testing
+- Evaluation bias / judge unreliability
+
+> You changed the RAG pipeline. How do you know the RAG actually got better?
+
+Evaluation dataset + retrieval metrics + generation metrics + latency/cost measurements
+
+## Debugging
+
+> Users complain that the RAG gives incorrect answers. How would you debug it?
+
+Did we retrieve the correct information? -> 
+Did we give the model the correct information? -> 
+Did the model use the information correctly?
+
+The distinction between **retrieval failure** and **generation failure** is extremely important.
+
+> What happens when the answer requires information from multiple documents?
+
+> Your AI application is too slow and expensive. How do you diagnose and optimize it?
+
+## Fine Tuning
+
+> RAG vs fine-tuning—when do you choose each?

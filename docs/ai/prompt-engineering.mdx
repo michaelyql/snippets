@@ -1,0 +1,99 @@
+# Prompt Engineering 
+
+## System vs user messages
+
+## Zero-shot, one-shot, Few-shot prompting
+
+- Zero-shot: Give the model a task without examples.
+- One-shot: Give one example before the actual task.
+- Few-shot: Give several examples to demonstrate the desired pattern.
+
+> Few-shot results are inconsistent. How do you stabilize them?
+
+- Check whether the examples are ambiguous, inconsistent, poorly ordered, or unrepresentative
+- Standardize the example format, use balanced and diverse examples, define labels precisely, make the output schema explicit, and choose examples by semantic similarity.
+- Control temperature where appropriate, use deterministic decoding if supported, validate outputs, and evaluate across multiple prompt orderings to detect sensitivity
+
+## Chain-of-thought prompting
+
+Chain-of-thought prompting encourages the model to decompose a problem into intermediate reasoning steps before producing an answer. For example, instead of asking only for the result of a multi-step calculation, we can ask it to solve the problem carefully and verify the result.
+
+## ReAct prompting
+
+ReAct combines reasoning with actions. The model alternates between deciding what it needs to do, calling a tool such as search or a database, observing the result, and then deciding the next step.
+
+For example, for a travel question, an agent might identify the required dates, call a flight-search tool, inspect the results, and then formulate an answer. The important production safeguards are strict tool schemas, permission checks, input validation, action limits, and treating tool output as untrusted data.
+
+
+## Context management
+
+## Prompt injection
+
+## Delimiters / separating instructions from data
+
+## Grounding
+
+Grounding in AI is the process of connecting a model's responses to verified, external source material rather than relying solely on its internal training memory. It relies on a source of truth - usually a curated knowledge base, documentation set, or structured data store.
+
+RAG is the technique, grounding is the outcome.
+
+Without grounding, language models are prone to AI hallucinations — confident, fluent answers that are factually wrong.
+
+Effective grounding is more than just bolting RAG onto a chatbot. A few practices separate strong grounding from weak:
+- **Curate the source of truth**: Stale, contradictory, or low-quality content produces stale, contradictory, low-quality grounded answers.
+- **Chunk content thoughtfully**: Articles need to be broken into self-contained passages that retrieve well and read coherently in isolation.
+- **Use semantic retrieval**: Keyword search misses paraphrases; vector embeddings catch the meaning behind the words.
+- **Require citations**: A grounded response should be able to point to its sources.
+- **Monitor continuously**: AI observability tooling surfaces when retrieval misses or when the model drifts off-source.
+
+## Observability
+
+Layers of AI Observability:
+- Application layer
+    - Telemetry: user interactions, session metadata, UI feedback, latencies.
+    - Purpose: Understand user behavior, flag anomalies, and surface negative UI feedback
+- Orchestration layer
+    - Telemetry: prompt/response pairs, retries, tool call timings, branching logic.
+    Purpose: Audit flows (e.g., LangChain), trace decisions, and debug failures
+- Agentic layer
+    - Telemetry: thoughts/goals, memory states, intermediate reasoning, tool usage.
+    - Purpose: Expose agent reasoning and improve traceability in complex tasks
+- Model & LLM layer
+    - Telemetry: prompt/completion logs, latency, token counts, quality metrics
+    - Purpose: Track model health and catch issues like hallucinations or slowdowns
+- Semantic search & vector DB layer
+    - Telemetry: embedding quality, relevance scores, latency, semantic drift
+    - Purpose: Monitor retrieval quality and RAG system performance
+- Infrastructure layer
+    - Telemetry: GPU/CPU/memory use, network/storage, inference costs.
+    - Purpose: Detect resource bottlenecks that affect system performance
+
+Telemetry = automated collection of measurements and data from remote or inaccessible points and its transmission to a receiving system for monitoring and analysis
+
+## Asking models to abstain
+
+## Prompt versioning
+
+## Schema-constrained structured outputs
+
+> How would you make an LLM reliably return JSON or other formats like XML?
+
+- Explicitly define the schema, required fields, types, allowed values, and behavior for missing information
+- Provide one or two valid examples, instruct the model to return only the format, and use structured-output or function-calling APIs when available
+- Also validate the result with a schema validator and retry or repair invalid output. Never trust prompt instructions alone for parsing or security
+
+Example:
+```
+Return only JSON matching this schema:
+{
+  "sentiment": "positive | negative | neutral",
+  "confidence": 0.0 to 1.0,
+  "reason": "short string"
+}
+```
+
+## Validation
+
+## Retries  
+
+## Handling malformed responses

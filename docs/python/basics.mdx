@@ -1,0 +1,1095 @@
+# Basics
+
+## Decorators
+
+A decorator is a function that takes another function, extends or modifies its behavior, and returns a new function.
+
+They are commonly used for logging, authorization, timing, caching, and validation.
+
+```python
+def announce(func):
+    def wrapper():
+        print("Starting function...")
+        func()
+        print("Function finished.")
+
+    return wrapper
+
+@announce
+def greet():
+    print("Hello!")
+
+# equivalent to
+# greet = announce(greet)
+
+greet()
+```
+
+The decorator replaces `greet` with the returned wrapper function.
+
+Use `*args` and `**kwargs` so the decorator works with arbitrary functions:
+
+```python
+from functools import wraps
+
+def log_call(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"Calling {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"Result: {result}")
+        return result
+
+    return wrapper
+
+@log_call
+def add(a, b):
+    return a + b
+
+add(2, 3)
+```
+
+A decorator can itself receive arguments:
+
+```python
+from functools import wraps
+
+def repeat(times):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            result = None
+            for _ in range(times):
+                result = func(*args, **kwargs)
+            return result
+
+        return wrapper
+
+    return decorator
+
+@repeat(3)
+def say_hello():
+    print("Hello")
+
+say_hello()
+```
+
+## Generators
+
+A generator is a special kind of iterator that produces values lazily, one at a time.
+
+A function becomes a generator when it contains `yield` instead of (or in addition to)  return.
+
+```python
+def count_up_to(n):
+    i = 1
+    while i <= n:
+        yield i
+        i += 1
+
+numbers = count_up_to(3)
+
+print(next(numbers))  # 1
+print(next(numbers))  # 2
+print(next(numbers))  # 3
+```
+
+After yielding a value, the generator pauses. The next call to `next()` resumes execution from where it stopped.  When there are no more values, Python raises StopIteration.
+
+Usually, generators are consumed with a `for` loop:
+
+```python
+for number in count_up_to(3):
+    print(number)
+```
+
+Generators are useful because it produces values only when needed: 
+
+```python
+# generator
+squares = (x * x for x in range(1_000_000))
+for square in squares:
+    print(square)
+
+# versus list (stores all values in memory)
+squares = [x * x for x in range(1_000_000)] 
+```
+
+Generator for reading a large file:
+```python
+def read_lines(filename):
+    with open(filename) as file:
+        for line in file:
+            yield line.strip()
+
+for line in read_lines("large_file.txt"):
+    print(line)
+```
+
+Generators can be chained together:
+```python
+def numbers():
+    for i in range(10):
+        yield i
+
+def even_numbers(values):
+    for value in values:
+        if value % 2 == 0:
+            yield value
+
+def squares(values):
+    for value in values:
+        yield value * value
+
+result = squares(even_numbers(numbers()))
+
+for value in result:
+    print(value)
+# 0 4 16 36 64
+```
+
+Each stage processes values lazily.
+
+## Method Resolution Order (MRO)
+
+Method Resolution Order determines the order in which Python searches classes for an attribute or method. It matters mainly when inheritance and multiple inheritance are involved.
+
+## Concurrency
+
+### Global Interpreter Lock
+
+The **Global Interpreter Lock** (GIL) is a mutual-exclusion lock used by interpreters like CPython to ensure that only one thread executes Python bytecode at any given time
+- The lock allows only a single native thread to control the interpreter per process
+- Even on computers with multiple CPU cores, multi-threaded Python code cannot run tasks in true parallel.
+- It protects internal data structures and memory management, specifically reference counting, from unsafe concurrent changes
+
+Impact on performance
+- CPU-Bound tasks such as heavy calculations and data processing run slower in multi-threaded programs because threads wait for their turn to use the interpreter. 
+    - Developers often use separate processes via `multiprocessing` to bypass this.
+- I/O-Bound tasks such as network requests and file reads release the lock while waiting for a response
+    - This allows multi-threading to handle concurrent waiting tasks efficiently
+
+## Cheatsheet
+
+### Data Structures
+
+```python
+# Lists
+nums = [1, 2, 3]
+
+nums.append(4)
+nums.remove(2)          # remove first occurrence of value
+x = nums[0]             # indexing
+last = nums[-1]
+
+sub = nums[1:3]         # slice [start:end)
+sub = nums[:2]
+sub = nums[2:]
+sub = nums[::-1]        # reverse
+
+squares = [x * x for x in nums]
+evens = [x for x in nums if x % 2 == 0]
+
+import copy
+
+a = [[1, 2], [3, 4]]
+shallow = a.copy()              # or copy.copy(a)
+deep = copy.deepcopy(a)
+
+zeros = [0] * 5
+
+# Be careful: inner lists are shared
+grid_bad = [[0] * 3] * 3
+grid_good = [[0] * 3 for _ in range(3)]
+
+
+# Dict
+d = {}
+d = {"a": 1, "b": 2}
+
+d["c"] = 3              # insert
+d["a"] = 10             # update
+
+x = d["a"]
+x = d.get("missing", 0)
+
+del d["b"]
+x = d.pop("c")
+
+if "a" in d:
+    pass
+
+for key in d:
+    pass
+
+for key, value in d.items():
+    pass
+
+squares = {x: x * x for x in range(5)}
+
+
+# Set
+s = set()
+s = {1, 2, 3}
+
+s.add(4)
+s.update([5, 6])
+
+s.remove(1)             # raises KeyError if missing
+s.discard(10)           # safe if missing
+x = s.pop()
+
+if 2 in s:
+    pass
+
+a = {1, 2, 3}
+b = {3, 4, 5}
+
+union = a | b
+intersection = a & b
+difference = a - b
+symmetric_difference = a ^ b
+
+
+# Heap / Priority Queue
+import heapq
+
+# Min heap
+heap = []
+
+heapq.heappush(heap, 5)
+heapq.heappush(heap, 2)
+heapq.heappush(heap, 8)
+
+top = heap[0]
+smallest = heapq.heappop(heap)
+
+nums = [5, 2, 8, 1]
+heapq.heapify(nums)
+
+# Max heap using negation
+max_heap = []
+
+heapq.heappush(max_heap, -5)
+heapq.heappush(max_heap, -2)
+heapq.heappush(max_heap, -8)
+
+top = -max_heap[0]
+largest = -heapq.heappop(max_heap)
+
+# Priority queue with (priority, value)
+pq = []
+heapq.heappush(pq, (2, "medium"))
+heapq.heappush(pq, (1, "high"))
+heapq.heappush(pq, (3, "low"))
+
+priority, value = heapq.heappop(pq)
+
+
+# FIFO Queue using deque
+from collections import deque
+
+q = deque()
+
+q.append(1)
+q.append(2)
+q.append(3)
+
+front = q[0]
+x = q.popleft()
+
+q.appendleft(0)
+x = q.pop()
+
+if q:
+    pass
+
+# Tuples & Unpacking
+t = (1, 2, 3)
+single = (1,)
+
+a, b, c = t
+
+a, b = b, a
+
+first, *middle, last = [1, 2, 3, 4, 5]
+
+x, y = (10, 20)
+
+
+# Sorting
+nums = [5, 2, 8, 1]
+
+ascending = sorted(nums)
+descending = sorted(nums, reverse=True)
+
+nums.sort()
+nums.sort(reverse=True)
+
+words = ["apple", "kiwi", "banana"]
+by_length = sorted(words, key=len)
+
+pairs = [(1, 3), (2, 1), (1, 2)]
+
+pairs.sort()                         # sort by first, then second
+pairs.sort(key=lambda x: x[1])       # sort by second
+pairs.sort(key=lambda x: (x[0], -x[1]))
+
+d = {"a": 3, "b": 1, "c": 2}
+sorted_items = sorted(d.items(), key=lambda x: x[1])
+
+
+# Useful Built-ins
+nums = [10, 20, 30]
+
+for i, value in enumerate(nums):
+    print(i, value)
+
+for i, value in enumerate(nums, start=1):
+    print(i, value)
+
+names = ["Alice", "Bob", "Charlie"]
+scores = [90, 80, 95]
+
+for name, score in zip(names, scores):
+    print(name, score)
+
+pairs = list(zip(names, scores))
+
+for i in range(5):
+    pass
+
+for i in range(2, 10, 2):
+    pass
+
+total = sum(nums)
+
+has_positive = any(x > 0 for x in nums)
+all_positive = all(x > 0 for x in nums)
+
+minimum = min(nums)
+maximum = max(nums)
+
+words = ["apple", "kiwi", "banana"]
+longest = max(words, key=len)
+shortest = min(words, key=len)
+
+
+# collections.defaultdict
+from collections import defaultdict
+
+d = defaultdict(int)
+
+d["a"] += 1
+d["b"] += 2
+
+groups = defaultdict(list)
+
+groups["fruit"].append("apple")
+groups["fruit"].append("banana")
+
+
+# collections.Counter
+from collections import Counter
+
+nums = [1, 1, 2, 2, 2, 3]
+
+counts = Counter(nums)
+
+print(counts[2])
+
+most_common = counts.most_common(2)
+
+counts.update([2, 3, 3])
+
+
+# collections.deque
+from collections import deque
+
+dq = deque([1, 2, 3])
+
+dq.append(4)
+dq.appendleft(0)
+
+right = dq.pop()
+left = dq.popleft()
+
+
+# itertools.product
+from itertools import product
+
+pairs = list(product([1, 2], ["a", "b"]))
+
+for x, y in product([1, 2], ["a", "b"]):
+    print(x, y)
+
+
+# itertools.permutations
+from itertools import permutations
+
+perms = list(permutations([1, 2, 3]))
+
+perms_length_2 = list(permutations([1, 2, 3], 2))
+
+
+# itertools.combinations
+from itertools import combinations
+
+combs = list(combinations([1, 2, 3], 2))
+
+
+# itertools.chain
+from itertools import chain
+
+combined = list(chain([1, 2], [3, 4], [5, 6]))
+
+
+# Binary Search with bisect
+import bisect
+
+nums = [1, 3, 3, 5, 7]
+
+left = bisect.bisect_left(nums, 3)
+right = bisect.bisect_right(nums, 3)
+
+bisect.insort(nums, 4)
+
+# Equivalent:
+# bisect_left  -> first index >= target
+# bisect_right -> first index > target
+
+# Byte Array
+b = bytearray()
+b = bytearray([65, 66, 67])
+
+b.append(68)
+b.extend([69, 70])
+
+x = b[0]
+b[0] = 97
+
+text = "hello"
+encoded = text.encode("utf-8")
+decoded = encoded.decode("utf-8")
+
+b = bytearray(b"hello")
+```
+
+### Math
+```python
+# Math Operations
+a = 10
+b = 3
+
+addition = a + b
+subtraction = a - b
+multiplication = a * b
+division = a / b
+floor_division = a // b
+modulo = a % b
+power = a ** b
+
+x = float("inf")
+y = float("-inf")
+
+absolute = abs(-5)
+minimum = min(1, 2, 3)
+maximum = max(1, 2, 3)
+
+import math
+
+root = math.sqrt(16)
+ceil = math.ceil(3.2)
+floor = math.floor(3.8)
+power = math.pow(2, 3)
+
+# Bitwise operations
+a = 0b1010
+b = 0b1100
+
+and_result = a & b
+or_result = a | b
+xor_result = a ^ b
+not_result = ~a
+left_shift = a << 2
+right_shift = a >> 2
+
+# Check/set/clear/toggle bit k
+k = 2
+
+is_set = (a & (1 << k)) != 0
+a |= (1 << k)           # set
+a &= ~(1 << k)          # clear
+a ^= (1 << k)           # toggle
+```
+
+### Strings
+```python
+# Strings
+s = "hello"
+
+first = s[0]
+last = s[-1]
+
+sub = s[1:4]
+sub = s[:3]
+sub = s[2:]
+reverse = s[::-1]
+
+combined = "hello" + " " + "world"
+repeated = "abc" * 3
+
+index = s.find("ll")         # -1 if not found
+index = s.index("ll")        # raises ValueError if not found
+
+contains = "ell" in s
+
+upper = s.upper()
+lower = s.lower()
+trimmed = "  hello  ".strip()
+
+parts = "a,b,c".split(",")
+joined = "-".join(["a", "b", "c"])
+
+replaced = s.replace("hello", "world")
+
+starts = s.startswith("he")
+ends = s.endswith("lo")
+
+# Strings are immutable
+s = "hello"
+# s[0] = "H"                # invalid
+
+s = "H" + s[1:]
+
+name = "Alice"
+age = 20
+formatted = f"{name} is {age} years old"
+```
+
+### IO
+
+```python
+# Basic IO - stdin / stdout
+name = input()
+
+x = int(input())
+
+a, b = map(int, input().split())
+
+nums = list(map(int, input().split()))
+
+print("hello")
+print(a, b)
+print(a, b, sep=", ")
+print("hello", end="")
+print(f"x = {x}")
+
+import sys
+
+line = sys.stdin.readline().strip()
+sys.stdout.write("hello\n")
+
+# Read entire stdin
+import sys
+
+data = sys.stdin.read()
+
+# File IO - write
+with open("file.txt", "w") as f:
+    f.write("hello\n")
+    f.write("world\n")
+
+# File IO - read entire file
+with open("file.txt", "r") as f:
+    contents = f.read()
+
+# File IO - read line by line
+with open("file.txt", "r") as f:
+    for line in f:
+        line = line.strip()
+
+# File IO - read all lines
+with open("file.txt", "r") as f:
+    lines = f.readlines()
+
+# File IO - append
+with open("file.txt", "a") as f:
+    f.write("new line\n")
+```
+
+### Concurrency
+```python
+# Threads
+import threading
+
+def worker(name, count):
+    for i in range(count):
+        print(name, i)
+
+t1 = threading.Thread(target=worker, args=("A", 3))
+t2 = threading.Thread(target=worker, args=("B", 3))
+
+t1.start()
+t2.start()
+
+t1.join()
+t2.join()
+
+
+# Thread Pool
+from concurrent.futures import ThreadPoolExecutor
+
+def work(x):
+    return x * x
+
+with ThreadPoolExecutor(max_workers=4) as executor:
+    futures = [executor.submit(work, x) for x in range(5)]
+    results = [future.result() for future in futures]
+
+with ThreadPoolExecutor(max_workers=4) as executor:
+    results = list(executor.map(work, range(5)))
+
+
+# Thread Lock
+import threading
+
+lock = threading.Lock()
+counter = 0
+
+def increment():
+    global counter
+
+    with lock:
+        counter += 1
+```
+
+### async / await
+
+```python
+# Async / Await
+import asyncio
+
+async def fetch(x):
+    await asyncio.sleep(1)
+    return x * 2
+
+async def main():
+    result = await fetch(5)
+    print(result)
+
+asyncio.run(main())
+
+
+# Run multiple async tasks concurrently
+import asyncio
+
+async def fetch(x):
+    await asyncio.sleep(1)
+    return x * 2
+
+async def main():
+    results = await asyncio.gather(
+        fetch(1),
+        fetch(2),
+        fetch(3),
+    )
+
+    print(results)
+
+asyncio.run(main())
+
+
+# Create async tasks
+import asyncio
+
+async def work(x):
+    await asyncio.sleep(1)
+    return x
+
+async def main():
+    task1 = asyncio.create_task(work(1))
+    task2 = asyncio.create_task(work(2))
+
+    result1 = await task1
+    result2 = await task2
+
+asyncio.run(main())
+```
+
+### Functions
+```python
+# Lambda
+square = lambda x: x * x
+
+result = square(5)
+
+pairs = [(1, 5), (2, 3), (3, 1)]
+pairs.sort(key=lambda x: x[1])
+
+
+# Iterators
+nums = [1, 2, 3]
+
+it = iter(nums)
+
+x = next(it)
+y = next(it)
+z = next(it)
+
+x = next(it, None)      # default if iterator exhausted
+
+
+# Generators
+def count_up_to(n):
+    i = 1
+
+    while i <= n:
+        yield i
+        i += 1
+
+for x in count_up_to(3):
+    print(x)
+
+gen = (x * x for x in range(5))
+
+x = next(gen)
+
+# Functions
+def add(a, b):
+    return a + b
+
+def greet(name="World"):
+    return f"Hello {name}"
+
+result = add(1, 2)
+
+result = add(a=1, b=2)
+
+
+# *args
+def total(*args):
+    return sum(args)
+
+result = total(1, 2, 3, 4)
+
+
+# **kwargs
+def print_info(**kwargs):
+    for key, value in kwargs.items():
+        print(key, value)
+
+print_info(name="Alice", age=20)
+
+
+# *args and **kwargs
+def func(a, b, *args, **kwargs):
+    print(a, b)
+    print(args)
+    print(kwargs)
+
+func(1, 2, 3, 4, name="Alice")
+
+
+# Unpacking arguments
+nums = [1, 2]
+
+result = add(*nums)
+
+data = {"a": 1, "b": 2}
+
+result = add(**data)
+```
+
+### Classes 
+
+```python
+# Classes
+class Person:
+    species = "Human"           # class attribute
+
+    def __init__(self, name, age):
+        self.name = name         # instance attribute
+        self.age = age
+
+    def greet(self):
+        return f"Hello, I'm {self.name}"
+
+
+person = Person("Alice", 20)
+
+print(person.name)
+print(person.greet())
+print(Person.species)
+
+
+# Class Method / Static Method
+class Example:
+    count = 0
+
+    @classmethod
+    def get_count(cls):
+        return cls.count
+
+    @staticmethod
+    def add(a, b):
+        return a + b
+
+
+Example.get_count()
+Example.add(1, 2)
+
+
+# Inheritance
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return "..."
+
+
+class Dog(Animal):
+    def __init__(self, name, breed):
+        super().__init__(name)
+        self.breed = breed
+
+    def speak(self):
+        return "Woof"
+
+
+dog = Dog("Max", "Labrador")
+
+print(dog.name)
+print(dog.speak())
+```
+
+### Exceptions 
+```python
+# Exceptions
+try:
+    x = int("abc")
+except ValueError:
+    print("Invalid number")
+
+
+try:
+    x = 10 / 0
+except ZeroDivisionError as e:
+    print(e)
+else:
+    print("No exception")
+finally:
+    print("Always runs")
+
+
+# Raise Exception
+def divide(a, b):
+    if b == 0:
+        raise ValueError("b cannot be zero")
+
+    return a / b
+```
+
+### RNG
+```python
+# Random
+import random
+
+x = random.random()                 # float in [0, 1)
+x = random.randint(1, 10)           # inclusive
+
+x = random.choice([1, 2, 3])
+
+nums = [1, 2, 3, 4]
+random.shuffle(nums)
+
+sample = random.sample(nums, 2)
+```
+
+### Regex, Date Time, JSON
+```python
+# Regex
+import re
+
+text = "My number is 12345"
+
+match = re.search(r"\d+", text)
+
+if match:
+    print(match.group())
+
+match = re.match(r"My", text)
+
+numbers = re.findall(r"\d+", "1 apple, 20 bananas, 300 oranges")
+
+replaced = re.sub(r"\d+", "#", text)
+
+parts = re.split(r"\s+", "hello   world python")
+
+
+# Date & Time
+from datetime import datetime, date, timedelta
+
+now = datetime.now()
+
+today = date.today()
+
+dt = datetime(2026, 9, 8, 12, 30)
+
+tomorrow = now + timedelta(days=1)
+yesterday = now - timedelta(days=1)
+
+later = now + timedelta(hours=2, minutes=30)
+
+formatted = now.strftime("%Y-%m-%d %H:%M:%S")
+
+parsed = datetime.strptime("2026-09-08", "%Y-%m-%d")
+
+
+# JSON
+import json
+
+data = {
+    "name": "Alice",
+    "age": 20,
+}
+
+json_string = json.dumps(data)
+
+json_string = json.dumps(data, indent=2)
+
+data_again = json.loads(json_string)
+
+
+# JSON File - Write
+with open("data.json", "w") as f:
+    json.dump(data, f, indent=2)
+
+
+# JSON File - Read
+with open("data.json", "r") as f:
+    data = json.load(f)
+
+
+# pathlib
+from pathlib import Path
+
+path = Path("folder/file.txt")
+
+print(path.name)
+print(path.stem)
+print(path.suffix)
+print(path.parent)
+
+exists = path.exists()
+is_file = path.is_file()
+is_dir = path.is_dir()
+
+folder = Path("new_folder")
+folder.mkdir(exist_ok=True)
+
+nested = Path("a/b/c")
+nested.mkdir(parents=True, exist_ok=True)
+
+path.write_text("hello")
+
+contents = path.read_text()
+
+for file in Path(".").iterdir():
+    print(file)
+
+for file in Path(".").glob("*.txt"):
+    print(file)
+
+for file in Path(".").rglob("*.txt"):
+    print(file)
+```
+
+### Type Hints
+```python
+# Type Hints
+def add(a: int, b: int) -> int:
+    return a + b
+
+
+def process(nums: list[int]) -> list[int]:
+    return [x * 2 for x in nums]
+
+
+def frequencies(words: list[str]) -> dict[str, int]:
+    return {word: words.count(word) for word in words}
+
+
+def unique(nums: list[int]) -> set[int]:
+    return set(nums)
+
+
+def coordinates() -> tuple[int, int]:
+    return (10, 20)
+
+
+# Optional / Union
+def find_user(user_id: int) -> str | None:
+    if user_id == 1:
+        return "Alice"
+
+    return None
+
+
+def parse(value: int | str) -> int:
+    return int(value)
+
+
+# Type Aliases
+UserId = int
+
+def get_user(user_id: UserId) -> str:
+    return "Alice"
+```
+
+### Data Classes
+
+```python
+# Dataclasses
+from dataclasses import dataclass
+
+@dataclass
+class Person:
+    name: str
+    age: int
+    active: bool = True
+
+
+person = Person("Alice", 20)
+
+print(person.name)
+print(person)
+
+person.age = 21
+
+
+# Frozen Dataclass
+@dataclass(frozen=True)
+class Point:
+    x: int
+    y: int
+
+
+point = Point(1, 2)
+
+# point.x = 10            # invalid: frozen dataclass
+
+
+# Dataclass with Default Factory
+from dataclasses import dataclass, field
+
+@dataclass
+class Team:
+    name: str
+    members: list[str] = field(default_factory=list)
+
+
+team = Team("Engineering")
+team.members.append("Alice")
+```

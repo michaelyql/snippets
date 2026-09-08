@@ -1,0 +1,55 @@
+# Agents
+
+## Model vs Agent
+
+- A plain LLM: prompt -> tokens
+    - LLMs are good for understanding natural language, reasoning, deciding which tool to use, synthesizing information, summarizing, classifying, generating text
+    - Use it as a reasoner/planner 
+- An agent:
+    - LLM -> decide action -> API, Search, Database -> Results -> LLM -> final answer
+    - Add reliability layers: LLM -> Tool selection -> Tool/MCP -> External data -> Validator -> Structured result -> LLM -> Final response -> Output validator 
+    - The agent uses the LLM to reason and act, but still calls on deterministic tools and functions
+    - Add additional verifiers/validators and guardrails to control the behaviour of the agent 
+- Normal Code 
+    - authentication, make API requests, enforce permissions, validate schemas, perform arithmetic, enforce business rules, check database constraints, reject invalid actions, etc.
+    - APIs/databases act as sources of truth
+    - Validators are guardrails 
+
+## Pipeline
+
+User -> LLM -> decides action -> Tool / API -> result -> LLM -> possibly another tool -> final response
+
+## Function/tool calling
+
+> Build a small agent that can call two tools.
+
+> Design an agent that safely calls external APIs.
+
+## Structured outputs
+
+> Call an LLM API and validate structured output.
+
+## Agent loops
+
+## Tool selection
+
+## Planning vs execution
+
+## State/memory
+
+## Multi-step workflows
+
+## Error recovery
+
+## Idempotency
+
+## Human approval
+
+## Agent vs deterministic workflow
+
+> When would you not use an agent?
+
+A good applied engineer should recognize that deterministic workflow > agent, when the task is predictable and can be expressed explicitly.  
+
+Agents introduce latency, cost and nondeterminism.
+
