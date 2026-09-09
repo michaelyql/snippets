@@ -4,4 +4,37 @@
 
 ## Recurrence Relations 
 
+### Linear Homogeneous Recurrence Relations
+
+General form: 
+$$
+a_{n}=c_{1}a_{n-1}+c_{2}a_{n-2}+\dots +c_{k}a_{n-k}
+$$
+
+### Linear Non-homogeneous Recurrence Relations
+
+General form: 
+$$
+a_{n}=c_{1}a_{n-1}+c_{2}a_{n-2}+\dots +c_{k}a_{n-k} + f(n)
+$$
+
+where $f(n)\not= 0$ and is a function of $n$ only, and $c_1,\dots,c_k$ are real constants 
+
+To solve, let $a_n=a_h + a_p$, i.e. the solution is a combination of a homogeneous solution ($a_h$) and particular solution ($a_p$)
+
+To solve $a_h$, let $f(n)=0$, find the characteristic equation (CE) and its roots
+
+To solve $a_p$, guess a trial solution based on the form of $f(n)$:
+
+| $f(n)$ | Trial solution $a_n^{(p)}$ |
+|-|-|
+| $B$, 1 is not a characteristic root | $C$ |
+| $B$, 1 is a characteristic root with multiplicity $m$ | $Cn^m$ |
+| $Ak^n$, $k$ is not a characteristic root | $Bk^n$ |
+| $Ak^n$, $k$ is a characteristic root with multiplicity $m$ | $Bn^mk^n$ |
+| $\lambda^n\sum_{i=0}^t p_in^i $, $\lambda$ is not a characteristic root | $\lambda^n (\sum_{i=0}^t q_i n^i)$|
+| $\lambda^n\sum_{i=0}^t p_in^i$, $\lambda$ is a characteristic root with multiplicity $m$ | $n^m \lambda^n (\sum_{i=0}^t q_i n^i)$|
+|$An^t k^n$, $k$ is not a characteristic root | $(\sum_{i=0}^t q_in^i)k^n$
+|$An^t k^n$, $k$ is a characteristic root with multiplicity $m$ | $n^m (\sum_{i=0}^t q_in^i)k^n$
+
 ## Generating Functions
