@@ -2,6 +2,92 @@
 
 ## Fast Fourier Transform 
 
+Multiply polynomials in $O(n\log n)$ instead of $O(n^2)$. 
+
+Key idea: represent polynomial $A(x)=a_0+a_1x_1+\dots+a_{n-1}x^{n-1}$ in **point-value** representation
+
+I.e. $((x_0,A(x_0)),\dots,(x_{n-1},A(x_{n-1})))$
+
+Solve for a system of linear equations 
+
+$$
+A(x_0)=a_0+a_1x_0 + a_2x_0^2 + \dots \\
+A(x_1)=a_0+a_1x_1 + a_2x_1^2 + \dots \\
+A(x_2)=a_0+a_1x_2 + a_2x_2^2 + \dots \\
+\vdots
+$$
+
+There is a theorem that says, the point-value representation is a unique representation of the polynomial's coefficients.
+
+The $x_i$ used to construct the SLE are the $n$-th roots of unity $x_i=\omega_n^i$ for $i=0,\dots,n-1$, where $\omega_n=e^{2\pi i/n}$, so the points are $1,\omega_n^1,\omega_n^2,\dots,\omega_n^{n-1}$
+
+($n$-th roots of unity are the roots to the equation $x^n=1$. "Unity" just means 1)
+
+Geometrically, the $n$ points are evenly spaced around the unit circle.
+
+Split $A(x)$ into even and odd indexed coefficients, 
+
+$$
+\begin{align*}
+A(x)&=(a_0+a_2x^2+a_4x^4+\dots)+x(a_1+a_3x^2+a_5x^4 + \dots )\\
+&=A_{even}(x)+x\cdot A_{odd}(x)
+\end{align*}
+$$
+
+Assume $x$ is a root of unity $\omega_n^i$, then $x^2=(\omega_n^i)^2=\omega_n^{2i}$. 
+
+Since $\omega_n^2=(e^{2\pi i/n})^2=e^{4\pi i/n}=e^{2\pi i/(n/2)}=\omega_{n/2}$, we have $(\omega_{n}^i)^2=\omega_{n/2}^i$
+
+Thus we can solve for two smaller subproblems, each for a polynomial with $n/2$ coefficients at $n/2$ roots of unity. This gives the recursion $T(n)=2T(n/2)+O(n)=O(n\log n)$. 
+
+Some properties of roots of unity are:
+- $\omega_n^n=1$
+- $\omega_n^{k+n}=\omega_n^k\omega_n^n=\omega_n^k$
+- $\omega_n^{n/2}=-1$, therefore $\omega_n^{i+n/2}=-\omega_n^i$ (halfway around the circle)
+- $\omega_n^2=\omega_{n/2}$, therefore $(\omega_n^i)^2=\omega_{n/2}^i$
+- Each multiplication by $\omega_n$ rotates by $\frac{360^\circ}{n}$ 
+
+FFT can be thought of as three stages:
+
+$\boxed{\text{coefficients}\rightarrow\text{values}\rightarrow\text{multiply values}\rightarrow\text{coefficients}}$
+
+Suppose we want to find $C(x)=A(x)\cdot B(x)$.
+
+Choose $n$ roots of unity $1,\omega_n,\omega_n^2,\dots,\omega_{n}^{n-1}$. FFT computes $A(\omega_n^0),A(\omega_n^1),\dots,A(\omega_n^{n-1})$, and likewise for $B$. Then you get arrays like $\hat{A_k}=A(\omega_n^k)$ 
+
+At each evaluation point, $C(\omega_n^k)=A(\omega_n^k)B(\omega_n^k)$. So just compute $\hat{C_k}=\hat{A_k}\hat{B^k}$
+
+---
+
+Example: $A(x)=1+x$, $B(x)=1+2x$. Then $C(x)=1+3x+2x^2$
+
+Using $n=4$, the roots are $1,i,-1,-i$. Evaluate $A$: 
+
+$$
+A(1)=2\\
+A(i)=1+i\\
+A(-1)=0\\
+A(-i)=1-i
+$$
+
+So $\hat{A}=[2,1+i,0,1-i]$. Likewise $\hat{B}=[3,1+2i,-1,1-2i]$. 
+
+Multiply the corresponding positions, 
+$$
+\hat{C_0}=2\cdot 3=6\\
+\hat{C_1}=(1+i)(1+2i)=-1+3i\\
+\hat{C_2}=0\cdot(-1)=0\\
+\hat{C_3}=(1-i)(1-2i)=-1-3i
+$$
+
+So $\hat{C}=[6,-1+3i,0,-1-3i]$. These are the values of $C(x)$ at the four roots of unity. 
+
+In order to recover $1+3x+2x^2$, we use **inverse FFT**. The forward FFT converts $[a_0,\dots,a_{n-1}]$ into $[A(1), A(\omega), A(\omega^2),\dots,A(\omega^{n-1})]$, the inverse FFT does the opposite.
+
+Conceptually, given $C(1),C(\omega),C(\omega^2),\dots$, it finds the unique polynomial whose values are those numbers. 
+
+This is because $n$ distinct points uniquely determines a degree-$<n$ polynomial.
+
 ## Number Theoretic Transform
 
 ### Examples 

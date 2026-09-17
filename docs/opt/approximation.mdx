@@ -268,9 +268,65 @@ Time complexity: $O(2^n\cdot n^2)$
 - Thus the expected max cut is $\sum_{e\in E} w(e)\cdot E[X_e]=\frac{1}{2}\sum_{e\in E} w(e)$
 - Since $OPT$ is at most the sum of all edge weights, i.e. $OPT\leq \sum_{e\in E}w(e)$, therefore $E[w(\text{cut})]\geq \frac{1}{2} \cdot OPT$
 
-### Multiway cut 
+### Max k-cut
 
-### k-Cut
+### Max Directed Cut
+
+For a directed cut $(U,W)$ of $V$ where $W=V\setminus U$, the value is the total weight of all edges $(i,j)$ with $i\in U$ and $j \in W$.
+
+$\frac{1}{4}$-approximation:
+
+For each $i\in V$ place it in $U$ or $W$ uniformly at random. Then in order for $(i,j)$ to belong to the cut, $i\in U$ and $j\in W$ with probability $\frac{1}{2}\cdot \frac{1}{2}=\frac{1}{4}$. Thus $E[\mathbb{Z}]=\sum \frac{1}{4} w_{ij} \geq \frac{1}{4}OPT$ since $\sum w_{ij} \geq OPT$
+
+--- 
+
+$\frac{1}{2}$-approximation with randomized rounding:
+
+Let $z_{ij}$ indicate whether an edge contributes to the directed cut.
+
+Expressed as an integer linear program,
+
+$$
+\begin{align*}
+\text{maximize } &\sum_{(i,j)\in E}^m w_{ij}z_{ij} \\
+\text{subject to } &z_{ij}\leq x_i \text{ for every } (i,j)\in E \\
+& z_{ij}\leq 1-x_j \text{ for every } (i,j)\in E \\
+&x_i\in \{0,1\} \\
+&0\leq z_{ij} \leq 1
+\end{align*}
+$$
+
+Note that $z_{ij}$ can take any real value, but this is still an ILP because at least one variable ($x_i$) is constrained to integral values.
+
+Let $x_i$ indicate whether $i$ is placed in $U$
+
+$$
+z_{ij} = p_i \cdot (1-p_j) = \left(\frac{1}{4}+\frac{x_i}{2}\right)\cdot\left(\frac{1}{4}+\frac{1-x_j}{2}\right)
+$$
+
+If $x_i\leq 1-x_j$, then $\min\{x_i, 1-x_j\}=x_i$, we have 
+
+$p_i\cdot(1-p_j)\geq \left(\frac{1}{4}+\frac{x_i}{2}\right)^2\geq \frac{x_i}{2}=\frac{1}{2}\min\{x_i,1-x_j\}$
+
+Similarly, if $1-x_j\leq x_i$, we have 
+
+$p_i(1-p_j)\geq \left(\frac{1}{4}+\frac{1-x_j}{2}\right)^2 \geq \frac{1-x_j}{2} = \frac{1}{2}\min\{x_i,1-x_j\} $
+
+So in both cases, $p_i(1-p_j)\geq \frac{1}{2}\min\{x_i,1-x_j\}$. 
+
+Since $z_{ij}\leq x_i$ and $z_{ij}\leq 1-x_j$, we have $z_{ij}\leq \min\{x_i,1-x_j\}$, and thus
+
+$$
+\frac{1}{2}z_{ij}\leq p_i(1-p_j)
+$$
+
+Thus the expected weight of the directed cut is 
+
+$$
+E[\mathbb{Z}] = \sum p_i(1-p_j)w_{ij} \geq \sum \frac{1}{2}z_{ij}w_{ij} = \frac{1}{2}OPT
+$$
+
+### Multiway cut 
 
 ### Sparsest Cut
 
