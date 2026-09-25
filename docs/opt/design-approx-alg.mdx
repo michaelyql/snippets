@@ -1,0 +1,109 @@
+# Design of Approximation Algorithms
+
+By David P. Williamson and David B. Shmoys
+
+## Greedy Algorithms & Local Search
+
+Greedy: construct a solution step by step. *Primal infeasible*
+
+Local search: start with feasible solution, make local changes. *Primal feasible*
+
+### Job scheduling on single machine
+
+There are $n$ jobs, each has processing time $p_i$, can begin no earlier than release time $r_i$ and must be completed by due date $d_i$. The lateness of a job is $C_i - d_i$ where $C_i$ is the completion time of the job. Release dates are non-negative. The goal is to minimize the maximum latenss $L_{\max}=\max_{i=1,\dots,n}\{L_i\}$.
+
+This is NP-hard. Deciding if there exists a schedule with $L_{\max}\leq 0$ (i.e. can all jobs be completed by their due date) is strongly NP-hard. A heuristic is to take the task with the earliest due date first.
+
+Let $S$ be any subset of jobs, $r(S)=\min_{j\in S}r_j$, $p(S)=\sum_{j\in S}p_j$, and $d(S)=\max_{j\in S}d_j$. Let $L_{\max}^*$ be the optimal value.
+
+**Lemma**: For any $S$, $L_{\max}^*\geq r(S)+p(S)-d(S)$. This is because the earliest a job in $S$ can be processed is $r(S)$, and the earliest it can finish is $r(S)+p(S)$. So the lateness is at least $r(S)+p(S)-d(S)$.
+
+A job $j$ is available at time $t$ if its release date $r_j \leq t$. At each moment that the machine is idle, start processing next an available job with the earliest due date. This is known as the *earliest due date (EDD)* rule.
+
+**Theorem**: The EDD rule is a 2-approximation algorithm for the problem of minimizing the maximum lateness on a single machine subject to release dates with negative due dates.
+
+*Proof*. Let $j$ be a job of maximum lateness in this schedule, i.e. $L_{\max} = C_j − d_j$ (note that $C_j$ can be $\leq d_j$ i.e. $L_{\max}\leq 0$). Find the earliest point in time $t \leq C_j$ such that the machine was processing without any idle time for the entire period $[t, C_j)$. Let $S$ be the set of jobs processed in $[t,C_j)$. By choice of $t$, none of the jobs in $S$ were available prior to $t$, so $r(S)=t$. Since only $S$ jobs are processed in this interval, $p(S)=C_j-t=C_j-r(S)$. Thus $C_j\leq r(S)+p(S)$. Since $d(S)<0$, $L_{\max}^*\geq r(S)+p(S)-d(S)\geq r(S)+p(S)\geq C_j$. With $S=\set{j}$, $L_{\max}^*\geq r_j+p_j-d_j\geq -d_j$. Thus $L_{\max}=C_j-d_j\leq 2L_{\max}^*$
+
+### $k$-center problem
+
+Given an undirected complete graph $G=(V,E)$ with distance $d_{ij}\geq 0$ between each pair of vertices $i,j\in V$. Assume $d_{ii}=0$, $d_{ij}=d_{ji}$, and the distances obey the triangle inequality: for each $i,j,l\in V$, $d_{ij}+d_{jl}\geq d_{il}$. Distances model similarity; vertices closer to each other are more similar and vice versa. Find $k$ clusters, grouping vertices that are most similar in clusters together. 
+I.e. find $S\subseteq V$, $|S|=k$, minimizing the maximum distance of a vertex to its cluster center.
+
+Geometrically speaking, find the centers of $k$ different balls of the same radius that cover all points so that the radius is as small as possible.
+
+Formally, define the distance of vertex $i$ from $S\subseteq V$ be $d(i,S)=\min_{j\in S}d_{ij}$. Then the radius for $S$ is $\max_{i\in V}d(i,S)$, and the goal is to find a set of size $k$ of minimum radius.
+
+Variants include minimizing the sum of distances of vertices to their cluster centers $\sum_{i\in V}d(i,S)$. This is the $k$-median problem. Another variant is correlation clustering.
+
+A greedy algorithm is as follows:
+
+$$
+\begin{array}{l}
+\text{Pick arbitrary } i\in V\\
+S\gets  \set{i} \\
+\textbf{while }|S|< k \textbf{ do}\\
+\qquad j\gets \arg\max_{j\in V}d(j,S)\\
+\qquad S\gets S\cup\set{j}
+\end{array}
+$$
+
+**Theorem**: the greedy algorithm is a 2-approximation algorithm for the $k$-center problem.
+
+*Proof*. Let $S^* = \{j_1, \dots , j_k\}$ denote the optimal solution, and let $r^*$ denote its radius. This solution partitions the nodes $V$ into clusters $V_1,\dots , V_k$, where each point $j \in V$ is placed in $V_i$ if it is closest to $j_i$ among all of the points in $S^*$ (and ties are broken arbitrarily). Each pair of points $j$ and $j'$ in the same cluster $V_i$ are at most $2r^*$ apart: by the triangle inequality, $d_{jj'} \leq d_{jj_i} + d_{j_ij'} $, and since $d_{jj_i}, d_{j'j_i} \leq r^*$, $d_{jj'} \leq 2r^*$.
+
+Consider the set $S \subseteq V$ of points selected by the greedy algorithm. If one center in $S$ is selected from each cluster of the optimal solution $S^*$, then every point in $V$ is clearly within $2r^*$ of some selected point in $S$.
+
+Suppose that the algorithm selects two points within
+the same cluster. That is, in some iteration, the algorithm selects a point $j \in V_i$, even though it had already selected a point $j\ \in V_i$ in an earlier iteration. The distance between these two points is at most $2r^*$. The algorithm selects $j$ in this iteration because it is currently the furthest from the points already in $S$. Hence, all points are within a distance of at most $2r^*$ of some center already selected for $S$. This remains true even as more centers are added in subsequent iterations.
+
+**Theorem**: There is no $\alpha$-approximation algorithm for the $k$-center problem for $\alpha < 2$ (i.e. the above result is the best possible) unless $P = NP$.
+
+*Proof*: In the dominating set problem, we are given a graph $ G = (V, E)$ and an integer $k$, and we must decide if there exists a set $S \subseteq V$ of size $k$ such that each vertex is either in $S$, or adjacent to a vertex in $S$. Given an instance of the dominating set problem, we can define an instance of the $k$-center problem by setting the distance between adjacent vertices to 1, and nonadjacent vertices to 2. Then there is a dominating set of size $k$ if and only if the optimal radius for this $k$-center instance is 1. Any $\rho$-approximation algorithm with $\rho < 2$ must always produce a solution of radius 1 if such a solution exists, since any solution of radius $\rho < 2$ must actually be of radius 1.
+
+### Job scheduling on identical parallel machines
+
+There are now $m$ machines, all jobs are available at $t=0$. The aim is to complete all jobs as soon as possible, i.e. minimize $C_{\max}=\max_{j=1\,dots,n} C_j$. This is called the *makespan* or *length* of the schedule.
+
+An equivalent view is the load-balancing problem. There are $n$ items each with weight $p_j$ to be distributed among $m$ machines. The aim is to assign each item to one machine to minimize the maximum total weight assigned to one machine.
+
+Local Algorithm: Start with any schedule. Consider the job $l$ that finishes last; check whether or not there exists a machine to which it can be reassigned that would cause this job to finish earlier. If so, transfer $l$ to this other machine. We can determine whether to transfer job $l$ by checking if there exists a machine that finishes its currently assigned jobs earlier than $C_l-p_l$. Repeat until the last job to complete cannot be transferred.
+
+**Theorem**: The local search procedure for scheduling jobs on identical parallel machines is a 2-approximation algorithm.
+
+*Proof*. Let $C_{\max}^*$ be the length of an optimal schedule. Since each job must be processed, $C_{\max}^*\geq \max_{j=1,\dots,n} p_j$. In total, there is $P=\sum_{j=1}^np_j$ units of processing. On average each machine does $P/m$ units of work. Hence there must exist one machine that is assigned at least that much work. Thus $C_{\max}^*\geq P/m$.
+
+Consider the solution produced by the local search algorithm. Let $l$ be a job that completes last in this final schedule; the completion time $C_l$ is equal to this solution’s objective function value. Every other machine must be busy from $t=0$ until the start of job $l$ at time $S_l = C_l −p_l$.
+
+Partition the schedule into two disjoint time intervals, from $t= 0 $ until $S_l$, and $S_l$ to $C_l$. The latter interval has length at most $C_{\max}^*$. For the former interval, since every machine is busy throughout the period, thet total work done is $mS_l$, which is no more than $P$. Hence $S_l\leq P/m$. Thus $S_l \leq C_{\max}^*$. Thus the total makespan is at most $2C_{\max}^*$.
+
+The analysis of the approximation ratio can be refined slightly. We actually derived that $S_l\leq \sum_{j\not=l}p_j / m$ since job $l$ had not started yet. Hence the total length is at most $p_l + \sum_{j\not=l}p_j/m = (1-\frac{1}{m})p_l + P/m$. Hence the length is at most $(2-\frac{1}{m})C_{\max}^*$. The difference is significant only if $m$ is small.
+
+In terms of run time, we claim that no job is transferred twice, and that after at most $n$ iterations, the algorithm terminates. In each iteration, $C_{\max}$ never increases. We can assume that when we transfer a job to another machine, we reassign that job to the machine that is currently finishing earliest with $C_{\min}$. Note that $C_{\min}$ never decreases. Now suppose a job is transferred twice, from machine $i$ to $i'$, then later to $i^*$. This implies $C_{\min}' < C_{\min}$, a contradiction.
+
+Greedy *List Scheduling* Algorithm: whenever a machine becomes idle, one of the remaining jobs is assigned to start processing on that machine. From the load-balancing perspective, the next job on the list is assigned to the machine that is currently the least heavily loaded. 
+
+If one uses this schedule as the starting point for the local search procedure, that algorithm would immediately declare that the solution cannot be improved. Consider a job $l$ that is (one of the jobs) last to complete its processing. Each machine is busy until $C_l − p_l$, since otherwise we would have assigned job $l$ to that other machine. Hence, no transfers are possible.
+
+**Theorem**: The list scheduling algorithm for the problem of minimizing the makespan on $m$ identical parallel machines is a 2-approximation algorithm.
+
+It is not hard to obtain a stronger result by improving this list scheduling algorithm. Not all lists yield the same schedule, and it is natural to use an additional greedy rule that first sorts the jobs in non-increasing order. This greedy algorithm is called the *longest processing time (LPT)*.
+
+**Theorem**: The *LPT* rule is a $4/3$-approximation algorithm for scheduling jobs to minimize the makespan on identical parallel machines.
+
+*Proof*. Suppose there exists some counterexample with $C> 4/3\cdot OPT$.
+
+Let $p_1\geq\dots\geq p_n$. We first claim that in such a counterexample, the last job to complete $\ell$ is also the smallest, i.e. $\ell=n$. Assume there is at least one counterexample where $l\not=n$, and the makespan is $C$. Choose a counterexample with the fewest jobs which produces this value. If its last-finishing job is $\ell\ne n$, deleting jobs $\ell+1,\ldots,n$ gives an even smaller subset with fewer jobs, with makespan still $C$, because job $\ell$ is still present and still finishes at $C$. This contradicts the assumption that the original counterexample was the smallest subset. Thus the last job to complete in the schedule is job $n$.
+
+Now if $p_\ell\leq C_{\max}^* / 3$, the counterexample already fails. Job $\ell$ starts at time $C-p_\ell$. Up to that point, the LPT schedule has assigned total work $C-p_\ell$ to machines, so some machine’s load at that moment is at most $(C-p_\ell)/m$. The list-scheduling bound gives
+$$
+C\leq \frac{\sum_i p_i}{m} + \left(1-\frac{1}{m}\right)p_l\leq C_{\max}^*+ \left(1-\frac{1}{m}\right)p_l\leq \frac{4}{3}C_{\max}^*
+$$
+This contradicts the assumption $C>4/3\cdot C_{\max}^*$. Thus every job must be longer than $C_{\max}^*/3$. Since the jobs are sorted in nonincreasing order, all jobs satisfy $p_i\ge p_n>C^*_{\max}/3$.
+
+In an optimal schedule, no machine can have three jobs. Three jobs, each longer than $C^*_{\max}/3$, would have total processing time greater than $C^*_{\max}$, so that machine would exceed the optimal makespan. 
+
+**Lemma**: For any input to the problem of minimizing the makespan on identical parallel machines for which the processing requirement of each job is more than one-third the optimal makespan, the longest processing time rule computes an optimal schedule.
+
+The intuition is that if every job is more than a third of the optimal makespan, an optimal schedule can put at most two jobs on each machine. LPT’s descending order then places jobs in pairs in a way that achieves the best possible maximum pair load.
+
+The lemma says that LPT is optimal in this special case. This contradicts $C>\frac43C^*_{\max}$, so the supposed counterexample cannot exist. 

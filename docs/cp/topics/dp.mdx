@@ -1,0 +1,19 @@
+# Dynamic Programming
+
+CF771C Bear and Tree Jumps
+
+Given a tree, let $d(u,v)$ be minimum number of jumps to go from $u$ to $v$ where in each jump you can move at most $k$ ($1\leq k\leq 5$) vertices away. Find the sum of $d(u,v)$ over all pairs $u<v$.
+
+- DP with rerooting. Assume we know the number of jumps for some child $c$ of $u$. Then for every node in subtree of $c$ they will now have to travel one extra edge to reach $u$. If the distance between some node $v$ in subtree of $c$ is a multiple of $k$, then it will have to use one extra jump to reach $u$. Then we update the number of nodes at a distance $i$ mod $k$ from $u$.
+- To reroot, simply remove the contribution of the child from the parent, add parent's distances to child, then reroot to the child. After rerooting, undo the change in contribution. Take the sum over all nodes. This will overcount every pair twice, so divide the answer by 2.
+
+--- 
+
+CF771D Bear and Company
+
+Given a string $s$, each move you can swap any adjacent characters. Find the min moves to make $s$ have no "VK" substring ($n\leq 75$)
+
+- DP state: $dp[v][k][x][\text{is\_last\_v}]$ = min moves to move first $v$ V's, first $k$ K's, and first $x$ non-VK characters to the front (first $v+k+x$ characters). $\text{is\_last\_v}$ tracks whether the last character is V or not, which either forbids taking K next, or allows to take any V, K or X.
+- Transition: consider next V, K or X to move to the front. It has to swap with all characters to its left that are not the first $v$ V's, $k$ K's or $x$ X's. This gives $O(n)$ transition for overall $O(n^4)$. The transition can be optimised with prefix sums to give overall $O(n^3)$
+- Why this works:
+    - Imagine building the final string from left to right, building a prefix that grows to the right. Each new character is swapped until it is appended to the current prefix
