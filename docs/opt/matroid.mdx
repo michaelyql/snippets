@@ -1,0 +1,50 @@
+# Matroids
+
+## Introduction / Definitions
+
+A **matroid** is an ordered pair $(E, I)$ where $E=\set{e_1,\dots,e_n}$ is ground set of elements and $I$ is a family of *independent subsets* of $E$.
+
+The independent sets have certain properties:
+- the empty set $\emptyset$ is in $E$
+- any subset of an independent set is also independent (hereditary property)
+- if two independent sets have different size, the smaller one can take an element from the larger one to form a new independent set (augmentation property)
+
+A matroid generalizes the concept of linear independence in vector spaces. It also draws from concepts in graph theory. 
+
+A subset of the $E$ that is not independent is called *dependent*.
+
+A *maximal independent set* i.e. an independent set that becomes dependent upon adding any element of $E$, is a **basis** for the matroid.
+
+A *circuit* is a minimal dependent subset of $E$, i.e. a dependent set whose proper subsets are all independent. The term arises from graphic matroids, where circuits are cycles in the graph. 
+
+The dependent sets, the bases, or the circuits of a matroid characterize the matroid completely. 
+
+*Rank* function (from linear algebra): any two bases of a matroid have the same number of elements i.e. same rank. 
+
+There are many more definitions and concepts in advanced matroid theory.
+
+## Matroid Intersection
+
+A matroid intersection of two or more matroids on the same ground set is a *family of sets* that are *simultaneously independent* in each of the matroids. 
+
+The matroid intersection problem is to find the largest common independent set in both matorids. If the elements are weighted, the weighted matroid intersection problem tries to find the common independent set with maximum weight. The unweighted version can be seen as the weighted version where all elements have a weight of 1. Both can be found in polynomial time for the intersection of 2 matroids. 
+
+For 3 or more matroids, weighted/unweighted matroid intersection is NP-complete. 
+
+## Approximations for 2-matroid intersection
+
+- [A Fast Approximation for Maximum Weight Matroid Intersection](https://epubs.siam.org/doi/10.1137/1.9781611974331.ch33)
+- [Exact and Approximation Algorithms for
+Weighted Matroid Intersection](https://www.di.ens.fr/~cchuang/work/matroid_intersection.pdf): $(1-\epsilon)$-approximation
+- [A Faster Auction Algorithm for Weighted Matroid Intersection](https://arxiv.org/abs/2610.00920): deterministic $(1-\epsilon)$-approximation
+
+## Approximations for k-matroid intersection
+
+- [An Analysis of Approximations for Maximizing Submodular Set Functions - Fisher, Nemhauser, Wolsey (1978)](http://luthuli.cs.uiuc.edu/~daf/courses/Opt-2019/Paperssubmodular/fisher.pdf) greedy $(k+1)$ approximation for maximizing a monotone submodular function subject to $k$ matroid constraints. When the function is linear (the classic weighted case), this bound naturally tightens to a $k$-approximation
+- [Submodular Maximization over Multiple Matroids via Generalized Exchange Properties - Lee, Sviridenko, Vondrák (2009)](https://theory.stanford.edu/~jvondrak/data/multiple-matroids-MOR.pdf) longstanding $(k-1)$ guarantee
+- [Matroid Matching: The Power of Local Search - Lee, Sviridenko, Vondrák ()](https://epubs.siam.org/doi/10.1137/11083232X) $k/2$ approximation
+- [Better Approximation for Weighted k-Matroid Intersection - Singer, Thiery (2024)](https://arxiv.org/abs/2411.19366) $(k+1)/(2\ln 2)$ approximation
+- [Submodular Maximization over a Matroid k-Intersection: Multiplicative Improvement over Greedy - Feldman, Ward (2026)](https://arxiv.org/pdf/2602.08473) (improvement from singer, thiery?)
+
+
+

@@ -1,0 +1,120 @@
+---
+title: lock in for icpc
+authors: [michael]
+tags: [icpc]
+---
+
+i've been saying i will lock in for icpc but i keep falling short 
+
+time to finally put my money where my mouth is
+
+{/*truncate*/}
+
+## 2020 seoul regional
+
+### J - switches
+
+theres n lights and n switches, each switch may connect to multiple lights. for each light we want to check if its possible to flip switches s.t. only that single light is flipped on. odd parity = on, even = off. 
+
+- thought for awhile, tried thinking dp but there's too much states to track (need track parity of every single light sum) so it's obviously not the answer 
+- next instinct is treat each switch as a column vector
+- then problem becomes xor basis - finding if there exist subset of column vectors s.t. their XOR is exactly 
+- and for small n, this seems completely feasible
+- turns out to be the correct solution. but idk how to implement xor basis
+
+gpt says this is implementation:
+```cpp
+const int N = 500;
+bitset<N> basis[N];
+
+void insert(bitset<N> v, int n) {
+    for (int b = n - 1; b >= 0; --b) {
+        if (!v[b]) continue;
+        if (basis[b].none()) {
+            basis[b] = v;
+            return;
+        }
+        v ^= basis[b];
+    }
+}
+
+bool contains(bitset<N> v, int n) {
+    for (int b = n - 1; b >= 0; --b) {
+        if (!v[b]) continue;
+        if (basis[b].none()) return false;
+        v ^= basis[b];
+    }
+    return true;
+}
+
+// query each light
+for (int i = 0; i < n; ++i) {
+    bitset<N> target;
+    target[i] = 1;
+    bool possible = contains(target, n);
+}
+```
+- need to include this in my templates
+- greedy: cancel the highest set bit first
+    - `basis[b]` is either empty, or a vector whose highest set bit is exactly `b`
+    - So `basis[b]` has bit `b` set, and all bits above `b` are zero. Its lower bits can be anything
+- How `insert(v)` works
+    - Scan bits from highest to lowest. Whenever `v[b] == 1`:
+        - If `basis[b]` exists, do `v ^= basis[b]`. This cancels bit `b`, without changing any higher bits. **The `basis[b]` does not change**, only `v` itself is changed 
+        - Otherwise, store `v` in `basis[b]`. This adds a new independent vector, and we’re done
+    - if `v` becomes zero, the original vector was already obtainable by XORing existing basis vectors, so there is nothing to add.
+- How `contains(v)` works
+    - Perform the same cancellation, but you cannot add new basis vectors:
+    - If the current highest set bit has a basis vector, XOR it away.
+    - If that basis vector is missing, return false.
+    - If you reach zero, return true.
+    - so we essentially try to "switch off" bits from MSB to LSB. at each point we use `basis[b]` to switch off b-th bit. smaller bits may be affected but we don't care because we will get to them eventually. if there is no basis vector whose MSB is b-th bit when the current vector has b-th bit set, then there's no basis that can xor to the original vector
+
+### K - tiling polyomino
+
+theres a shape with no holes in it. it's represented in a nxn matrix where 0 = empty cell and 1 = filled. find if its possible to tile it with no unfilled cell, using 2x1 (represent w 2), 1x2 (rep with 3), 3x1 (rep with 4) and 1x3 tiles (rep with 5). also find one such tiling if it exists.
+
+- supposed to use the property that each cell has at least 2 neighbours to greedily tile the shape
+- initially assume all rows can be tiled with horizontal tiles. the problematic rows are the ones with only a 1x1 cell, these have to be converted into vertical tiles, which may in turn force other cells to be converted to vertical tiles
+
+### L - two buildings
+
+given heights of n buildings, find max value of `(h[i]+h[j])*(j-i)` for i < j 
+
+- DnC DP optimization - $O(n \log n)$
+- the idea is to plot the points $(i, h_i)$ and $(i, -h_i)$. when taking two points i and j for $i < j$, the value of the rectangle made by the top left point $(i,h_i)$ and $(j,-h_j)$ is exactly $A(i,j)=(j-i)\cdot (h_i+h_j)$
+- for a fixed right endpoint $j$, two left candidates $a$ and $b$ for $a<b$, if $h_a\geq h_b$ then $a$ *dominates* $b$ i.e. it is always better to use point $a$ as a left endpoint over point $b$ (since the rectangle formed using $a$ as the left endpoint is bigger than or equal to the rectangle formed by $b$)
+- otherwise $h_a<h_b$ and $A(a,j)$ is not necessarily bigger than $A(b,j)$. so the candidates to consider are such that $h_{L_1} < h_{L_2} < \dots$ for the surviving left endpoint candidates 
+- for the bottom right corner, a point $k>j$ with $h_k\geq h_j$ will always be chosen over $j$. so the right endpoint candidates follow $h_{R_1} > h_{R_2} > \dots$, i.e. only keep right endpoint $k$ if $h_k<h_j$ as it's not clear whether the effect from the increase in $j$ or increase in $h_j$ is bigger 
+- consider $D=A(b,j)-A(a,j)=(j-b)\cdot(h_b+h_j)-(j-a)\cdot (h_a+h_j)=j\cdot(h_b+h_j-h_a-h_j)-bh_b-bh_j+ah_a+ah_j=j\cdot(h_b-h_a)-h_j(b-a)+(ah_a-bh_b)$. Since $j$ increases and $h_j$ decreases for surviving right endpoints, the difference $D$ increases
+- assume the current range of optimal left endpoints is in $[optLo,optHi]$ and the range of right endpoints is $[lo,hi]$. find $mid=(lo+hi)/2$, scan the range $[optLo,optHi]$ for the best left endpoint $best$ for mid which maximizes $A(best,mid)$. then for right endpoints $<mid$, their optimal left endpoint lies only in $[optLo,best]$ and for right endpoints $>mid$, their optimal left endpoint lies in $[best,optHi]$, so just recurse accordingly
+
+## dp optimization 
+
+blog by ko osaga: https://koosaga.com/242
+
+main ideas
+- CHT 
+- D&C
+- monotone queue
+- knuth optimization / interval dp
+- aliens trick / wqs binary search
+- slope trick
+- hirschberg's algorithm
+- dynamic tree dp
+- circular dp (not sure what is this)
+
+monge array / quadrangle inequality 
+- an $n\times m$ matrix is Monge if sum of top left and bottom right element is $\leq$ sum of bottom left and top right for any $2\times 2$ *submatrix* (the four elements of the intersection of two columns and two rows)
+- $A[i,j]+A[k,l]\leq A[i,l]+A[k,j]$ for $1\leq i<k\leq n$ and $1\leq j<l\leq m$
+- this is equivalent to $A[i,j]+A[i+1,j+1]\leq A[i,j+1]+A[i+1,j]$ for $1\leq i<n$ and $1\leq j< m$
+- the position of the *leftmost* (there might be duplicates) minimum value in each row is *totally monotone* - it stays in place or shifts to the right as you go down the rows
+- you can find the minimum value of *every* row in $O(m+n)$ time using D&C - SWAMK algorithm
+- the uppermost minimum in each column is also totally monotone (down and right)
+- the row and column *maxima* march up towards the right/down towards the left
+- any subarray (choosing any rows and columns) is also Monge
+- any linear combination of non-negative coefficients its also Monge
+- applications: TSP, computational geometry, DP
+
+
+

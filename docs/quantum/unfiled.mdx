@@ -1,0 +1,32 @@
+# Unfiled notes
+
+areas of quantum computing
+- theory: quantum information, algorithms, complexity 
+    - entanglement, entropy, quantum channels, state discrimination, teleportation, no-cloning, communication complexity, capacities of quantum communication channels
+    - Shor, Grover, quantum walks, amplitude estimation, Hamiltonian simulation, optimization, linear algebra, graph problems, etc
+    - BQP vs classical complexity classes
+    - whether a quantum speedup is polynomial, quadratic, exponential, or only in query/sample complexity
+- physical systems: quantum hardware, control, devices
+    - how to encode a reliable logical qubit into many physical qubits
+    - superconducting qubits, trapped ions, neutral atoms, photonics, semiconductor/spin qubits
+- practical concerns: error correction, fault tolerance, compilers/architecture, resource estimation
+    - circuit synthesis, gate decomposition, qubit routing, scheduling, compiler optimization, hardware-aware algorithms, resource estimation, runtime/software systems
+- applications: chemistry / simulation, optimization, ML, cryptography, scientific computing
+    - using quantum systems to transmit information securely or distribute entanglement
+    - quantum key distribution, quantum repeaters, quantum networks, distributed quantum computing
+    - simulate molecules, materials, many-body systems, quantum chemistry, condensed matter, and high-energy physics
+    - QAOA, quantum annealing, quantum linear algebra, quantum kernels, quantum neural-network ideas, and quantum-enhanced sampling
+
+why more quantum algorithms haven't been found for solving *classical* problems (shor 2003)
+- there are three main classes quantum algorithms fall into
+    - (1) using fourier transform to find periodicity
+        - factoring, discrete logarithm, Simon's algorithm, Hallgreen's algorithm for Pell's equation
+    - (2) exhaustive search of n items in $\sqrt{n}$ time 
+        - grover's search algorithm, and extensions
+    - (3) simulating/solving quantum physics problems
+        - feynman's idea of using quantum computing to speed up simulation of quantum physics
+- speedups generally not possible for problems with polynomial classical algorithms, hence most try to focus on NP hard (i.e. what problems are actually open for quantum attack)
+- https://dl.acm.org/doi/pdf/10.1145/602382.602408
+- https://math.mit.edu/~shor/papers/Progress.pdf
+- [Recent progress in quantum algorithms - 2010](https://dl.acm.org/doi/pdf/10.1145/1646353.1646375)
+

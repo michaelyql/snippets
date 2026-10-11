@@ -348,3 +348,24 @@ Sliding window error-control protocols
 
 - Best-effort delivery, no guarantee (packet can be lost, dropped, duplicated, scrambled), no recovery, equal treatment (routers treat all the same and drop without warning). Transport layer adds reliability
 
+- IP address belongs to the *interface* of a host, not the host itself
+    - The host is the device itself
+    - A host can have multiple interfaces (Wi-Fi, Ethernet). Each interface has its own IP address
+    - An interface can hold multiple IP addresses, e.g. one primary IPv4 with secondary IPv6 addresses
+    - `ip addr` / `ip a` / `ifconfig` to view all network interfaces and addresses 
+- Convert IP to bits e.g. 202.3.14.25, convert each segment to its binary equivalent
+- CIDR format: Base IP Address/Prefix number (number of network bits)
+- Subnet id/host id
+- Combining IPs into single block
+    - Find longest common prefix of network bits
+- Splitting block into multiple subnets 
+    - Use additional bits after the network bits to identify the subnets
+    - Each subnet has its own new network prefix
+- A private IP address is a non-routable address assigned to a device inside a local network
+    - Allows devices to communicate with each other without being exposed directly to the public internet
+    - The Internet Assigned Numbers Authority (IANA) reserves specific address blocks for private networks
+    - Class A: 10.0.0.0 to 10.255.255.255 (supports large enterprise networks) (10/8 prefix)
+    - Class B: 172.16.0.0 to 172.31.255.255 (supports medium-to-large networks) (172.16/12 prefix)
+    - Class C: 192.168.0.0 to 192.168.255.255 (commonly used in home routers and small networks) (192,168/16 prefix)
+    - NAT: A router uses NAT to translate your private local IP into a single public IP so multiple devices can share one internet connection.
+    - DHCP: Used to assign private IP on a local network

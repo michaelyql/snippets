@@ -80,7 +80,7 @@ The analysis of the approximation ratio can be refined slightly. We actually der
 
 In terms of run time, we claim that no job is transferred twice, and that after at most $n$ iterations, the algorithm terminates. In each iteration, $C_{\max}$ never increases. We can assume that when we transfer a job to another machine, we reassign that job to the machine that is currently finishing earliest with $C_{\min}$. Note that $C_{\min}$ never decreases. Now suppose a job is transferred twice, from machine $i$ to $i'$, then later to $i^*$. This implies $C_{\min}' < C_{\min}$, a contradiction.
 
-Greedy *List Scheduling* Algorithm: whenever a machine becomes idle, one of the remaining jobs is assigned to start processing on that machine. From the load-balancing perspective, the next job on the list is assigned to the machine that is currently the least heavily loaded. 
+*List Scheduling* Algorithm: whenever a machine becomes idle, one of the remaining jobs is assigned to start processing on that machine. From the load-balancing perspective, the next job on the list is assigned to the machine that is currently the least heavily loaded. 
 
 If one uses this schedule as the starting point for the local search procedure, that algorithm would immediately declare that the solution cannot be improved. Consider a job $l$ that is (one of the jobs) last to complete its processing. Each machine is busy until $C_l − p_l$, since otherwise we would have assigned job $l$ to that other machine. Hence, no transfers are possible.
 
@@ -107,3 +107,192 @@ In an optimal schedule, no machine can have three jobs. Three jobs, each longer 
 The intuition is that if every job is more than a third of the optimal makespan, an optimal schedule can put at most two jobs on each machine. LPT’s descending order then places jobs in pairs in a way that achieves the best possible maximum pair load.
 
 The lemma says that LPT is optimal in this special case. This contradicts $C>\frac43C^*_{\max}$, so the supposed counterexample cannot exist. 
+
+## Rounding data and dynamic programming
+
+## Deterministic rounding of linear programs
+
+### Minimize sum of completion times on single machine
+
+Given $n$ jobs with processing time $p_i$ and release time $r_i$, find a schedule which minimizes $\sum C_i$ where $C_i$ is the completion time of job $i$. This is the same as minimizing the average completion time, since the average completion time just rescales the objective function for each feasible solution by a factor of $1/n$.
+
+We can convert any *preemptive* schedule into a non-preemptive schedule such that the completion time of each job at most doubles.
+
+An optimal solution to the preemptive version of the scheduling problem can be found in polynomial time via the *shortest remaining processing time* (SRPT) rule.
+
+Let $C^P_j$ be the completion time of job $j$ in an optimal preemptive schedule, and let $OPT$ be the sum of completion times in an optimal nonpreemptive schedule. Then $\sum_{j=1}^n C_j^P \leq OPT$. This follows from the fact that an optimal nonpreemptive schedule is feasible for the preemptive scheduling problem. 
+
+Suppose the jobs are indexed such that $C_1^P \leq C_2^P \leq \dots \leq C_n^P$. Schedule the jobs non-preemptively in the same order that they complete in the preemptive schedule. I.e. schedule job 1 from $r_1$ to $r_1+p_1$, schedule job 2 as soon as possible after job 1 i.e. from $\max(r_1+p_1, r_2)$, and so on. Let $C^N_j$ the completion time of job $j$ in the nonpreemptive schedule. Then job $j$ is processed from $\max\{C_{j-1}^N, r_j\}$ to $\max\{C_{j-1}^N, r_j\} + p_j$.
+
+**Lemma**: $C_j^N \leq 2C_j^P$ 
+
+*Proof*. Since $j$ is processed in the optimal preemptive schedule after jobs $1,\dots,j-1$, $C_j^P \geq \max_{k=1,\dots,j} r_k$ and $C_j^P \geq \sum_{k=1}^p p_k$. Also we have $C_j^N\geq \max_{k=1,\dots,j} r_k$.
+
+In the nonpreemptive schedule, for any period of time that the machine is idle, it occurs only when the next job to be processed has not yet been released. Thus in the interval $\max_{k=1}^j r_k$ to $C_j^N$, there cannot be any idle time, since all jobs $k=1,\dots,j$ have been released by then. Thus this interval must be at most $\sum_{k=1}^j p_k$, for otherwise there would be an idle period.
+
+Therefore $C_j^N \leq \max_{k=1}^j r_k + \sum_{k=1}^j p_k \leq 2C_j^P$
+
+**Theorem**: Scheduling in order of the completion times of an optimal preemptive schedule
+is a 2-approximation algorithm for scheduling a single machine with release dates to minimize
+the sum of completion times. 
+
+*Proof*: $\sum_{j=1}^n C_j^N\leq 2\sum_{j=1}^n C_j^p \leq 2 \cdot OPT$ 
+
+### Minimize weighted sum of completion times on a single machine
+
+Same as the previous problem, but each job has weight $w_j$ and we want to minimize $\sum_{j=1}^n w_jC_j$. Unlike the unweighted case, it is NP-hard to find an optimal schedule for the preemptive
+version of the weighted case.
+
+Construct a linear program relaxation as follows: goal is to minimize $\sum_{j=1}^n w_jC_j$. Constraints are $C_j \geq r_j+p_j$. Additionally, consider some set of jobs $S\subseteq \set{1,\dots,n}$ and the sum $\sum_{j\in S}p_jC_j$. This sum is minimized when all the jobs in $S$ have a release date of zero and all the jobs in $S$ finish first in the schedule before any of the other jobs not in $S$. 
+
+Then for any $j\in S$, $C_j$ is equal to $p_j$ plus the sum of all processing times of jobs in $S$ that preceded $j$. Thus in $p_jC_j$, $p_j$ is multiplied with all processing times of jobs in $S$ that preceded $j$. Thus $\sum_{j\in S}p_jC_j$ contains all terms $p_jp_k$ for all pairs $j,k\in S$. Thus 
+$$
+\sum_{j\in S}p_jC_j = \sum_{j,k\in S:j\leq k}p_jp_k=\frac{1}{2}\left(\sum_{j\in S}p_j\right)^2+\frac{1}{2}\sum_{j\in S}p_j^2 \geq \frac{1}{2}\left(\sum_{j\in S}p_j\right)^2
+$$
+
+Let $N=\set{1,\dots,n}$, $p(S)=\sum_{j\in S}p_j$, then the inequality becomes $\sum_{j\in S}p_jC_j \geq \frac{1}{2} p(S)^2$. The sum can only increase if the jobs in $S$ have a release date greater than zero, or if they do not finish first in the schedule. Thus the inequality holds for any $S\subseteq N$. Thus the second constraint is 
+$$
+\sum_{j\in S}p_jC_j \geq \frac{1}{2}p(S)^2
+$$
+for each $S\subseteq N$. 
+
+This LP is a relaxation of the problem, so for an optimal LP solution $C^*$, $\sum_{j=1}^n w_jC_j^* \leq OPT$, where $OPT$ denotes the value of the optimal solution to the problem. There are an exponential number of the second type of constraint, but it can be solved in polynomial time using the *ellipsoid method*. Finally, schedule the jobs nonpreemptively in the same order as the completion times of $C^*$. 
+
+**Theorem**: Scheduling in order of the completion time of $C^*$ is a 3-approximation algorithm
+for scheduling jobs on a single machine with release dates to minimize the sum of weighted
+completion times.
+
+*Proof*. Assume that the jobs are reindexed $C_1^*\leq \dots \leq C_n^*$. Let $C_j^N$ be the completion time of $j$ in the nonpreemptive schedule. Again, there cannot be any idle time between $\max_{k=1,\dots,j}r_k$ and $C_j^N$. Thus $C_j^N \leq \max_{k=1}^j r_k + \sum_{k=1}^j p_k$.
+
+Let $\ell=\arg\max_{k=1}^j r_k$. Then $C_j^* \geq C_{\ell}^*$ and $C_{\ell}^* \geq r_{\ell}$, thus $C_j^* \geq \max_{k=1}^j r_k$. Let $[j]$ denote $\set{1,\dots,j}$. 
+
+Let $S=[j]$. Since $C^*$ is a feasible LP solution, $\sum_{k\in S}p_kC_k^* \geq \frac{1}{2}p(S)^2$. Since $C_j^*\geq\dots\geq C_1^*$, $C_j^*\sum_{k\in S}p_k = C_j^* \cdot p(S)\geq \sum_{k \in S}p_kC_k^*$. Thus $C_j^*\cdot p(S)\geq \frac{1}{2}p(S)^2$. Dividing both sides by $p(S)$ shows 
+$$
+C_j^* \geq \frac{1}{2}p(S)=\frac{1}{2}p([j])
+$$
+Thus $C_j^N\leq p([j])+\max_{k=1,\dots,j}r_k\leq 2C_j^*+ C_j^*=3C_j^*$, and $\sum_{j=1}^n w_jC_j^N \leq 3\sum_{j=1}^n w_jC_j^*\leq 3 OPT$, giving the desired result.
+
+### Solving large linear programs in polynomial time via the ellipsoid method
+
+The *simplex* method to solve LP runs in worst case exponential time, but on average polynomial time for most cases. 
+
+*Interior-point* methods are a class of algorithms for solving linear programs; while typically not as fast or as popular as the simplex method, interior point methods do solve linear programs in polynomial time. However, they still aren't sufficient to solve problems exponential to the size of inputs.
+
+This is what the *ellipsoid* method is for. 
+
+Suppose we have a general linear program: minimize $\sum_{j=1}^n d_jx_j$ subject to $\sum_{j=1}^n a_{ij}x_j\geq b_i$ for $i=1,\dots,m$ and $x_j\geq 0 \; \forall j$. Suppose that we can give a bound $\phi$ on the number of bits needed to encode any inequality. 
+
+Then the ellipsoid method for linear programming allows us to find an optimal solution to the linear program in time polynomial in $n$ (the number of variables) and $\phi$, given a polynomial-time *separation oracle*. This running time *does not* depend on $m$, the number of constraints of the linear program, which are assumed to be exponential. 
+
+### Prize-collecting Steiner tree problem
+
+Given an undirected graph $G=(V,E)$, edge cost $e_c\geq 0$ for each $e\in E$, a root vertex $r\in V$, an penalty $\pi_i \geq 0$ for $i\in V$. The goal is to find a tree $T$ that contains the root vertex $r$ so as to minimize the cost of the edges in the tree plus the penalties of all vertices not in the tree. 
+
+In other words, if $V(T)$ is the set of vertices in the tree $T$, the goal is to minimize 
+$$
+\sum_{e\in T}c_e+ \sum_{i\in V\setminus V(T)}\pi_i
+$$
+The *min-cost Steiner tree* problem is a special case where $\pi_i=\infty$ (thus $i$ must be included in the tree) or $\pi_i = 0$ (may be omitted without penalty). The vertices that must be included in the solution in the tree are called *terminals*.
+
+One application of the prize-collecting Steiner tree problem is deciding how to extend cable
+access to new customers. 
+- Each vertex represents a potential new customer, the cost of edge $(i, j) $ represents the cost of connecting $i$ to $j$ by cable. 
+- The root $r$ represents a site that is already connected to the cable network, and the penalties $\pi_i$ represent the potential profit to be gained by connecting customer $i$ to the network. 
+- Thus, the goal is to minimize the total cost of connecting new customers to the network, plus the profits lost by leaving the unconnected customers out of the network.
+
+The prize-collecting Steiner tree problem can be modeled as an integer program. Use a 0-1 variable $y_i$ for each $i \in V$ and $x_e$ for each $e \in E$, with 1 indicating the vertex/edge is included, and 0 for not included. 
+
+The objective function is 
+$$
+\text{minimize } \sum_{e\in E}c_ex_e + \sum_{i\in V}\pi_i(1-y_i)
+$$
+
+To enforce the constraint that root $r$ is connected to each vertex $i$ with $y_i=1$, first define $\delta(S)$ to be the set of edges defined by the *cut* of $S$, i.e. the set of edges with exactly one endpoint in $S$ for some non-empty $S\subset V$.
+
+For each $S\subseteq V\setminus \set{r}$ and each $i\in S$, introduce the constraint 
+$$
+\sum_{e\in \delta(S)}x_e\geq y_i
+$$
+In simpler terms, for any $r-i$ cut $S$, if $y_i=1$, ensure that at least one of the cut edges of $\delta(S)$ are included in the tree. By max-flow/min-cut theorem, there is at least one path from $r$ to $i$. Thus this ensures all terminals are included in the tree.
+
+Thus the full LP with constraints is
+
+$$
+\begin{align*}
+\text{minimize } &\sum_{e\in E}c_ex_e + \sum_{i\in V}\pi_i(1-y_i) \\
+\text{subject to } &\sum_{e\in \delta(S)} x_e\geq y_i, \qquad \forall S\subseteq V\setminus \set{r}, S\not=\emptyset, \forall i\in S\\
+&y_r=1\\
+&y_i\in \set{0,1}\qquad \forall i\in V\\
+&x_e\in \set{0,1}\qquad \forall e\in E
+\end{align*}
+$$
+
+Relax the ILP such that $y_i,x_e\geq 0$. Now apply the ellipsoid method. The separation oracle for the constraints $\sum_{e\in \delta(S)} x_e\geq y_i$ is as follows: 
+
+Given a solution $(x, y)$, construct a network flow problem on the graph $G$ where the capacity of each edge $e$ is $x_e$. For each vertex $i$, check if the max flow from $i$ to the $r$ is at least $y_i$, i.e. the constraint holds. Hence, for any solution $(x, y)$, we can find a violated constraint in polynomial time.
+
+The algorithm to solve the original ILP is thus as follows: Given an optimal solution $(x^*, y^*)$ to the LP relaxation, for some $\alpha\in[0,1)$, let $U$ be the set of all vertices such that $y_i\geq \alpha$. Since $y_r = 1$, $r$ is in $U$. Build a Steiner tree where the terminals are the set $U$. Let $T$ be one such Steiner tree, obtained either by the primal-dual method, or the greedy method. Return $T$ as the solution to the ILP. 
+
+**Lemma**: The tree $T$ returned by the primal-dual method has cost $\sum_{e\in T}c_e\leq \frac{2}{\alpha}\sum_{e\in E}c_ex_e^*$
+
+**Lemma**: $\sum_{i\in V\setminus V(T)}\pi_i \leq \frac{1}{1-\alpha}\sum_{i\in V}\pi_i(1-y_i^*)$
+
+*Proof*. If $i$ is not in $T$, then it is not in $U$, so $y_i^*<\alpha$.  Thus, $1 − y_i^* > 1-\alpha$, and $\frac{1−y_i^*}{1-\alpha}>1$.
+
+Combining the two lemmas immediately gives the following theorem and corollary.
+
+**Theorem**: The cost of the solution produced by the algorithm is 
+$$
+\sum_{e\in T}c_e +\sum_{i\in V\setminus V(T)}\pi_i\leq \frac{2}{\alpha}\sum_{e\in E}c_e x_e^*+\frac{1}{1-\alpha}\sum_{i\in V}\pi_i(1-y_i^*)
+$$
+
+**Corollary**: Using $\alpha=\frac{2}{3}$ gives a 3-approximation for the prize-collecting Steiner tree problem.
+
+*Proof*. Bound the cost by $\max\{2/\alpha, 1/(1-\alpha)\}$. This is minimized by setting $\frac{2}{\alpha}=\frac{1}{1-\alpha}$, thus $\alpha=\frac{2}{3}$.
+
+Thus the cost of the tree is 
+$$
+\sum_{e\in T}c_e +\sum_{i\in V\setminus V(T)}\pi_i \leq 3\left( \sum_{e\in T}c_ex_e^* +\sum_{i\in V}\pi_i(1-y_i^*) \right)\leq 3 \text{OPT}
+$$
+
+A natural idea is to try all possible values of $\alpha$. Since there are $|V|$ variables $y_i^*$, there are at most $|V|$ distinct values of $y_i^*$. We can construct $|V$| sets $U_j=\set{i\in V:y_i^*\geq y_j^*}$. For each $j\in V$, construct a Steiner tree $T_j$ on the vertices $U_j$,
+and return the best overall solution out of the $|V|$ solutions constructed. 
+
+This algorithm can be analyzed as a deterministic variant of a randomized algorithm.
+
+### Uncapacitated facility location problem
+
+There are a set of clients/demands $D$ and a set of facilities $F$. There is a cost $c_{ij}$ of assigning client $j$ to facility $i$. Each facility has a cost $f_i$. The goal of the problem is to choose a subset of facilities $F' \subseteq F$ so as to minimize the total cost of the facilities in $F'$ and the cost of assigning each client to the nearest facility. In other words, we wish to find $F'$ so as to minimize
+$$
+\sum_{i\in F'}f_i+\sum_{j\in D}\min_{i\in F'}c_{ij}
+$$
+The first part is the facility cost, and the second part is the assignment cost or service cost. We say that we *open* the facilities in $F'$. 
+
+The UFLP is a general problem which is found in many contexts and has many variants. E.g. a company having to build warehouses to store parts and customers needing to use those parts, the cost of assignment is the distance of the warehouse to the customer. Additional constraints may include that the customer must be within a 4 hour trip to the facility, a facility can only service a maximum number of customers (i.e. the *capacitated* variant), or multiple facility types (e.g. customers assigned to warehouses, warehouses assigned to distribution centers).
+
+The uncapacitated facility location problem is as hard to approximate as the set cover problem.  However, it is relatively common for facilities and clients to be points in a *metric* space, with assignment costs $c_ij$ representing the distance from facility $i$ to client $j$ which obeys the *triangle inequality*. 
+
+More precisely, given clients $j, l$ and facilities $i, k$, we have $c_{ij} \leq c_{il} + c_{kl} + c_{kj}$. Since the clients and facilities correspond to points in a metric space, we assume that we have distances $c_{ii'}$ between two facilities $i$ and $i'$, and $c_{jj'}$ between two clients $j$ and $j'$.
+
+4-approximation algorithm: Use decision variables $y_i \in \set{0, 1}$ for each facility $i \in F$. $y_i=1$ if facility $i$ is opened, and 0 otherwise. Also introduce decision variables $x_{ij}\in\set{0,1}$, 1 if client $j$ is assigned to facility $i$ and 0 otherwise. The objective function is to minimize 
+$$
+\sum_{i\in F}f_iy_i+\sum_{i\in F,j\in D}c_{ij}x_{ij}
+$$
+
+To ensure that each client $j\in D$ is assigned to exactly one facility, introduce the constraint $\sum_{i\in F}x_{ij}=1$.
+
+Finally, to make sure clients are only assigned to facilities that are open, introduce the constraint $x_{ij}\leq y_i$ for all $i\in F,j\in D$. 
+
+### Bin packing problem
+
+### Exercises 
+
+1. *SONET ring loading problem*: Given a cycle on $n$ nodes numbered $0,\dots,n-1$ clockwise, 
+
+## Random sampling and randomized rounding of linear programs 
+
+## Randomized rounding of semidefinite programs
+
+## The primal-dual method 
+
+## Cuts and metrics

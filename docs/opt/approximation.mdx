@@ -334,14 +334,14 @@ $$
 
 - The **flow** along an edge can be thought of as the rate per unit time at which the commodity is being transported along the edge. 
 - The **capacity** of an edge can be thought of as the maximum rate at which the commodity can be transported along the edge
-- **Capacity constraint**: the flow along an edge cannot exceed its capacity. 
-- **Conservation constraint**: flow entering a node = flow leaving a node
 - Formal definition: 
     - For a directed graph $G=(V,E)$ 
     - source $s$, sink $t$
     - a capacity function $c: E\rightarrow \mathbb{R}^+$ which maps each edge $(x,y)$ to a capacity $c(x,y)$
     - The capacity constraint states that the flow $f:E\rightarrow \mathbb{R}^+$ through each edge $(x,y)\in E$ is such that $f(x,y)\leq c(x,y)$, and
     - The conservation constraint states that for each vertex $v\in V\setminus \{s,t\}$, $\sum_{(u,v)\in E} f(u,v)=\sum_{(v,z)\in E} f(v,z)$
+    - Capacity constraint: the flow along an edge cannot exceed its capacity. 
+    - Conservation constraint: flow entering a node = flow leaving a node
 - The Max-Flow problem aims to find a feasible flow that maximizes the flow from $s$ to $t$
 
 ### Edmonds-Karp 
