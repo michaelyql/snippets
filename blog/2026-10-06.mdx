@@ -116,5 +116,38 @@ monge array / quadrangle inequality
 - any linear combination of non-negative coefficients its also Monge
 - applications: TSP, computational geometry, DP
 
+## knuth's optimization
 
+SPOJ - breaking string 
 
+```cpp
+int n, m;
+while ((cin >> n >> m)) {
+    vi a(m+2);
+    rep(i,1,m+1) cin >> a[i];
+    a[0] = 0;
+    a[m+1] = n;
+    vvi opt(m + 2, vi(m + 2));
+    vector<vll> dp(m + 2, vll(m + 2));
+    for(int i=1;i<=m;i++){
+        opt[i][i] = i;
+        dp[i][i] = a[i+1]-a[i-1];
+    }
+    for(int i=m-1; i>=1; i--) {
+        for(int j=i+1; j<=m; j++) {
+            int L = opt[i][j-1], R = opt[i+1][j];
+            ll& val = dp[i][j];
+            val = LLONG_MAX;
+            for(int k=L; k<=R; k++) {
+                ll cand = dp[i][k-1] + dp[k+1][j];
+                if (cand < val) {
+                    val = cand;
+                    opt[i][j] = k;
+                }
+            }
+            val += a[j+1]-a[i-1]; 
+        }
+    }
+    cout << dp[1][m] << '\n';
+}
+```

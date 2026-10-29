@@ -1,0 +1,67 @@
+---
+title: geometry
+authors: [michael]
+tags: [icpc]
+---
+
+## geometry
+
+{/*truncate*/}
+
+## basics
+
+hi
+
+### angle chasing
+
+- sum of angles in triangle = 180
+- opposite angles (X shape)
+- congruent triangles
+- supplementary angles on a line add to 180
+- similar triangles - AA (angle angle), SAS (side angle side), SSS (side side side)
+- perpendicular lines
+- parallel lines
+- angle bisectors (split angle into two equal halves)
+- transversal lines (Z shape)
+- inscribed angle, intercepted arc (arc where two lines cut the circle)
+
+### power of a point theorem
+
+- $Pow_{\Gamma}(P)=OP^2 - r^2=(OP-r)(OP+r)$
+- P is exterior point, cut at x, y: secant. $PX\cdot PY=Pow_{\Gamma}(P)$
+    - $PA\cdot PB=PC\cdot PD$ for two lines and it cuts at A,B,C,D
+- P is interior point, cut at x, y: chord. $PX\cdot PY=-Pow_{\Gamma}(P)$
+    - same, $PA\cdot PB=PC\cdot PD$ 
+- P is exterior point, tangent at z: tangent. $PZ^2=Pow_{\Gamma}(P)$
+    -  $PA\cdot PB = PZ^2$ 
+- *concyclic*: three or more points that lie on the same circle 
+
+### cyclic quadrilateral
+
+- (1) all four vertices on a circle A,B,C,D
+- (2) $\angle ADB =\angle ACB$ for convex quadrilateral
+- (3) $\angle ABC + \angle ADC = 180^\circ$ (convex)
+- $(1)\iff(2)$, $(1)\iff(3)$
+
+### inscribed angle theorem
+
+- the measure of an inscribed angle is half the measure of its intercepted arc
+- the central angle is the angle of the intercepted arc from the center
+- inscribed angle $\angle ACB = \widehat{AB}/2$ (*measure* of an arc i.e. angle of AB from center)
+- for internal angle, $1/2\cdot (x^\circ + y^\circ)$
+- for external angle, $1/2\cdot (x^\circ - y^\circ)$ 
+
+
+## problems
+
+2018 Hanoi Regional Problem K
+
+given $n$ points on the plane, find if there exists a triangle such that all points are on the triangle ($n\leq 10^5$)
+- i thought of finding the convex hull of the $n$ points 
+- if the points can lie on a triangle, then it should be possible to recover the triangle from the convex hull
+- for 3 sides, the hull is already a triangle, we are done
+- define an empty side as a side of the convex hull which only contains input points on its endpoints and none in between
+- for 4 sides, we have to check three cases: (1) does there exist two adjacent empty sides which can be removed, and the remaining two sides of the hull can form a triangle, (2) does there exist two opposite empty sides that can be removed, and the remaining two sides are not parallel, and (3) does there exist a single empty side which can be removed, after which the remaining three sides form a triangle when extended
+- for 5 sides, there are 2 cases to consider: (1) does there exist two non-adjacent empty sides that can be removed, and (2) does there exist three sides which can be removed, such that the remaining two lines form the two sides of a triangle, and the last side contains the last vertex in between its endpoints
+- for 6-gon, only 1 case to consider: does there exist three pairwise non-adjacent empty sides that can be removed such that the remaining three lines form a triangle
+- solved by **0** teams during the regional
